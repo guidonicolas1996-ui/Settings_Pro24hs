@@ -206,26 +206,15 @@ function normalizeRoutePath(pathname = window.location.pathname) {
 
 function applyCleanUrl() {
   const cleanPath = normalizeRoutePath();
-  const hasCleanPath = window.location.pathname !== cleanPath;
 
-  if (hasCleanPath) {
-    const nextUrl = `${window.location.protocol}//${window.location.host}${cleanPath}${window.location.search}${window.location.hash}`;
+  if (window.location.pathname !== cleanPath) {
+    const nextUrl = `${cleanPath}${window.location.search}${window.location.hash}`;
     window.history.replaceState({}, '', nextUrl);
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const currentPath = normalizeRoutePath();
-
-  if (currentPath === '/index.html' || currentPath === '/index') {
-    window.location.replace('/');
-    return;
-  }
-
-  if (window.location.pathname !== currentPath) {
-    window.location.replace(currentPath);
-    return;
-  }
+  applyCleanUrl();
 
   renderContent();
   setViewportHeight();
