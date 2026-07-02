@@ -2,7 +2,7 @@
 const landingContent = {
   accessBadge: 'ACCESO VIP',
   heroTitle: 'OBTENÉ UN <span class="gradient-text">100%</span> EN TU PRIMER DEPÓSITO',
-  heroCopy: '🢃 Escribinos apretando el botón de abajo 🢃',
+  heroCopy: 'Escribinos apretando el botón de abajo',
   ctaLabel: 'WHATSAPP OFICIAL',
   helperText: 'ATENCIÓN Y RETIROS LAS 24 HS',
   footerText: '© 2026 el juego es solo +18. Operá con responsabilidad.'

@@ -735,6 +735,35 @@ Responsive
   }
 }
 
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .ambient-layer {
+    opacity: 0.8;
+  }
+
+  .ambient-layer .blob {
+    animation: none !important;
+    transform: none !important;
+    filter: blur(90px);
+    opacity: 0.3;
+  }
+
+  .whatsapp-button,
+  .whatsapp-button::before,
+  .whatsapp-button::after,
+  .hero-header__mascot,
+  #active-logo,
+  #active-mascot {
+    animation: none !important;
+    transition-duration: 0.1s !important;
+  }
+
+  .whatsapp-button:hover,
+  .whatsapp-button:focus-visible {
+    transform: none;
+    box-shadow: 0 16px 32px rgba(37, 211, 102, 0.2);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ambient-layer,
   .whatsapp-button,
