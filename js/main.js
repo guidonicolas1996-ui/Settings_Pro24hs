@@ -8,7 +8,7 @@ const landingContent = {
   footerText: '© 2026 el juego es solo +18. Operá con responsabilidad.'
 };
 
-const WHATSAPP_URL = 'https://wa.me/5491112345678?text=Hola%20quiero%20recibir%20información';
+const WHATSAPP_URL = 'https://www.linkify.com.ar/api/soporte?id=k6cipb';
 
 function renderContent() {
   const accessBadge = document.getElementById('access-badge');

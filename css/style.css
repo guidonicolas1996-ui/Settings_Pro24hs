@@ -31,6 +31,8 @@ body {
   background:
     radial-gradient(circle at top left, rgba(255, 107, 53, 0.2), transparent 28%),
     linear-gradient(140deg, var(--color-bg) 0%, #0c1430 55%, #140f35 100%);
+  background-size: 200% 200%;
+  animation: ambient-glow 20s ease-in-out infinite;
 }
 
 img {
@@ -226,6 +228,24 @@ button {
   }
 }
 
+@keyframes ambient-glow {
+  0% {
+    background-position: 0% 0%;
+  }
+  25% {
+    background-position: 50% 50%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 50% 50%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
 @media (max-width: 640px) {
   .page-shell {
     padding-inline: 0.8rem;
@@ -241,6 +261,10 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  body {
+    animation: none;
+  }
+
   .whatsapp-button {
     animation: none;
   }
