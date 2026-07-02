@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Ajustes del casino activo y selección de branding." />
+    <meta name="theme-color" content="#060b1d" />
+    <title>Settings - Casino Oficial</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body class="settings-page">
+    <div class="ambient-layer" aria-hidden="true">
+      <span class="blob blob-1"></span>
+      <span class="blob blob-2"></span>
+      <span class="blob blob-3"></span>
+      <span class="blob blob-4"></span>
+      <span class="blob blob-5"></span>
+    </div>
+
+    <main class="settings-shell">
+      <section class="settings-card settings-card--hero">
+        <p class="settings-eyebrow">Configuración</p>
+        <h1>Seleccioná los casinos activos</h1>
+        <p class="settings-copy">Los logos aparecerán todos juntos en la landing y la mascota cambiará entre los casinos activos.</p>
+
+        <fieldset class="settings-fieldset">
+          <legend class="settings-label">Casinos activos</legend>
+
+          <label class="settings-checkbox">
+            <input type="checkbox" name="theme-select" value="ganamos" checked />
+            <span>1 - Ganamos</span>
+          </label>
+
+          <label class="settings-checkbox">
+            <input type="checkbox" name="theme-select" value="zeus" />
+            <span>2 - Zeus</span>
+          </label>
+
+          <label class="settings-checkbox">
+            <input type="checkbox" name="theme-select" value="apostamos" />
+            <span>3 - Apostamos</span>
+          </label>
+        </fieldset>
+      </section>
+
+      <section class="settings-card">
+        <div class="settings-cards">
+          <article class="theme-card is-active" data-theme-card="ganamos">
+            <img src="img/logo1.png" alt="Logo Ganamos" class="theme-card__logo" />
+            <div>
+              <h2>1. Ganamos</h2>
+              <p>Rosado y naranja</p>
+            </div>
+          </article>
+
+          <article class="theme-card" data-theme-card="zeus">
+            <img src="img/logo2.png" alt="Logo Zeus" class="theme-card__logo" />
+            <div>
+              <h2>2. Zeus</h2>
+              <p>Azules y celestes</p>
+            </div>
+          </article>
+
+          <article class="theme-card" data-theme-card="apostamos">
+            <img src="img/logo3.png" alt="Logo Apostamos" class="theme-card__logo" />
+            <div>
+              <h2>3. Apostamos</h2>
+              <p>Verde y vibrante</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <p class="settings-footer">
+        <a href="index.html">Volver a la landing</a>
+      </p>
+    </main>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>

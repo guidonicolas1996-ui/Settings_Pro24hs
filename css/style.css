@@ -1,12 +1,15 @@
+﻿/* ===========================
+Variables
+=========================== */
 :root {
   --color-bg: #060b1d;
   --color-surface: #110d33;
   --color-surface-strong: #1e1643;
   --color-border: rgba(255, 255, 255, 0.12);
-  --color-primary: #ff6b35;
-  --color-primary-strong: #ff8c42;
-  --color-accent: #ffbc00;
-  --color-success: #25d366;
+  --color-primary: #7d6cff;
+  --color-primary-strong: #8f80ff;
+  --color-accent: #ffd166;
+  --color-success: #36d399;
   --color-text: #f8f9ff;
   --color-muted: #9bb0d2;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
@@ -14,14 +17,79 @@
   --radius-md: 18px;
   --transition: 180ms ease;
   --ambient-duration: 3s;
+  --theme-primary: #7d6cff;
+  --theme-primary-strong: #8f80ff;
+  --theme-accent: #ffd166;
+  --theme-success: #36d399;
+  --theme-accent-soft: rgba(255, 209, 102, 0.15);
+  --theme-accent-border: rgba(255, 209, 102, 0.35);
+  --theme-glow-1: rgba(125, 108, 255, 0.28);
+  --theme-glow-2: rgba(255, 209, 102, 0.16);
+  --blob-1-color: rgba(125, 108, 255, 0.9);
+  --blob-2-color: rgba(163, 119, 255, 0.8);
+  --blob-3-color: rgba(255, 209, 102, 0.78);
+  --blob-4-color: rgba(255, 255, 255, 0.24);
+  --blob-5-color: rgba(125, 108, 255, 0.4);
 }
+
+body[data-theme="ganamos"] {
+  --theme-primary: #b607bc;
+  --theme-primary-strong: #5e0274;
+  --theme-accent: #f1a3e7;
+  --theme-success: #25d366;
+  --theme-accent-soft: rgba(240, 173, 229, 0.15);
+  --theme-accent-border: rgba(240, 173, 229, 0.35);
+  --theme-glow-1: rgba(103, 1, 119, 0.3);
+  --theme-glow-2: rgba(90, 2, 102, 0.2);
+  --blob-1-color: rgba(175, 7, 180, 0.9);
+  --blob-2-color: rgba(202, 50, 196, 0.8);
+  --blob-3-color: rgba(241, 109, 235, 0.78);
+  --blob-4-color: rgba(255, 255, 255, 0.24);
+  --blob-5-color: rgba(88, 0, 102, 0.4);
+}
+
+body[data-theme="zeus"] {
+  --theme-primary: #2d8cff;
+  --theme-primary-strong: #64b4ff;
+  --theme-accent: #8dd4ff;
+  --theme-success: #25d366;
+  --theme-accent-soft: rgba(141, 212, 255, 0.16);
+  --theme-accent-border: rgba(141, 212, 255, 0.38);
+  --theme-glow-1: rgba(45, 140, 255, 0.28);
+  --theme-glow-2: rgba(141, 212, 255, 0.2);
+  --blob-1-color: rgba(56, 163, 255, 0.9);
+  --blob-2-color: rgba(79, 129, 255, 0.8);
+  --blob-3-color: rgba(119, 208, 255, 0.82);
+  --blob-4-color: rgba(255, 255, 255, 0.24);
+  --blob-5-color: rgba(47, 128, 255, 0.4);
+}
+
+body[data-theme="apostamos"] {
+  --theme-primary: #22c55e;
+  --theme-primary-strong: #4ade80;
+  --theme-accent: #86efac;
+  --theme-success: #22c55e;
+  --theme-accent-soft: rgba(134, 239, 172, 0.16);
+  --theme-accent-border: rgba(134, 239, 172, 0.38);
+  --theme-glow-1: rgba(34, 197, 94, 0.28);
+  --theme-glow-2: rgba(134, 239, 172, 0.18);
+  --blob-1-color: rgba(34, 197, 94, 0.88);
+  --blob-2-color: rgba(74, 222, 128, 0.8);
+  --blob-3-color: rgba(134, 239, 172, 0.8);
+  --blob-4-color: rgba(255, 255, 255, 0.24);
+  --blob-5-color: rgba(22, 163, 74, 0.4);
+}
+
+/* ===========================
+Base styles
+=========================== */
 
 * {
   box-sizing: border-box;
 }
 
 html {
-  font-size: 16px;
+  font-size: 14.4px;
 }
 
 body {
@@ -29,38 +97,95 @@ body {
   min-height: 100dvh;
   font-family: "Montserrat", "Segoe UI", Roboto, Arial, sans-serif;
   color: var(--color-text);
-  background: linear-gradient(140deg, var(--color-bg) 0%, #0c1430 55%, #140f35 100%);
+  background: linear-gradient(140deg, rgba(6, 11, 29, 0.96) 0%, rgba(12, 20, 48, 0.96) 55%, rgba(20, 15, 53, 0.96) 100%), url("../img/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
+
+img,
+button,
+select,
+input {
+  display: block;
+  max-width: 100%;
+  font: inherit;
+}
+
+/* ===========================
+Animated background
+=========================== */
 
 .ambient-layer {
   position: fixed;
-  inset: -10%;
+  inset: 0;
   z-index: 0;
+  overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(255, 107, 53, 0.55) 0%, transparent 32%),
-    radial-gradient(circle at 80% 35%, rgba(255, 188, 0, 0.32) 0%, transparent 34%),
-    radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.16) 0%, transparent 36%);
-  filter: blur(28px);
-  opacity: 1;
-  animation: ambient-float var(--ambient-duration) ease-in-out infinite;
+  background: transparent;
 }
 
-.page-shell {
-  position: relative;
-  z-index: 1;
-}
-
-img {
+.ambient-layer .blob {
+  position: absolute;
   display: block;
-  max-width: 100%;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.8;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  transition: background 0.5s ease, opacity 0.5s ease;
 }
 
-button {
-  font: inherit;
+.ambient-layer .blob-1 {
+  top: -8%;
+  left: -12%;
+  width: 32rem;
+  height: 32rem;
+  background: radial-gradient(circle, var(--blob-1-color) 0%, rgba(255, 255, 255, 0) 72%);
+  animation: blob-one 10.4s ease-in-out infinite alternate;
 }
+
+.ambient-layer .blob-2 {
+  top: 6%;
+  right: -10%;
+  width: 38rem;
+  height: 38rem;
+  background: radial-gradient(circle, var(--blob-2-color) 0%, rgba(255, 255, 255, 0) 72%);
+  animation: blob-two 9.1s ease-in-out infinite alternate;
+}
+
+.ambient-layer .blob-3 {
+  bottom: -12%;
+  left: 5%;
+  width: 34rem;
+  height: 34rem;
+  background: radial-gradient(circle, var(--blob-3-color) 0%, rgba(255, 255, 255, 0) 72%);
+  animation: blob-three 6.8s ease-in-out infinite alternate;
+}
+
+.ambient-layer .blob-4 {
+  bottom: 4%;
+  right: 8%;
+  width: 28rem;
+  height: 28rem;
+  background: radial-gradient(circle, var(--blob-4-color) 0%, rgba(255, 255, 255, 0) 72%);
+  animation: blob-four 10.5s ease-in-out infinite alternate;
+}
+
+.ambient-layer .blob-5 {
+  top: 34%;
+  left: 28%;
+  width: 24rem;
+  height: 24rem;
+  background: radial-gradient(circle, var(--blob-5-color) 0%, rgba(255, 255, 255, 0) 72%);
+  animation: blob-five 12.6s ease-in-out infinite alternate;
+}
+
+/* ===========================
+Page layout
+=========================== */
 
 .page-shell {
   min-height: 100dvh;
@@ -68,7 +193,9 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem 1.5rem;
+  padding: 1.5rem 1rem 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .hero-header {
@@ -82,8 +209,10 @@ button {
 
 .brand-mark {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
+  gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-radius: 1.25rem;
   background: rgba(255, 255, 255, 0.06);
@@ -92,8 +221,14 @@ button {
 }
 
 .brand-mark__image {
-  width: clamp(7rem, 20vw, 8.5rem);
+  width: clamp(5.5rem, 16vw, 7rem);
   height: auto;
+}
+
+.hero-header__mascot,
+#active-logo,
+#active-mascot {
+  transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
 .hero-header__mascot {
@@ -105,9 +240,9 @@ button {
   margin: 0;
   padding: 0.6rem 1rem;
   border-radius: 999px;
-  background: rgba(255, 188, 0, 0.15);
-  color: var(--color-accent);
-  border: 1px solid rgba(255, 188, 0, 0.35);
+  background: var(--theme-accent-soft);
+  color: var(--theme-accent);
+  border: 1px solid var(--theme-accent-border);
   font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -121,13 +256,13 @@ button {
 }
 
 .hero-card {
+  position: relative;
   padding: clamp(1.35rem, 3vw, 2rem);
   border-radius: var(--radius-lg);
   background: linear-gradient(140deg, rgba(17, 13, 51, 0.98), rgba(30, 22, 67, 0.96));
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: var(--shadow);
   overflow: hidden;
-  position: relative;
 }
 
 .hero-card::before,
@@ -138,20 +273,21 @@ button {
   filter: blur(40px);
   opacity: 0.45;
   pointer-events: none;
+  transition: background 0.5s ease;
 }
 
 .hero-card::before {
   inset: -5rem -3rem auto auto;
   width: 12rem;
   height: 12rem;
-  background: rgba(255, 107, 53, 0.3);
+  background: var(--theme-glow-1);
 }
 
 .hero-card::after {
   inset: auto auto -4rem -2rem;
   width: 10rem;
   height: 10rem;
-  background: rgba(255, 188, 0, 0.2);
+  background: var(--theme-glow-2);
 }
 
 .hero-card h1 {
@@ -163,8 +299,8 @@ button {
 }
 
 .gradient-text {
-  color: var(--color-primary);
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-strong), var(--color-accent));
+  color: var(--theme-primary);
+  background: linear-gradient(90deg, var(--theme-primary), var(--theme-primary-strong), var(--theme-accent));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -184,7 +320,13 @@ button {
   margin-top: 1.25rem;
 }
 
+/* ===========================
+WhatsApp CTA
+=========================== */
+
 .whatsapp-button {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -197,23 +339,53 @@ button {
   font-weight: 800;
   font-size: clamp(1rem, 2.2vw, 1.1rem);
   letter-spacing: 0.02em;
-  background: linear-gradient(135deg, var(--color-success), #1da751);
+  background: linear-gradient(135deg, var(--theme-success), #1da751);
   box-shadow: 0 16px 32px rgba(37, 211, 102, 0.25);
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition);
-  animation: pulse 2.4s ease-in-out infinite;
+  animation: whatsapp-glow 1.8s ease-in-out infinite;
+  overflow: visible;
+}
+
+.whatsapp-button::before,
+.whatsapp-button::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.whatsapp-button::before {
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 72%);
+  opacity: 0.22;
+  transform: scale(0.8);
+  animation: whatsapp-halo 1.8s ease-in-out infinite;
+}
+
+.whatsapp-button::after {
+  inset: -18px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(37, 211, 102, 0.24), rgba(37, 211, 102, 0) 70%);
+  z-index: -1;
+  opacity: 0;
+  animation: whatsapp-ring 1.8s ease-in-out infinite;
 }
 
 .whatsapp-button:hover,
 .whatsapp-button:focus-visible {
   transform: translateY(-2px);
-  box-shadow: 0 18px 34px rgba(37, 211, 102, 0.32);
+  box-shadow: 0 0 18px 4px rgba(37, 211, 102, 0.24), 0 18px 34px rgba(37, 211, 102, 0.32);
 }
 
 .whatsapp-button img {
   width: 1.4rem;
   height: 1.4rem;
 }
+
+/* ===========================
+Footer
+=========================== */
 
 .helper-text {
   margin-top: 0.25rem;
@@ -234,35 +406,249 @@ button {
   line-height: 1.4;
 }
 
-@keyframes pulse {
+/* ===========================
+Settings page
+=========================== */
+
+.settings-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.settings-shell {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 42rem);
+  display: grid;
+  gap: 1rem;
+}
+
+.settings-card {
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(140deg, rgba(17, 13, 51, 0.98), rgba(30, 22, 67, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow);
+}
+
+.settings-card--hero h1 {
+  margin: 0.1rem 0 0.5rem;
+  font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+}
+
+.settings-eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--theme-accent);
+}
+
+.settings-copy {
+  margin: 0 0 1rem;
+  color: var(--color-muted);
+}
+
+.settings-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-weight: 700;
+}
+
+.settings-fieldset {
+  display: grid;
+  gap: 0.75rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+}
+
+.settings-checkbox input {
+  accent-color: var(--theme-primary);
+}
+
+.settings-checkbox span {
+  font-size: 1rem;
+}
+
+.settings-card select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.settings-cards {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-card.is-active {
+  border-color: var(--theme-accent);
+  box-shadow: inset 0 0 0 1px var(--theme-accent);
+}
+
+.theme-card__logo {
+  width: 4rem;
+  height: auto;
+}
+
+.theme-card h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.theme-card p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.settings-footer {
+  text-align: center;
+  margin-top: 0.35rem;
+}
+
+.settings-footer a {
+  color: var(--theme-accent);
+  text-decoration: none;
+}
+
+/* ===========================
+Animations
+=========================== */
+
+@keyframes whatsapp-glow {
   0%,
   100% {
-    box-shadow: 0 16px 32px rgba(37, 211, 102, 0.25);
-    transform: scale(1);
+    box-shadow: 0 16px 32px rgba(37, 211, 102, 0.22);
+    transform: translateY(0);
   }
   50% {
-    box-shadow: 0 20px 38px rgba(37, 211, 102, 0.34);
-    transform: scale(1.01);
+    box-shadow: 0 20px 42px rgba(37, 211, 102, 0.32);
+    transform: translateY(-1px);
   }
 }
 
-@keyframes ambient-float {
-  0% {
-    transform: translate(-6%, -5%) scale(1);
-  }
-  25% {
-    transform: translate(6%, -8%) scale(1.08);
+@keyframes whatsapp-halo {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: scale(0.9);
   }
   50% {
-    transform: translate(8%, 6%) scale(1.12);
-  }
-  75% {
-    transform: translate(-5%, 7%) scale(1.06);
-  }
-  100% {
-    transform: translate(-6%, -5%) scale(1);
+    opacity: 0.28;
+    transform: scale(1);
   }
 }
+
+@keyframes whatsapp-ring {
+  0% {
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.18);
+    transform: scale(0.95);
+  }
+  45% {
+    opacity: 0.22;
+    box-shadow: 0 0 0 12px rgba(37, 211, 102, 0.12);
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 28px rgba(37, 211, 102, 0);
+    transform: scale(1.12);
+  }
+}
+
+@keyframes blob-one {
+  0% {
+    transform: translate3d(-6vw, -4vh, 0) scale(1) rotate(90deg);
+  }
+  50% {
+    transform: translate3d(16vw, 10vh, 0) scale(1.1) rotate(12deg);
+  }
+  100% {
+    transform: translate3d(2vw, 18vh, 0) scale(1.02) rotate(-6deg);
+  }
+}
+
+@keyframes blob-two {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.95) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-18vw, 14vh, 0) scale(1.18) rotate(-16deg);
+  }
+  100% {
+    transform: translate3d(12vw, -10vh, 0) scale(1.04) rotate(8deg);
+  }
+}
+
+@keyframes blob-three {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(16vw, -14vh, 0) scale(1.12) rotate(10deg);
+  }
+  100% {
+    transform: translate3d(-8vw, 12vh, 0) scale(0.98) rotate(-8deg);
+  }
+}
+
+@keyframes blob-four {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-14vw, -10vh, 0) scale(1.08) rotate(-12deg);
+  }
+  100% {
+    transform: translate3d(10vw, 10vh, 0) scale(1.02) rotate(10deg);
+  }
+}
+
+@keyframes blob-five {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.98) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(12vw, -8vh, 0) scale(1.16) rotate(8deg);
+  }
+  100% {
+    transform: translate3d(-10vw, 8vh, 0) scale(1) rotate(-6deg);
+  }
+}
+
+/* ===========================
+Responsive
+=========================== */
 
 @media (max-width: 640px) {
   .page-shell {
@@ -273,17 +659,17 @@ button {
     gap: 0.65rem;
   }
 
-  .hero-card {
+  .hero-card,
+  .settings-card {
     padding: 1.2rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-layer {
-    animation: none;
-  }
-
-  .whatsapp-button {
+  .ambient-layer,
+  .whatsapp-button,
+  .whatsapp-button::before,
+  .whatsapp-button::after {
     animation: none;
   }
 
