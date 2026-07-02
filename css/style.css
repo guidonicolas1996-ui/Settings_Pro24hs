@@ -234,7 +234,7 @@ Page layout
 .hero-header__mascot {
   width: min(100%, 16rem);
   position: relative;
-  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 1));
 }
 
 .hero-header__mascot::before {
