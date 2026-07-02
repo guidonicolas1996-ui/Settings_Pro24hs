@@ -190,7 +190,43 @@ function setViewportHeight() {
   document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
 }
 
+function normalizeRoutePath(pathname = window.location.pathname) {
+  const trimmed = pathname.replace(/\/+$/, '') || '/';
+
+  if (trimmed === '/index' || trimmed === '/index.html') {
+    return '/';
+  }
+
+  if (trimmed.endsWith('.html')) {
+    return trimmed.slice(0, -5);
+  }
+
+  return trimmed;
+}
+
+function applyCleanUrl() {
+  const cleanPath = normalizeRoutePath();
+  const hasCleanPath = window.location.pathname !== cleanPath;
+
+  if (hasCleanPath) {
+    const nextUrl = `${window.location.protocol}//${window.location.host}${cleanPath}${window.location.search}${window.location.hash}`;
+    window.history.replaceState({}, '', nextUrl);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  const currentPath = normalizeRoutePath();
+
+  if (currentPath === '/index.html' || currentPath === '/index') {
+    window.location.replace('/');
+    return;
+  }
+
+  if (window.location.pathname !== currentPath) {
+    window.location.replace(currentPath);
+    return;
+  }
+
   renderContent();
   setViewportHeight();
   applyTheme(activeTheme);
