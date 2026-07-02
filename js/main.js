@@ -34,6 +34,47 @@ const themeConfig = {
 
 const THEME_SEQUENCE = Object.keys(themeConfig);
 
+// Firebase
+import { db } from "./firebase.js";
+
+import {
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const FIRESTORE_COLLECTION = "config";
+const FIRESTORE_DOCUMENT = "landing";
+
+async function getRemoteConfig() {
+  try {
+    const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
+    return snapshot.exists() ? snapshot.data() : null;
+  } catch (error) {
+    console.error("Error leyendo configuración remota de Firebase:", error);
+    return null;
+  }
+}
+
+function getThemesFromConfig(config) {
+  if (!config) return null;
+
+  const selected = [];
+  if (config.showGanamos) selected.push("ganamos");
+  if (config.showZeus) selected.push("zeus");
+  if (config.showApostamos) selected.push("apostamos");
+  return selected;
+}
+
+async function saveRemoteConfig(config) {
+  try {
+    await setDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), config, { merge: true });
+  } catch (error) {
+    console.error("Error guardando configuración en Firebase:", error);
+  }
+}
+// End Firebase
+
 function getDefaultThemeName() {
   return THEME_SEQUENCE[0] || 'ganamos';
 }
@@ -190,7 +231,18 @@ function setViewportHeight() {
   document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const firebaseConfig = await getRemoteConfig();
+  const remoteThemes = getThemesFromConfig(firebaseConfig);
+
+  if (remoteThemes && remoteThemes.length) {
+    activeThemes = normalizeThemes(remoteThemes);
+    activeTheme = activeThemes[0];
+  } else {
+    activeThemes = getStoredThemes();
+    activeTheme = activeThemes[0] || getDefaultThemeName();
+  }
+
   renderContent();
   setViewportHeight();
   applyTheme(activeTheme);
@@ -211,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (checkboxInputs.length) {
     checkboxInputs.forEach((input) => {
       input.checked = activeThemes.includes(input.value);
-      input.addEventListener('change', () => {
+      input.addEventListener('change', async () => {
         const selected = Array.from(checkboxInputs)
           .filter((item) => item.checked)
           .map((item) => item.value)
@@ -224,6 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const primary = setActiveThemes(selected);
         applyTheme(primary);
+
+        await saveRemoteConfig({
+          showGanamos: selected.includes("ganamos"),
+          showZeus: selected.includes("zeus"),
+          showApostamos: selected.includes("apostamos")
+        });
       });
     });
   }
