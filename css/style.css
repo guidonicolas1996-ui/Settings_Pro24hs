@@ -32,7 +32,7 @@ body {
     radial-gradient(circle at top left, rgba(255, 107, 53, 0.2), transparent 28%),
     linear-gradient(140deg, var(--color-bg) 0%, #0c1430 55%, #140f35 100%);
   background-size: 200% 200%;
-  animation: ambient-glow 20s ease-in-out infinite;
+  animation: ambient-glow 10s ease-in-out infinite;
 }
 
 img {
