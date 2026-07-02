@@ -5,7 +5,7 @@ const landingContent = {
   heroCopy: 'Escribinos apretando el botón de abajo',
   ctaLabel: 'WHATSAPP OFICIAL',
   helperText: 'ATENCIÓN Y RETIROS LAS 24 HS',
-  footerText1: 'Los bonos son válidos solo para slots. El mínimo de carga es de $2.000,00',
+  footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
   footerText2: '© 2026 el juego es solo +18. Operá con responsabilidad.'
 };
 
