@@ -1,5 +1,5 @@
 /* Configuración principal de textos y destino del botón */
-const landingContent = {
+let landingContent = {
   accessBadge: 'ACCESO VIP',
   heroTitle: 'OBTENÉ UN <span class="gradient-text">100%</span> EN TU PRIMER DEPÓSITO',
   heroCopy: 'Escribinos apretando el botón de abajo',
@@ -12,6 +12,7 @@ const landingContent = {
 const WHATSAPP_URL = 'https://www.linkify.com.ar/api/soporte?id=k6cipb';
 const STORAGE_KEY = 'activeCasino';
 const STORAGE_KEY_MULTI = 'activeCasinos';
+const BACKGROUND_IMAGES = ['/img/background1.png', '/img/background2.png', '/img/background3.png', '/img/background4.png', '/img/background5.png'];
 const themeConfig = {
   ganamos: {
     label: 'Ganamos',
@@ -190,14 +191,54 @@ function renderContent() {
   const heroCopy = document.getElementById('hero-copy');
   const ctaLabel = document.getElementById('cta-label');
   const helperText = document.getElementById('helper-text');
-  const footerText = document.getElementById('footer-text');
+  const footerText1 = document.getElementById('footer-text1');
+  const footerText2 = document.getElementById('footer-text2');
 
   if (accessBadge) accessBadge.textContent = landingContent.accessBadge;
   if (heroTitle) heroTitle.innerHTML = landingContent.heroTitle;
   if (heroCopy) heroCopy.textContent = landingContent.heroCopy;
   if (ctaLabel) ctaLabel.textContent = landingContent.ctaLabel;
   if (helperText) helperText.textContent = landingContent.helperText;
-  if (footerText) footerText.textContent = landingContent.footerText;
+  if (footerText1) footerText1.textContent = landingContent.footerText1;
+  if (footerText2) footerText2.textContent = landingContent.footerText2;
+}
+
+function getStoredLandingContent() {
+  try {
+    const raw = localStorage.getItem('landingContent');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function setStoredLandingContent(content) {
+  try {
+    localStorage.setItem('landingContent', JSON.stringify(content));
+  } catch (error) {
+    console.warn('No se pudo guardar landingContent en localStorage', error);
+  }
+}
+
+function getLandingContent() {
+  return landingContent;
+}
+
+function setLandingContent(content, saveRemote = true) {
+  landingContent = Object.assign({}, landingContent, content || {});
+  renderContent();
+  setStoredLandingContent(landingContent);
+  if (saveRemote && typeof saveRemoteConfig === 'function') {
+    saveRemoteConfig({ landingContent }).catch((e) => console.warn('Error guardando landingContent remoto', e));
+  }
+  try {
+    window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: landingContent }));
+  } catch (e) {
+    // ignore
+  }
+  return landingContent;
 }
 
 function fadeAsset(element, src, alt) {
@@ -233,6 +274,12 @@ function fadeAsset(element, src, alt) {
     element.style.opacity = '1';
     element.style.transform = 'scale(1)';
   }
+}
+
+function applyRandomBackground() {
+  const fallback = '/img/background.png';
+  const selectedBackground = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)] || fallback;
+  document.documentElement.style.setProperty('--background-image', `url("${selectedBackground}")`);
 }
 
 function applyTheme(themeName) {
@@ -302,8 +349,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeTheme = activeThemes[0] || getDefaultThemeName();
   }
 
+  // Load landing content from remote config if available, otherwise from localStorage
+  try {
+    if (firebaseConfig && firebaseConfig.landingContent) {
+      setLandingContent(firebaseConfig.landingContent, false);
+    } else {
+      const stored = getStoredLandingContent();
+      if (stored) setLandingContent(stored, false);
+    }
+  } catch (e) {
+    console.warn('Error cargando landingContent inicial', e);
+  }
+  // Notify listeners that landingContent is ready
+  try {
+    window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: landingContent }));
+  } catch (e) {
+    // ignore
+  }
+
   renderContent();
   setViewportHeight();
+  applyRandomBackground();
   applyTheme(activeTheme);
   setCheckboxStates(activeThemes);
   observeRemoteConfig();
@@ -356,3 +422,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 window.addEventListener('resize', setViewportHeight);
+
+const landingSettingsAPI = {
+  getLandingContent,
+  setLandingContent,
+  getStoredLandingContent,
+  setStoredLandingContent,
+  saveRemoteConfig
+};
+
+if (typeof window !== 'undefined') {
+  window.landingSettings = landingSettingsAPI;
+}
+
+export { getLandingContent, setLandingContent, getStoredLandingContent, setStoredLandingContent, saveRemoteConfig };

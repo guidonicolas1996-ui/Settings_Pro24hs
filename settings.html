@@ -52,11 +52,113 @@
         </div>
       </section>
 
+      <section class="settings-card settings-card--texts">
+              <p class="settings-eyebrow">Textos de la página</p>
+              <p class="settings-copy">Modificá los textos que se muestran en la landing.</p>
+              <form id="landing-content-form">
+                <label>Badge de acceso
+                  <input type="text" id="input-accessBadge" name="accessBadge" />
+                </label>
+
+                <label>Título principal (HTML permitido)
+                  <input type="text" id="input-heroTitle" name="heroTitle" />
+                </label>
+
+                <label>Copete
+                  <input type="text" id="input-heroCopy" name="heroCopy" />
+                </label>
+
+                <label>Texto del CTA
+                  <input type="text" id="input-ctaLabel" name="ctaLabel" />
+                </label>
+
+                <label>Helper text
+                  <input type="text" id="input-helperText" name="helperText" />
+                </label>
+
+                <label>Footer 1
+                  <input type="text" id="input-footerText1" name="footerText1" />
+                </label>
+
+                <label>Footer 2
+                  <input type="text" id="input-footerText2" name="footerText2" />
+                </label>
+
+                <div class="settings-actions">
+                  <button type="button" id="save-landing-content" class="btn btn--primary">Guardar textos</button>
+                  <button type="button" id="reset-landing-content" class="btn btn--secondary">Restablecer valores por defecto</button>
+                </div>
+              </form>
+            </section>
+
       <p class="settings-footer">
         <a href="./index.html">Volver a la landing</a>
       </p>
     </main>
 
     <script type="module" src="js/main.js"></script>
+
+    <script>
+      function populateForm(content) {
+        if (!content) return;
+        document.getElementById('input-accessBadge').value = content.accessBadge || '';
+        document.getElementById('input-heroTitle').value = content.heroTitle || '';
+        document.getElementById('input-heroCopy').value = content.heroCopy || '';
+        document.getElementById('input-ctaLabel').value = content.ctaLabel || '';
+        document.getElementById('input-helperText').value = content.helperText || '';
+        document.getElementById('input-footerText1').value = content.footerText1 || '';
+        document.getElementById('input-footerText2').value = content.footerText2 || '';
+      }
+
+      // Listen for landingContent readiness (dispatched by main.js)
+      window.addEventListener('landingContent:ready', (e) => {
+        populateForm(e.detail || {});
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const api = window.landingSettings || {};
+        const remoteOrStored = (api.getLandingContent && api.getLandingContent()) || (api.getStoredLandingContent && api.getStoredLandingContent());
+        populateForm(remoteOrStored);
+        setTimeout(() => {
+          const latest = (api.getLandingContent && api.getLandingContent()) || (api.getStoredLandingContent && api.getStoredLandingContent());
+          populateForm(latest);
+        }, 600);
+
+        document.getElementById('save-landing-content').addEventListener('click', async () => {
+          const payload = {
+            accessBadge: document.getElementById('input-accessBadge').value,
+            heroTitle: document.getElementById('input-heroTitle').value,
+            heroCopy: document.getElementById('input-heroCopy').value,
+            ctaLabel: document.getElementById('input-ctaLabel').value,
+            helperText: document.getElementById('input-helperText').value,
+            footerText1: document.getElementById('input-footerText1').value,
+            footerText2: document.getElementById('input-footerText2').value
+          };
+
+          if (api.setLandingContent) api.setLandingContent(payload, false);
+          if (api.setStoredLandingContent) api.setStoredLandingContent(payload);
+          try {
+            if (api.saveRemoteConfig) {
+              await api.saveRemoteConfig({ landingContent: payload });
+            }
+            alert('Textos guardados correctamente (remoto y local).');
+          } catch (e) {
+            console.warn('No se pudo guardar de forma remota', e);
+            alert('Textos guardados localmente. Error guardando en remoto.');
+          }
+        });
+
+        document.getElementById('reset-landing-content').addEventListener('click', async () => {
+          if (!confirm('Restablecer los textos a los valores por defecto?')) return;
+          try {
+            localStorage.removeItem('landingContent');
+            location.reload();
+          } catch (e) {
+            console.warn(e);
+            location.reload();
+          }
+        });
+      });
+    </script>
   </body>
 </html>

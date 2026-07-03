@@ -6,6 +6,7 @@ Variables
   --color-surface: #110d33;
   --color-surface-strong: #1e1643;
   --color-border: rgba(255, 255, 255, 0.12);
+  --background-image: url("../img/background.png");
   --color-primary: #7d6cff;
   --color-primary-strong: #8f80ff;
   --color-accent: #ffd166;
@@ -97,7 +98,7 @@ body {
   min-height: 100dvh;
   font-family: "Montserrat", "Segoe UI", Roboto, Arial, sans-serif;
   color: var(--color-text);
-  background: linear-gradient(140deg, rgba(6, 11, 29, 0.96) 0%, rgba(12, 20, 48, 0.96) 55%, rgba(20, 15, 53, 0.96) 100%), url("../img/background.png");
+  background-image: linear-gradient(140deg, rgba(6, 11, 29, 0.96) 0%, rgba(12, 20, 48, 0.96) 55%, rgba(20, 15, 53, 0.96) 100%), var(--background-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -395,6 +396,106 @@ WhatsApp CTA
 .whatsapp-button:focus-visible {
   transform: translateY(-2px);
   box-shadow: 0 0 18px 4px rgba(37, 211, 102, 0.24), 0 18px 34px rgba(37, 211, 102, 0.32);
+}
+
+/* ===========================
+Settings form styles
+=========================== */
+
+.settings-shell {
+  width: min(100%, 48rem);
+  margin: 0 auto;
+}
+
+.settings-card--texts {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+}
+
+.settings-card--texts h2 {
+  margin: 0 0 0.4rem 0;
+  font-size: 1.05rem;
+  color: var(--color-text);
+}
+
+.settings-card--texts .settings-copy {
+  margin: 0 0 0.9rem 0;
+  color: var(--color-muted);
+}
+
+#landing-content-form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+#landing-content-form label {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--color-muted);
+}
+
+#landing-content-form input[type="text"],
+#landing-content-form textarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.015));
+  color: var(--color-text);
+  resize: vertical;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+
+#landing-content-form input[type="text"]:focus,
+#landing-content-form textarea:focus {
+  outline: none;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.6), 0 0 0 4px var(--theme-glow-1);
+  transform: translateY(-2px);
+}
+
+.settings-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.btn {
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--color-text);
+  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-strong));
+  box-shadow: 0 12px 30px rgba(125,108,255,0.12);
+}
+
+.btn--secondary {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: var(--color-muted);
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  opacity: 0.98;
+}
+
+@media (min-width: 720px) {
+  #landing-content-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  #input-heroTitle { grid-column: 1 / -1; }
+  .settings-actions { grid-column: 1 / -1; }
 }
 
 .whatsapp-button img {
@@ -776,4 +877,54 @@ Responsive
   .whatsapp-button:focus-visible {
     transform: none;
   }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.settings-button {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+
+    width: 48px;
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 24px;
+    text-decoration: none;
+
+    background: rgba(20, 20, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+
+    backdrop-filter: blur(10px);
+
+    z-index: 9999;
+
+    transition: transform .2s ease, background .2s ease;
+}
+
+.settings-button:hover {
+    transform: scale(1.08);
+    background: rgba(40, 40, 55, 0.95);
+}
+
+.settings-button:active {
+    transform: scale(.95);
 }
