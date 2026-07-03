@@ -414,6 +414,8 @@ function initSettings() {
   setupSettingsPage();
 }
 
+window.renderCasinos = renderCasinos;
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.casinosReady) {
     await window.casinosReady.catch(() => {});

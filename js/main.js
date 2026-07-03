@@ -602,7 +602,9 @@ async function observeRemoteConfig() {
         setCheckboxStates(activeThemes);
         applyTheme(activeTheme);
         if (window.location.pathname.includes('settings')) {
-          renderCasinos();
+          if (typeof window.renderCasinos === 'function') {
+            window.renderCasinos();
+          }
         }
       }
     });
