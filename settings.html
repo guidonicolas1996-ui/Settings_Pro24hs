@@ -404,23 +404,17 @@
             
             // Sincronizar con Firebase
             if (api.saveRemoteConfig) {
-              const configToSave = {};
-              selected.forEach((casinoId) => {
-                const match = casinoId.match(/casino_(\d+)/);
-                if (match) {
-                  const num = parseInt(match[1]);
-                  if (num >= 1 && num <= 5) {
-                    configToSave[`showCasino${num}`] = true;
-                  }
-                }
+              const casinosConfig = api.getCasinos ? api.getCasinos() : {};
+              const payload = { casinos: {} };
+
+              Object.entries(casinosConfig).forEach(([casinoId, casino]) => {
+                payload.casinos[casinoId] = {
+                  ...casino,
+                  active: selected.includes(casinoId)
+                };
               });
-              // Establecer false en los no seleccionados
-              for (let i = 1; i <= 5; i++) {
-                if (!configToSave[`showCasino${i}`]) {
-                  configToSave[`showCasino${i}`] = false;
-                }
-              }
-              await api.saveRemoteConfig(configToSave).catch(e => console.warn('Error guardando en Firebase:', e));
+
+              await api.saveRemoteConfig(payload).catch(e => console.warn('Error guardando en Firebase:', e));
             }
             
             renderCasinos();

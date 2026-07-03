@@ -125,11 +125,12 @@ function setLocalDynamicCasinos(casinos) {
 
 async function uploadImageFile(source, casinoId, type) {
   if (typeof source === 'string' && !source.startsWith('data:')) {
-    return source;
+    return { url: source, deleteToken: null };
   }
 
   if (!USE_REMOTE_STORAGE || !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-    return source instanceof File ? await fileToDataURL(source) : source;
+    const url = source instanceof File ? await fileToDataURL(source) : source;
+    return { url, deleteToken: null };
   }
 
   const originalMime = source instanceof File ? source.type : (source.match(/^data:(image\/[^;]+);/) || [])[1] || 'image/jpeg';
@@ -142,6 +143,7 @@ async function uploadImageFile(source, casinoId, type) {
   formData.append('folder', `${CLOUDINARY_FOLDER}/${casinoId}`);
   formData.append('public_id', `${type}-${Date.now()}`);
   formData.append('resource_type', 'image');
+  formData.append('return_delete_token', 'true');
 
   const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
   try {
@@ -156,10 +158,49 @@ async function uploadImageFile(source, casinoId, type) {
     }
 
     const result = await response.json();
-    return result.secure_url || result.url;
+    return {
+      url: result.secure_url || result.url,
+      deleteToken: result.delete_token || null
+    };
   } catch (error) {
     console.warn('Cloudinary upload falló, usando fallback base64 para imágenes:', { source, casinoId, type, error });
-    return source instanceof File ? await fileToDataURL(source) : source;
+    const url = source instanceof File ? await fileToDataURL(source) : source;
+    return { url, deleteToken: null };
+  }
+}
+
+function getImageUrl(imageRecord) {
+  return typeof imageRecord === 'string' ? imageRecord : (imageRecord && imageRecord.url) ? imageRecord.url : null;
+}
+
+function getImageDeleteToken(imageRecord) {
+  return typeof imageRecord === 'string' ? null : (imageRecord && imageRecord.deleteToken) ? imageRecord.deleteToken : null;
+}
+
+async function deleteCloudinaryImage(deleteToken) {
+  if (!deleteToken || !USE_REMOTE_STORAGE || !CLOUDINARY_CLOUD_NAME) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/delete_by_token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({ token: deleteToken })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Cloudinary delete failed (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    return result.result === 'ok' || result.result === 'deleted';
+  } catch (error) {
+    console.warn('Error borrando imagen Cloudinary:', error);
+    return false;
   }
 }
 
@@ -200,14 +241,14 @@ async function saveDynamicCasinos() {
 
 async function addCasino(id, name, logo, mascot, color) {
   const casinoId = id || `casino_${Date.now()}`;
-  let logoUrl = logo;
-  let mascotUrl = mascot;
+  let logoRecord = logo;
+  let mascotRecord = mascot;
 
   if (logo && (logo instanceof File || (typeof logo === 'string' && logo.startsWith('data:')))) {
-    logoUrl = await uploadImageFile(logo, casinoId, 'logo');
+    logoRecord = await uploadImageFile(logo, casinoId, 'logo');
   }
   if (mascot && (mascot instanceof File || (typeof mascot === 'string' && mascot.startsWith('data:')))) {
-    mascotUrl = await uploadImageFile(mascot, casinoId, 'mascot');
+    mascotRecord = await uploadImageFile(mascot, casinoId, 'mascot');
   }
 
   const existing = dynamicCasinos[casinoId] || {};
@@ -215,8 +256,10 @@ async function addCasino(id, name, logo, mascot, color) {
 
   dynamicCasinos[casinoId] = {
     label: name,
-    logo: logoUrl,
-    mascot: mascotUrl,
+    logo: typeof logoRecord === 'object' ? logoRecord.url : logoRecord,
+    logoDeleteToken: typeof logoRecord === 'object' ? logoRecord.deleteToken : null,
+    mascot: typeof mascotRecord === 'object' ? mascotRecord.url : mascotRecord,
+    mascotDeleteToken: typeof mascotRecord === 'object' ? mascotRecord.deleteToken : null,
     color: color,
     active: active
   };
@@ -226,8 +269,24 @@ async function addCasino(id, name, logo, mascot, color) {
 }
 
 async function removeCasino(casinoId) {
-  delete dynamicCasinos[casinoId];
-  await saveDynamicCasinos();
+  const casino = dynamicCasinos[casinoId];
+  if (casino) {
+    const logoDeleteToken = casino.logoDeleteToken || null;
+    const mascotDeleteToken = casino.mascotDeleteToken || null;
+
+    delete dynamicCasinos[casinoId];
+    await saveDynamicCasinos();
+
+    if (logoDeleteToken) {
+      await deleteCloudinaryImage(logoDeleteToken).catch((error) => console.warn('Error borrando logo Cloudinary:', error));
+    }
+    if (mascotDeleteToken) {
+      await deleteCloudinaryImage(mascotDeleteToken).catch((error) => console.warn('Error borrando mascot Cloudinary:', error));
+    }
+  } else {
+    delete dynamicCasinos[casinoId];
+    await saveDynamicCasinos();
+  }
 }
 
 async function updateCasinoActive(casinoId, active) {
@@ -248,39 +307,13 @@ async function getRemoteConfig() {
 }
 
 function getThemesFromConfig(config) {
-  if (!config) return null;
-  
-  const activeCasinos = [];
-  for (let i = 1; i <= MAX_CASINOS; i++) {
-    const key = `showCasino${i}`;
-    if (config[key] === true) {
-      activeCasinos.push(`casino_${i}`);
-    }
-  }
-  
-  return activeCasinos.length ? activeCasinos : null;
-}
+  if (!config || !config.casinos) return null;
 
-function getConfigFromThemes(casinoIds) {
-  const config = {};
-  
-  // Limpiar todos los showCasino primero
-  for (let i = 1; i <= MAX_CASINOS; i++) {
-    config[`showCasino${i}`] = false;
-  }
-  
-  // Establecer los activos
-  casinoIds.forEach((casinoId) => {
-    const match = casinoId.match(/casino_(\d+)/);
-    if (match) {
-      const num = parseInt(match[1]);
-      if (num >= 1 && num <= MAX_CASINOS) {
-        config[`showCasino${num}`] = true;
-      }
-    }
-  });
-  
-  return config;
+  const activeCasinos = Object.entries(config.casinos)
+    .filter(([, casino]) => casino && casino.active)
+    .map(([id]) => id);
+
+  return activeCasinos.length ? activeCasinos : null;
 }
 
 function setCheckboxStates(activeCasinoIds) {
@@ -439,7 +472,7 @@ function applyTheme(casinoId) {
     activeThemes.forEach((id) => {
       if (dynamicCasinos[id]) {
         const image = document.createElement('img');
-        image.src = dynamicCasinos[id].logo;
+        image.src = getImageUrl(dynamicCasinos[id].logo) || '';
         image.alt = dynamicCasinos[id].label;
         image.className = 'brand-mark__image';
         image.setAttribute('data-casino-id', id);
@@ -457,7 +490,7 @@ function applyTheme(casinoId) {
   }
 
   if (mascot) {
-    fadeAsset(mascot, dynamicCasinos[safeCasino].mascot, dynamicCasinos[safeCasino].label);
+    fadeAsset(mascot, getImageUrl(dynamicCasinos[safeCasino].mascot), dynamicCasinos[safeCasino].label);
   }
 
   // Aplicar color del casino y blobs
@@ -503,9 +536,17 @@ async function observeRemoteConfig() {
     onSnapshot(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), (snapshot) => {
       if (!snapshot.exists()) return;
       const config = snapshot.data();
-      const remoteCasinos = getThemesFromConfig(config);
-      if (remoteCasinos && Array.isArray(remoteCasinos)) {
-        applyRemoteThemes(remoteCasinos);
+      if (!config) return;
+
+      if (config.casinos && typeof config.casinos === 'object') {
+        dynamicCasinos = config.casinos;
+        activeThemes = getActiveCasinos();
+        activeTheme = activeThemes[0] || getDefaultCasino();
+        setCheckboxStates(activeThemes);
+        applyTheme(activeTheme);
+        if (window.location.pathname.includes('settings')) {
+          renderCasinos();
+        }
       }
     });
   } catch (error) {
@@ -544,15 +585,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn('Error cargando config remota al iniciar:', error);
     return null;
   });
-  const remoteCasinos = getThemesFromConfig(firebaseConfig);
 
-  if (remoteCasinos && Array.isArray(remoteCasinos) && remoteCasinos.length) {
-    activeThemes = remoteCasinos.filter(id => dynamicCasinos[id]);
-    activeTheme = activeThemes[0] || getDefaultCasino();
-  } else {
-    activeThemes = getStoredActiveCasinos();
-    activeTheme = activeThemes[0] || getDefaultCasino();
+  if (firebaseConfig && firebaseConfig.casinos && typeof firebaseConfig.casinos === 'object') {
+    dynamicCasinos = firebaseConfig.casinos;
   }
+
+  activeThemes = getActiveCasinos();
+  if (!activeThemes.length) {
+    activeThemes = [getDefaultCasino()];
+  }
+  activeTheme = activeThemes[0];
 
   if (!activeTheme || !dynamicCasinos[activeTheme]) {
     activeTheme = getDefaultCasino();
@@ -614,8 +656,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const primary = setActiveCasinos(selected);
         applyTheme(primary);
-
-        await saveRemoteConfig(getConfigFromThemes(selected));
       });
     });
   }
