@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Analytics de visitas y comportamiento de la landing." />
+    <meta name="theme-color" content="#060b1d" />
+    <title>Analytics - Casino Oficial</title>
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="settings-page">
+    <div class="ambient-layer" aria-hidden="true">
+      <span class="blob blob-1"></span>
+      <span class="blob blob-2"></span>
+      <span class="blob blob-3"></span>
+      <span class="blob blob-4"></span>
+      <span class="blob blob-5"></span>
+    </div>
+
+    <main class="settings-shell">
+      <section class="settings-card">
+        <div class="settings-header">
+          <div class="settings-header__text">
+            <p class="settings-eyebrow">Analytics de la landing</p>
+            <p class="settings-copy">Tráfico, fuente y comportamiento de usuarios únicos.</p>
+          </div>
+          <a href="/index.html" class="btn btn--secondary">Volver</a>
+        </div>
+
+        <div id="analytics-content" class="analytics-panel">
+          <div class="analytics-card">
+            <h3>Visitas únicas</h3>
+            <p id="analytics-unique">Cargando...</p>
+          </div>
+          <div class="analytics-card">
+            <h3>Visitas totales</h3>
+            <p id="analytics-total">Cargando...</p>
+          </div>
+          <div class="analytics-card">
+            <h3>Link principal</h3>
+            <p id="analytics-primary">Cargando...</p>
+          </div>
+          <div class="analytics-card">
+            <h3>Link alternativo</h3>
+            <p id="analytics-alternative">Cargando...</p>
+          </div>
+          <div class="analytics-card">
+            <h3>Clicks WhatsApp</h3>
+            <p id="analytics-whatsapp">Cargando...</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { db } from './js/firebase.js';
+      import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
+
+      async function loadAnalytics() {
+        try {
+          const ref = doc(db, 'analytics', 'landing');
+          const snapshot = await getDoc(ref);
+          if (!snapshot.exists()) {
+            document.getElementById('analytics-content').innerHTML = '<p>No se encontraron datos de analytics aún.</p>';
+            return;
+          }
+          const data = snapshot.data();
+          const totals = data.totals || {};
+          document.getElementById('analytics-unique').textContent = totals.uniqueVisitors || 0;
+          document.getElementById('analytics-total').textContent = totals.totalVisits || 0;
+          document.getElementById('analytics-primary').textContent = totals.primaryLinks || 0;
+          document.getElementById('analytics-alternative').textContent = totals.alternativeLinks || 0;
+          document.getElementById('analytics-whatsapp').textContent = totals.whatsappClicks || 0;
+        } catch (error) {
+          document.getElementById('analytics-content').innerHTML = '<p>Error cargando analytics.</p>';
+          console.error('Error loading analytics:', error);
+        }
+      }
+
+      loadAnalytics();
+    </script>
+  </body>
+</html>

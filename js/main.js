@@ -24,6 +24,7 @@ import {
   doc,
   getDoc,
   onSnapshot,
+  runTransaction,
   setDoc
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
@@ -33,6 +34,8 @@ const CLOUDINARY_UPLOAD_PRESET = "casinos"; // preset público de subida sin fir
 const CLOUDINARY_FOLDER = "casinos";
 const FIRESTORE_COLLECTION = "config";
 const FIRESTORE_DOCUMENT = "landing";
+const ANALYTICS_COLLECTION = "analytics";
+const ANALYTICS_DOCUMENT = "landing";
 
 // Generador de variaciones de color
 function generateColorVariations(baseColor) {
@@ -194,6 +197,206 @@ function getImageDeleteToken(imageRecord) {
     : (imageRecord && imageRecord.deleteToken)
       ? imageRecord.deleteToken
       : null;
+}
+
+function getDeviceMetadata(ip) {
+  return {
+    ip: ip || 'unknown',
+    userAgent: navigator.userAgent || 'unknown',
+    platform: navigator.platform || 'unknown',
+    screen: `${window.screen.width}x${window.screen.height}`,
+    language: navigator.language || 'unknown'
+  };
+}
+
+function bufferToHex(buffer) {
+  return Array.from(new Uint8Array(buffer)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function getVisitorFingerprint(ip) {
+  const text = `${ip}|${navigator.userAgent}|${navigator.platform}|${window.screen.width}x${window.screen.height}|${navigator.language}`;
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return bufferToHex(hashBuffer);
+}
+
+function getBucketKeys(date = new Date()) {
+  const local = new Date(date);
+  const year = local.getFullYear();
+  const month = String(local.getMonth() + 1).padStart(2, '0');
+  const day = String(local.getDate()).padStart(2, '0');
+  const hour = String(local.getHours()).padStart(2, '0');
+  const dateKey = `${year}-${month}-${day}`;
+  const hourKey = hour;
+  return { dateKey, hourKey, bucketKey: `${dateKey}:${hourKey}` };
+}
+
+function ensureBucket(current, dateKey, hourKey) {
+  current.buckets = current.buckets || {};
+  current.buckets[dateKey] = current.buckets[dateKey] || {};
+  current.buckets[dateKey][hourKey] = current.buckets[dateKey][hourKey] || {
+    uniqueVisitors: 0,
+    totalVisits: 0,
+    primaryLinks: 0,
+    alternativeLinks: 0,
+    whatsappClicks: 0
+  };
+  return current.buckets[dateKey][hourKey];
+}
+
+async function getIpAddress() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+
+  try {
+    const response = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+    clearTimeout(timeout);
+    const data = await response.json();
+    return data.ip || 'unknown';
+  } catch (error) {
+    return 'unknown';
+  }
+}
+
+async function getPersistentVisitorId() {
+  try {
+    let visitorId = localStorage.getItem('visitorId');
+    if (visitorId) {
+      return visitorId;
+    }
+
+    const ip = await getIpAddress();
+    visitorId = await getVisitorFingerprint(ip);
+    localStorage.setItem('visitorId', visitorId);
+    return visitorId;
+  } catch (error) {
+    return await getVisitorFingerprint('unknown');
+  }
+}
+
+async function registerAnalyticsVisit() {
+  const visitorId = await getPersistentVisitorId();
+  const ip = await getIpAddress();
+  const device = getDeviceMetadata(ip);
+  const source = new URLSearchParams(window.location.search).get('src') === 'alt' ? 'alternative' : 'primary';
+  const timestamp = new Date().toISOString();
+  const currentHour = timestamp.slice(0, 13);
+  const analyticsRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOCUMENT);
+
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(analyticsRef);
+    const current = snapshot.exists() ? snapshot.data() : {
+      totals: {
+        uniqueVisitors: 0,
+        totalVisits: 0,
+        primaryLinks: 0,
+        alternativeLinks: 0,
+        whatsappClicks: 0
+      },
+      visitors: {},
+      buckets: {}
+    };
+
+    const visitors = current.visitors || {};
+    const existing = visitors[visitorId];
+    const isNewVisitor = !existing;
+    const sourceKey = source === 'alternative' ? 'alternativeLinks' : 'primaryLinks';
+    const previousSourceCount = existing?.sources?.[source] || 0;
+    const sameHour = existing?.lastSeen?.slice(0, 13) === currentHour;
+
+    if (isNewVisitor) {
+      current.totals.uniqueVisitors += 1;
+    }
+    if (!sameHour && previousSourceCount === 0) {
+      current.totals[sourceKey] = (current.totals[sourceKey] || 0) + 1;
+    }
+
+    const updated = {
+      ...existing,
+      ...device,
+      firstSeen: existing?.firstSeen || timestamp,
+      lastSeen: timestamp,
+      visits: (existing?.visits || 0) + 1,
+      sources: {
+        ...(existing?.sources || {}),
+        [source]: (existing?.sources?.[source] || 0) + 1
+      },
+      whatsappClicked: existing?.whatsappClicked || false,
+      lastSource: source
+    };
+
+    visitors[visitorId] = updated;
+    current.visitors = visitors;
+    current.totals.totalVisits = (current.totals.totalVisits || 0) + 1;
+
+    const { dateKey, hourKey } = getBucketKeys(new Date(timestamp));
+    const bucket = ensureBucket(current, dateKey, hourKey);
+    if (!sameHour) {
+      bucket.uniqueVisitors += 1;
+      bucket[sourceKey] = (bucket[sourceKey] || 0) + 1;
+    }
+    current.buckets[dateKey][hourKey] = bucket;
+
+    transaction.set(analyticsRef, current);
+  });
+}
+
+async function registerAnalyticsWhatsappClick() {
+  const visitorId = await getPersistentVisitorId();
+  const ip = await getIpAddress();
+  const device = getDeviceMetadata(ip);
+  const source = new URLSearchParams(window.location.search).get('src') === 'alt' ? 'alternative' : 'primary';
+  const timestamp = new Date().toISOString();
+  const currentHour = timestamp.slice(0, 13);
+  const analyticsRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOCUMENT);
+
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(analyticsRef);
+    const current = snapshot.exists() ? snapshot.data() : {
+      totals: {
+        uniqueVisitors: 0,
+        totalVisits: 0,
+        primaryLinks: 0,
+        alternativeLinks: 0,
+        whatsappClicks: 0
+      },
+      visitors: {},
+      buckets: {}
+    };
+
+    const visitors = current.visitors || {};
+    const existing = visitors[visitorId];
+    const whatsappAlready = existing?.whatsappClicked || false;
+    const sameHourClick = existing?.lastWhatsappClickHour === currentHour;
+
+    if (!whatsappAlready) {
+      current.totals.whatsappClicks = (current.totals.whatsappClicks || 0) + 1;
+    }
+
+    const updated = {
+      ...existing,
+      ...device,
+      firstSeen: existing?.firstSeen || timestamp,
+      lastSeen: timestamp,
+      visits: existing?.visits || 0,
+      sources: existing?.sources || {},
+      whatsappClicked: true,
+      lastSource: source,
+      lastWhatsappClickHour: currentHour
+    };
+
+    visitors[visitorId] = updated;
+    current.visitors = visitors;
+
+    const { dateKey, hourKey } = getBucketKeys(new Date(timestamp));
+    const bucket = ensureBucket(current, dateKey, hourKey);
+    if (!sameHourClick) {
+      bucket.whatsappClicks += 1;
+    }
+    current.buckets = current.buckets || {};
+    current.buckets[dateKey][hourKey] = bucket;
+
+    transaction.set(analyticsRef, current);
+  });
 }
 
 async function deleteCloudinaryImage(deleteToken) {
@@ -687,12 +890,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyRandomBackground();
   applyTheme(activeTheme);
   setCheckboxStates(activeThemes);
-  observeRemoteConfig();
+
+  if (!window.location.pathname.includes('settings') && !window.location.pathname.includes('analytics')) {
+    registerAnalyticsVisit().catch((error) => {
+      console.warn('Analytics visit failed:', error);
+    });
+  }
 
   const whatsappButton = document.getElementById('whatsapp-button');
   if (whatsappButton) {
-    whatsappButton.addEventListener('click', openWhatsApp);
+    whatsappButton.addEventListener('click', () => {
+      registerAnalyticsWhatsappClick().catch((error) => {
+        console.warn('Analytics click failed:', error);
+      });
+      openWhatsApp();
+    });
   }
+
+  observeRemoteConfig();
 
   const select = document.getElementById('theme-select');
   if (select) {

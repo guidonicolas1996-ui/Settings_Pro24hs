@@ -922,6 +922,43 @@ Responsive
     transform: scale(.95);
 }
 
+.top-actions {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 0.75rem;
+  z-index: 9999;
+}
+
+.analytics-button,
+.settings-button {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(20, 20, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  transition: transform .2s ease, background .2s ease;
+}
+
+.analytics-button:hover,
+.settings-button:hover {
+  transform: scale(1.08);
+  background: rgba(40, 40, 55, 0.95);
+}
+
+.analytics-button:active,
+.settings-button:active {
+  transform: scale(.95);
+}
+
       .casino-form-section {
         background: rgba(255, 255, 255, 0.08);
         padding: 1.5rem;
