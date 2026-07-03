@@ -226,6 +226,7 @@ async function loadDynamicCasinos() {
 }
 
 async function saveDynamicCasinos() {
+  console.debug('saveDynamicCasinos start', { dynamicCasinos });
   setLocalDynamicCasinos(dynamicCasinos);
 
   if (!USE_REMOTE_STORAGE) {
@@ -235,17 +236,21 @@ async function saveDynamicCasinos() {
   try {
     const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
     const currentConfig = snapshot.exists() ? snapshot.data() : {};
-    await setDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), {
+    const newConfig = {
       ...currentConfig,
       casinos: dynamicCasinos
-    });
+    };
+    await setDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), newConfig);
+    console.debug('saveDynamicCasinos success', { newConfig });
   } catch (error) {
-    console.warn('Error guardando casinos dinámicos en Firebase, ya están guardados en localStorage:', error);
+    console.error('Error guardando casinos dinámicos en Firebase:', error);
+    throw error;
   }
 }
 
 async function addCasino(id, name, logo, mascot, color) {
   const casinoId = id || `casino_${Date.now()}`;
+  console.debug('addCasino start', { casinoId, id, name, color, hasLogo: !!logo, hasMascot: !!mascot });
   let logoRecord = logo;
   let mascotRecord = mascot;
 
@@ -273,6 +278,7 @@ async function addCasino(id, name, logo, mascot, color) {
   };
 
   await saveDynamicCasinos();
+  console.debug('addCasino done', { casinoId, casino: dynamicCasinos[casinoId] });
   return casinoId;
 }
 

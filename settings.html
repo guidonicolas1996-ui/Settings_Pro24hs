@@ -304,10 +304,10 @@
               }
 
               try {
-                await saveCasino(casinoId || null, name, compressedLogo, compressedMascot, color);
-                console.log('Casino guardado correctamente', { casinoId, name });
+                const newCasinoId = await saveCasino(casinoId || null, name, compressedLogo, compressedMascot, color);
+                console.log('Casino guardado correctamente', { newCasinoId, name });
                 alert(casinoId ? '✅ Casino actualizado exitosamente' : '✅ Casino creado exitosamente');
-                renderCasinos();
+                await renderCasinos();
                 document.getElementById('new-casino-form').reset();
                 document.getElementById('casino-id').value = '';
                 document.getElementById('logo-preview').innerHTML = '';
