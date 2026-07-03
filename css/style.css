@@ -438,9 +438,9 @@ Settings form styles
   color: var(--color-muted);
 }
 
-#landing-content-form input[type="text"],
 #landing-content-form textarea {
   width: 100%;
+  min-height: 3rem;
   padding: 0.7rem 0.85rem;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.06);
@@ -451,7 +451,6 @@ Settings form styles
   transition: box-shadow var(--transition), transform var(--transition);
 }
 
-#landing-content-form input[type="text"]:focus,
 #landing-content-form textarea:focus {
   outline: none;
   box-shadow: 0 6px 22px rgba(0,0,0,0.6), 0 0 0 4px var(--theme-glow-1);
@@ -492,10 +491,8 @@ Settings form styles
 
 @media (min-width: 720px) {
   #landing-content-form {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
-  #input-heroTitle { grid-column: 1 / -1; }
-  .settings-actions { grid-column: 1 / -1; }
 }
 
 .whatsapp-button img {
