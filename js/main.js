@@ -233,7 +233,12 @@ async function saveDynamicCasinos() {
   }
 
   try {
-    await setDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), { casinos: dynamicCasinos }, { merge: true });
+    const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
+    const currentConfig = snapshot.exists() ? snapshot.data() : {};
+    await setDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), {
+      ...currentConfig,
+      casinos: dynamicCasinos
+    });
   } catch (error) {
     console.warn('Error guardando casinos dinámicos en Firebase, ya están guardados en localStorage:', error);
   }
