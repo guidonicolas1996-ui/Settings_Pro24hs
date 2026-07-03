@@ -402,11 +402,6 @@ WhatsApp CTA
 Settings form styles
 =========================== */
 
-.settings-shell {
-  width: min(100%, 48rem);
-  margin: 0 auto;
-}
-
 .settings-card--texts {
   margin-top: 1rem;
   padding: 1rem;
@@ -537,7 +532,8 @@ Settings page
 .settings-shell {
   position: relative;
   z-index: 1;
-  width: min(100%, 42rem);
+  width: min(100%, 48rem);
+  margin: 0 auto;
   display: grid;
   gap: 1rem;
 }
@@ -1082,4 +1078,22 @@ Responsive
         .form-row {
           grid-template-columns: 1fr;
         }
+      }
+
+      .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: nowrap; /* CLAVE */
+      }
+
+      .settings-header__text {
+        flex: 1;
+        min-width: 0; /* CLAVE para evitar overflow raro */
+      }
+
+      .btn-new-casino {
+        flex: 0 0 auto;
+        white-space: nowrap;
       }
