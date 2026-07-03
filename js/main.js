@@ -431,17 +431,11 @@ function applyTheme(casinoId) {
   setStoredActiveCasino(safeCasino);
 
   const mascot = document.getElementById('active-mascot');
-  const activeLogo = document.getElementById('active-logo');
   const cards = document.querySelectorAll('[data-theme-card]');
   const logosWrapper = document.querySelector('.brand-mark');
 
   if (logosWrapper) {
-    const preserveLogo = activeLogo && logosWrapper.contains(activeLogo) ? activeLogo : null;
     logosWrapper.innerHTML = '';
-    if (preserveLogo) {
-      logosWrapper.appendChild(preserveLogo);
-    }
-
     activeThemes.forEach((id) => {
       if (dynamicCasinos[id]) {
         const image = document.createElement('img');
@@ -460,10 +454,6 @@ function applyTheme(casinoId) {
 
   if (!dynamicCasinos[safeCasino]) {
     return;
-  }
-
-  if (activeLogo) {
-    fadeAsset(activeLogo, dynamicCasinos[safeCasino].logo, dynamicCasinos[safeCasino].label);
   }
 
   if (mascot) {
