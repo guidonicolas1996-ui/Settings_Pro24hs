@@ -132,12 +132,16 @@ async function uploadImageFile(source, casinoId, type) {
     return source instanceof File ? await fileToDataURL(source) : source;
   }
 
-  const formData = new FormData();
+  const originalMime = source instanceof File ? source.type : (source.match(/^data:(image\/[^;]+);/) || [])[1] || 'image/jpeg';
   const fileBlob = source instanceof File ? source : dataURLtoBlob(source);
-  formData.append('file', fileBlob);
+  const fileName = originalMime === 'image/png' ? `${type}.png` : `${type}.jpg`;
+
+  const formData = new FormData();
+  formData.append('file', fileBlob, fileName);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
   formData.append('folder', `${CLOUDINARY_FOLDER}/${casinoId}`);
   formData.append('public_id', `${type}-${Date.now()}`);
+  formData.append('resource_type', 'image');
 
   const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
   try {
@@ -427,11 +431,17 @@ function applyTheme(casinoId) {
   setStoredActiveCasino(safeCasino);
 
   const mascot = document.getElementById('active-mascot');
+  const activeLogo = document.getElementById('active-logo');
   const cards = document.querySelectorAll('[data-theme-card]');
   const logosWrapper = document.querySelector('.brand-mark');
 
   if (logosWrapper) {
+    const preserveLogo = activeLogo && logosWrapper.contains(activeLogo) ? activeLogo : null;
     logosWrapper.innerHTML = '';
+    if (preserveLogo) {
+      logosWrapper.appendChild(preserveLogo);
+    }
+
     activeThemes.forEach((id) => {
       if (dynamicCasinos[id]) {
         const image = document.createElement('img');
@@ -450,6 +460,10 @@ function applyTheme(casinoId) {
 
   if (!dynamicCasinos[safeCasino]) {
     return;
+  }
+
+  if (activeLogo) {
+    fadeAsset(activeLogo, dynamicCasinos[safeCasino].logo, dynamicCasinos[safeCasino].label);
   }
 
   if (mascot) {
