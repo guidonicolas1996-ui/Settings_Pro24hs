@@ -160,21 +160,28 @@
       }
 
       // Helper to wait for the casinos API to become available
-      async function waitForCasinosApi(timeoutMs = 3000) {
+      async function waitForCasinosApi(timeoutMs = 5000) {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
-          const api = window.landingSettings && window.landingSettings.addCasino ? window.landingSettings :
-            window.casinosAPI && window.casinosAPI.addCasino ? window.casinosAPI : null;
-          if (api && (api.getCasinos || api.addCasino || api.setActiveCasinos)) {
-            return api;
+          const apiCandidate = window.landingSettings && (window.landingSettings.addCasino || window.landingSettings.getCasinos || window.landingSettings.setActiveCasinos)
+            ? window.landingSettings
+            : (window.casinosAPI && (window.casinosAPI.addCasino || window.casinosAPI.getCasinos || window.casinosAPI.setActiveCasinos))
+              ? window.casinosAPI
+              : null;
+
+          if (apiCandidate) {
+            return apiCandidate;
           }
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        return (window.landingSettings && (window.landingSettings.getCasinos || window.landingSettings.addCasino || window.landingSettings.setActiveCasinos))
-          ? window.landingSettings
-          : (window.casinosAPI && (window.casinosAPI.getCasinos || window.casinosAPI.addCasino || window.casinosAPI.setActiveCasinos))
-            ? window.casinosAPI
-            : {};
+
+        if (window.landingSettings || window.casinosAPI) {
+          console.warn('waitForCasinosApi: fallback returned existing global API object', { landingSettings: window.landingSettings, casinosAPI: window.casinosAPI });
+          return window.landingSettings || window.casinosAPI;
+        }
+
+        console.error('waitForCasinosApi: no casinos API available after timeout');
+        return {};
       }
 
       // File previews
@@ -445,6 +452,9 @@
         }
 
         const api = await waitForCasinosApi();
+        if (!api || typeof api !== 'object') {
+          console.error('No se pudo inicializar la API de casinos.');
+        }
         const remoteOrStored = (api.getLandingContent && api.getLandingContent()) || (api.getStoredLandingContent && api.getStoredLandingContent());
         populateForm(remoteOrStored);
         
