@@ -414,6 +414,10 @@ window.renderCasinos = renderCasinos;
 window.openEditCasinoModal = openEditCasinoModal;
 window.closeNewCasinoModal = closeNewCasinoModal;
 
+window.addEventListener('landingContent:ready', (event) => {
+  populateForm(event.detail || {});
+});
+
 window.addEventListener('DOMContentLoaded', async () => {
   if (window.casinosReady) {
     await window.casinosReady.catch(() => {});
