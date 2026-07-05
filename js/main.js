@@ -30,23 +30,18 @@ import {
 
 // Configuración de Cloudinary. Debes reemplazar estos valores con tu cuenta y preset de carga.
 const CLOUDINARY_CLOUD_NAME = "efcbsldh"; // ej: 'mi-cuenta'
-const CLOUDINARY_UPLOAD_PRESET = "casinos"; // preset público de subida sin firma
+const CLOUDINARY_UPLOAD_PRESET = "casinos"; // preset público de subida sin firma (fallback)
+const CLOUDINARY_UPLOAD_PRESET_LOGO = "casinos_logo"; // opcional: preset público para logos (ej: 'casinos_logo')
+const CLOUDINARY_UPLOAD_PRESET_MASCOT = "casinos_mascot"; // opcional: preset público para mascotas (ej: 'casinos_mascot')
 const CLOUDINARY_FOLDER = "casinos";
 const FIRESTORE_COLLECTION = "config";
 const FIRESTORE_DOCUMENT = "landing";
 const ANALYTICS_COLLECTION = "analytics";
 const ANALYTICS_DOCUMENT = "landing";
 
-function getCloudinaryTransformation(type) {
-  switch (type) {
-    case 'logo':
-      return 'c_pad,w_644,h_226,b_transparent,f_png';
-    case 'mascot':
-      return 'c_pad,w_851,h_1032,b_transparent,f_png';
-    default:
-      return 'c_pad,b_transparent,f_png';
-  }
-}
+// If you prefer server-side/signed uploads you could still send a 'transformation' param.
+// For unsigned uploads Cloudinary rejects the 'transformation' parameter, so we rely
+// on per-type Upload Presets (recommended) to enforce incoming transformations.
 
 // Generador de variaciones de color
 function generateColorVariations(baseColor) {
@@ -156,12 +151,14 @@ async function uploadImageFile(source, casinoId, type) {
   const doUpload = async (includeDeleteToken = true) => {
     const formData = new FormData();
     formData.append('file', fileBlob, fileName);
-    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    // Use per-type preset if provided, otherwise fallback to generic preset
+    const presetForType = (type === 'logo' && CLOUDINARY_UPLOAD_PRESET_LOGO) ? CLOUDINARY_UPLOAD_PRESET_LOGO
+      : (type === 'mascot' && CLOUDINARY_UPLOAD_PRESET_MASCOT) ? CLOUDINARY_UPLOAD_PRESET_MASCOT
+      : CLOUDINARY_UPLOAD_PRESET;
+    formData.append('upload_preset', presetForType);
     formData.append('folder', `${CLOUDINARY_FOLDER}/${casinoId}`);
     formData.append('public_id', `${type}-${Date.now()}`);
     formData.append('resource_type', 'image');
-    formData.append('transformation', getCloudinaryTransformation(type));
-    formData.append('format', 'png');
     if (includeDeleteToken) {
       formData.append('return_delete_token', 'true');
     }
@@ -177,6 +174,7 @@ async function uploadImageFile(source, casinoId, type) {
     }
 
     const result = await response.json();
+    console.debug('Cloudinary upload result', { type, presetForType, result });
     return {
       url: result.secure_url || result.url,
       deleteToken: result.delete_token || null

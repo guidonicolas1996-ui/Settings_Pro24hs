@@ -72,8 +72,8 @@ function setupFilePreview(inputId, previewId) {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      preview.innerHTML = '<p style="color: #ff6b6b; font-size: 0.8rem;">?? Archivo muy grande (m�x 2MB)</p>';
+    if (file.size > 10 * 1024 * 1024) {
+      preview.innerHTML = '<p style="color: #ff6b6b; font-size: 0.8rem;">Archivo muy grande (m�x 10MB)</p>';
       event.target.value = '';
       return;
     }
@@ -99,13 +99,13 @@ function getFormValues() {
 }
 
 function validateFiles(logoFile, mascotFile) {
-  const maxFileSize = 2 * 1024 * 1024;
+  const maxFileSize = 10 * 1024 * 1024;
   if (logoFile && logoFile.size > maxFileSize) {
-    alert(`Logo muy grande (${(logoFile.size / 1024 / 1024).toFixed(2)}MB). M�ximo: 2MB`);
+    alert(`Logo muy grande (${(logoFile.size / 1024 / 1024).toFixed(2)}MB). Máximo: 10MB`);
     return false;
   }
   if (mascotFile && mascotFile.size > maxFileSize) {
-    alert(`Mascota muy grande (${(mascotFile.size / 1024 / 1024).toFixed(2)}MB). M�ximo: 2MB`);
+    alert(`Mascota muy grande (${(mascotFile.size / 1024 / 1024).toFixed(2)}MB). Máximo: 10MB`);
     return false;
   }
   return true;
@@ -122,11 +122,22 @@ async function setupCasinoForm() {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
+    const submitButton = document.getElementById('casino-submit-button');
+    const originalButtonText = submitButton ? submitButton.innerText : null;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.innerText = 'Procesando...';
+    }
+
     const { casinoId, name, logoFile, mascotFile, color } = getFormValues();
     const api = await waitForCasinosApi();
     const saveCasino = api.addCasino || (window.landingSettings && window.landingSettings.addCasino) || (window.casinosAPI && window.casinosAPI.addCasino);
 
     if (!saveCasino) {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerText = originalButtonText;
+      }
       console.error('API de casinos no disponible', { api, windowLandingSettings: window.landingSettings, windowCasinosAPI: window.casinosAPI });
       alert('API de casinos no disponible. Recarg� la p�gina e intent� de nuevo.');
       return;
@@ -134,6 +145,10 @@ async function setupCasinoForm() {
 
     const existingCasino = casinoId && api.getCasinos ? api.getCasinos()[casinoId] : null;
     if (casinoId && !existingCasino) {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerText = originalButtonText;
+      }
       alert('No se encontr� el casino a editar.');
       return;
     }
@@ -144,6 +159,10 @@ async function setupCasinoForm() {
     }
 
     if (!validateFiles(logoFile, mascotFile)) {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerText = originalButtonText;
+      }
       return;
     }
 
@@ -184,7 +203,14 @@ async function setupCasinoForm() {
       }
     };
 
-    await saveCasinoEntry();
+    try {
+      await saveCasinoEntry();
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerText = originalButtonText;
+      }
+    }
   });
 }
 
