@@ -3,7 +3,8 @@ import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-
 
 const rangeSelect = document.getElementById('analytics-range-select');
 const detailSelect = document.getElementById('analytics-detail-select');
-const metricSelect = document.getElementById('analytics-metric-select');
+let metricCheckboxes = null;
+const chartLegend = document.getElementById('analytics-legend');
 const startInput = document.getElementById('analytics-start');
 const endInput = document.getElementById('analytics-end');
 const refreshButton = document.getElementById('analytics-refresh');
@@ -12,9 +13,17 @@ const breakdownElement = document.getElementById('analytics-breakdown');
 const breakdownTitle = document.getElementById('analytics-breakdown-title');
 const chartCanvas = document.getElementById('analytics-chart');
 const chartContext = chartCanvas ? chartCanvas.getContext('2d') : null;
+let summaryToggle;
+let summaryBody;
+let visualizationToggle;
+let visualizationBody;
+let chartToggle;
+let chartSection;
+let tableToggle;
+let tableSection;
 
 const DETAIL_LABELS = {
-  hour: 'Detalle por hora',
+  hour: 'Gráfico Comparativo',
   shift: 'Detalle por turno',
   day: 'Detalle por día',
   week: 'Detalle por semana',
@@ -24,6 +33,36 @@ const DETAIL_LABELS = {
 function toLocalDateTimeString(date) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 16);
+}
+
+function syncMetricCheckboxStyles() {
+  if (!metricCheckboxes) return;
+  const inputs = Array.from(metricCheckboxes.querySelectorAll('input[type="checkbox"]'));
+  inputs.forEach((input, idx) => {
+    const label = input.closest('label');
+    if (!label) return;
+    if (input.checked) {
+      label.classList.add('selected');
+    } else {
+      label.classList.remove('selected');
+    }
+    const metricKey = input.value;
+    const chipColor = METRIC_COLOR_MAP[metricKey] || METRIC_COLORS[idx % METRIC_COLORS.length];
+    label.style.setProperty('--chip-color', chipColor);
+  });
+}
+
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (isNaN(date.getTime())) {
+    return value;
+  }
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} (${hours}:${minutes}hs)`;
 }
 
 function createRange(preset) {
@@ -90,7 +129,10 @@ function collectBuckets(buckets, rangeStart, rangeEnd) {
     totalVisits: 0,
     primaryLinks: 0,
     alternativeLinks: 0,
-    whatsappClicks: 0
+    primaryVisits: 0,
+    alternativeVisits: 0,
+    whatsappClicks: 0,
+    whatsappClicksTotal: 0
   };
 
   for (const dateKey of Object.keys(buckets)) {
@@ -102,14 +144,21 @@ function collectBuckets(buckets, rangeStart, rangeEnd) {
       if (bucketEnd < rangeStart || bucketStart > rangeEnd) {
         continue;
       }
+      const [year, month, day] = dateKey.split('-');
+      const displayDate = `${day}/${month}`;
 
       totals.uniqueVisitors += bucket.uniqueVisitors || 0;
       totals.totalVisits += bucket.totalVisits || 0;
       totals.primaryLinks += bucket.primaryLinks || 0;
       totals.alternativeLinks += bucket.alternativeLinks || 0;
+      totals.primaryVisits += bucket.primaryVisits || 0;
+      totals.alternativeVisits += bucket.alternativeVisits || 0;
       totals.whatsappClicks += bucket.whatsappClicks || 0;
+      totals.whatsappClicksTotal += bucket.whatsappClicksTotal || 0;
       items.push({
-        label: `${dateKey} ${hourKey}:00`,
+        label: `${displayDate} ${hourKey}:00`,
+        dateKey,
+        hourKey,
         ...bucket
       });
     }
@@ -131,37 +180,45 @@ function countUniqueVisitors(visitors, rangeStart, rangeEnd) {
 }
 
 function groupKey(item, mode) {
-  const [dateKey, hourPart] = item.label.split(' ');
+  const dateKey = item.dateKey || item.label.split(' ')[0];
+  const hourPart = item.hourKey ? `${item.hourKey}:00` : item.label.split(' ')[1] || '00:00';
   const hour = Number(hourPart.split(':')[0]);
   const date = new Date(`${dateKey}T00:00:00`);
+  const [year, month, day] = dateKey.split('-');
+  const displayDay = `${day}/${month}`;
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   if (mode === 'hour') {
-    return { key: item.label, label: item.label, sort: item.label };
+    return { key: `${dateKey} ${hourPart}`, label: item.label, sort: `${dateKey} ${hourPart}` };
   }
 
   if (mode === 'shift') {
     const shiftIndex = hour < 8 ? 0 : hour < 16 ? 1 : 2;
     const shiftLabel = shiftIndex === 0 ? 'Noche' : shiftIndex === 1 ? 'Mañana' : 'Tarde';
-    const label = `${dateKey} ${shiftLabel}`;
+    const label = `${displayDay} ${shiftLabel}`;
     return { key: `${dateKey}-${shiftIndex}`, label, sort: `${dateKey}-${shiftIndex}` };
   }
 
   if (mode === 'day') {
-    return { key: dateKey, label: dateKey, sort: dateKey };
+    return { key: dateKey, label: displayDay, sort: dateKey };
   }
 
   if (mode === 'week') {
-    const day = date.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
+    const dayOfWeek = date.getDay();
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const weekStart = new Date(date);
     weekStart.setDate(date.getDate() + diff);
-    const weekLabel = weekStart.toISOString().slice(0, 10);
-    return { key: `week-${weekLabel}`, label: `Semana de ${weekLabel}`, sort: `week-${weekLabel}` };
+    const weekDay = String(weekStart.getDate()).padStart(2, '0');
+    const weekMonth = String(weekStart.getMonth() + 1).padStart(2, '0');
+    const weekLabel = `${weekDay}/${weekMonth}`;
+    return { key: `week-${weekStart.toISOString().slice(0, 10)}`, label: `Semana ${weekLabel}`, sort: `week-${weekStart.toISOString().slice(0, 10)}` };
   }
 
   if (mode === 'month') {
-    const monthLabel = `${dateKey.slice(0, 7)}`;
-    return { key: monthLabel, label: monthLabel, sort: monthLabel };
+    const monthIndex = Number(month) - 1;
+    const monthShort = monthNames[monthIndex] || '';
+    const yearShort = year.slice(-2);
+    return { key: `${year}-${month}`, label: `${monthShort}/${yearShort}`, sort: `${year}-${month}` };
   }
 
   return { key: item.label, label: item.label, sort: item.label };
@@ -179,7 +236,10 @@ function aggregateItems(items, mode) {
         totalVisits: 0,
         primaryLinks: 0,
         alternativeLinks: 0,
+        primaryVisits: 0,
+        alternativeVisits: 0,
         whatsappClicks: 0,
+        whatsappClicksTotal: 0,
         sort: group.sort
       };
     }
@@ -188,7 +248,10 @@ function aggregateItems(items, mode) {
     grouped[group.key].totalVisits += item.totalVisits || 0;
     grouped[group.key].primaryLinks += item.primaryLinks || 0;
     grouped[group.key].alternativeLinks += item.alternativeLinks || 0;
+    grouped[group.key].primaryVisits += item.primaryVisits || 0;
+    grouped[group.key].alternativeVisits += item.alternativeVisits || 0;
     grouped[group.key].whatsappClicks += item.whatsappClicks || 0;
+    grouped[group.key].whatsappClicksTotal += item.whatsappClicksTotal || 0;
   });
 
   return Object.values(grouped).sort((a, b) => a.sort.localeCompare(b.sort));
@@ -210,21 +273,24 @@ function getMetricValue(item, metric) {
   return item[metric] || 0;
 }
 
-function renderChart(items, metric) {
+function renderChart(items, metrics) {
   if (!chartContext || !chartCanvas) {
     return;
   }
 
   setChartSize();
-  const values = items.map((item) => getMetricValue(item, metric));
+  const metricList = Array.isArray(metrics) ? metrics : [metrics];
   const labels = items.map((item) => item.label);
   const width = chartCanvas.width / (window.devicePixelRatio || 1);
   const height = chartCanvas.height / (window.devicePixelRatio || 1);
   const padding = 40;
   const chartWidth = width - padding * 2;
   const chartHeight = height - padding * 2;
-  const maxValue = Math.max(...values, 1);
-  const barWidth = Math.max(20, chartWidth / Math.max(values.length, 1) - 10);
+  const barGroupWidth = Math.max(20, chartWidth / Math.max(items.length, 1) - 10);
+  const barGap = 4;
+  const barWidth = Math.max(6, (barGroupWidth - (metricList.length - 1) * barGap) / metricList.length);
+  const allValues = items.flatMap((item) => metricList.map((metric) => getMetricValue(item, metric)));
+  const maxValue = Math.max(...allValues, 1);
 
   chartContext.clearRect(0, 0, width, height);
   chartContext.fillStyle = 'rgba(255,255,255,0.08)';
@@ -238,35 +304,60 @@ function renderChart(items, metric) {
   chartContext.lineTo(width - padding, height - padding);
   chartContext.stroke();
 
-  values.forEach((value, index) => {
-    const x = padding + index * (barWidth + 10) + 10;
-    const barHeight = (value / maxValue) * (chartHeight - 20);
-    const y = height - padding - barHeight;
+  // colors are resolved per-metric using METRIC_COLOR_MAP
 
-    chartContext.fillStyle = 'rgba(125, 108, 255, 0.85)';
-    chartContext.fillRect(x, y, barWidth, barHeight);
+  items.forEach((item, index) => {
+    const baseX = padding + index * (barGroupWidth + 10) + 10;
+    metricList.forEach((metric, metricIndex) => {
+      const value = getMetricValue(item, metric);
+      const x = baseX + metricIndex * (barWidth + barGap);
+      const barHeight = (value / maxValue) * (chartHeight - 20);
+      const y = height - padding - barHeight;
 
-    chartContext.fillStyle = '#ffffff';
-    chartContext.font = '12px Inter, system-ui, sans-serif';
-    chartContext.textAlign = 'center';
-    chartContext.fillText(value.toString(), x + barWidth / 2, y - 8);
+      // use fixed color for the metric key so color doesn't depend on selection order
+      chartContext.fillStyle = METRIC_COLOR_MAP[metric] || METRIC_COLORS[metricIndex % METRIC_COLORS.length];
+      chartContext.fillRect(x, y, barWidth, barHeight);
+
+      chartContext.fillStyle = '#ffffff';
+      chartContext.font = '10px Inter, system-ui, sans-serif';
+      chartContext.textAlign = 'center';
+      chartContext.fillText(value.toString(), x + barWidth / 2, y - 6);
+    });
   });
 
-  chartContext.fillStyle = 'rgba(255,255,255,0.75)';
-  chartContext.font = '12px Inter, system-ui, sans-serif';
+  chartContext.fillStyle = '#ffffff';
+  chartContext.font = '8px Inter, system-ui, sans-serif';
   chartContext.textAlign = 'center';
 
-  labels.forEach((label, index) => {
-    if (index % Math.ceil(Math.max(labels.length / 8, 1)) !== 0) {
-      return;
-    }
-    const x = padding + index * (barWidth + 10) + 10 + barWidth / 2;
+  items.forEach((item, index) => {
+    const x = padding + index * (barGroupWidth + 10) + 10 + barGroupWidth / 2;
+    const label = item.label;
     chartContext.save();
     chartContext.translate(x, height - padding + 18);
-    chartContext.rotate(-Math.PI / 4);
+    // draw labels straight below the bars
     chartContext.fillText(label, 0, 0);
     chartContext.restore();
   });
+
+  // remove internal legend text since external legend already displays metric labels
+}
+
+function renderLegend(metrics) {
+  if (!chartLegend) {
+    return;
+  }
+
+  chartLegend.innerHTML = metrics
+    .map((metric, metricIndex) => {
+      const color = METRIC_COLOR_MAP[metric] || METRIC_COLORS[metricIndex % METRIC_COLORS.length];
+      return `
+        <span class="analytics-legend-chip">
+          <span class="analytics-legend-color" style="background:${color}"></span>
+          ${METRIC_LABELS[metric] || metric}
+        </span>
+      `;
+    })
+    .join('');
 }
 
 function renderBreakdown(items) {
@@ -278,11 +369,10 @@ function renderBreakdown(items) {
   const rows = items.map((item) => `
           <tr>
             <td>${item.label}</td>
-            <td>${item.uniqueVisitors || 0}</td>
-            <td>${item.totalVisits || 0}</td>
-            <td>${item.primaryLinks || 0}</td>
-            <td>${item.alternativeLinks || 0}</td>
-            <td>${item.whatsappClicks || 0}</td>
+            <td>${item.uniqueVisitors || 0}/${item.totalVisits || 0}</td>
+            <td>${item.primaryLinks || 0}/${item.primaryVisits || 0}</td>
+            <td>${item.alternativeLinks || 0}/${item.alternativeVisits || 0}</td>
+            <td>${item.whatsappClicks || 0}/${item.whatsappClicksTotal || 0}</td>
           </tr>
         `).join('');
 
@@ -292,11 +382,10 @@ function renderBreakdown(items) {
               <thead>
                 <tr>
                   <th>Grupo</th>
-                  <th>Únicas</th>
                   <th>Visitas</th>
-                  <th>Principal</th>
-                  <th>Alternativa</th>
-                  <th>WhatsApp</th>
+                  <th>Link Principal</th>
+                  <th>Link Alt.</th>
+                  <th>Clicks Wpp.</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
@@ -308,17 +397,45 @@ function renderBreakdown(items) {
 function displayTotals(totals, visitorCount) {
   document.getElementById('analytics-unique').textContent = visitorCount;
   document.getElementById('analytics-total').textContent = totals.totalVisits || 0;
-  document.getElementById('analytics-primary').textContent = totals.primaryLinks || 0;
-  document.getElementById('analytics-alternative').textContent = totals.alternativeLinks || 0;
-  document.getElementById('analytics-whatsapp').textContent = totals.whatsappClicks || 0;
+  document.getElementById('analytics-primary-unique').textContent = totals.primaryLinks || 0;
+  document.getElementById('analytics-primary-total').textContent = totals.primaryVisits || 0;
+  document.getElementById('analytics-alternative-unique').textContent = totals.alternativeLinks || 0;
+  document.getElementById('analytics-alternative-total').textContent = totals.alternativeVisits || 0;
+  document.getElementById('analytics-whatsapp-unique').textContent = totals.whatsappClicks || 0;
+  document.getElementById('analytics-whatsapp-total').textContent = totals.whatsappClicksTotal || 0;
 }
 
 const METRIC_LABELS = {
-  totalVisits: 'Visitas totales',
   uniqueVisitors: 'Visitas únicas',
-  whatsappClicks: 'Clicks WhatsApp',
-  primaryLinks: 'Link principal',
-  alternativeLinks: 'Link alternativo'
+  totalVisits: 'Visitas totales',
+  primaryLinks: 'Visitas únicas link principal',
+  primaryVisits: 'Visitas totales link principal',
+  alternativeLinks: 'Visitas únicas link alternativo',
+  alternativeVisits: 'Visitas totales link alternativo',
+  whatsappClicks: 'Clicks únicos WhatsApp',
+  whatsappClicksTotal: 'Clicks totales WhatsApp'
+};
+
+const METRIC_COLORS = [
+'rgba(255, 43, 78, 0.85)',   // rojo
+'rgba(255, 145, 66, 0.85)',    // naranja
+'rgba(255, 209, 102, 0.85)',   // amarillo
+'rgba(58, 239, 158, 0.85)',    // verde
+'rgba(0, 190, 165, 0.85)',     // teal
+'rgba(56, 163, 255, 0.85)',    // azul
+'rgba(125, 108, 255, 0.85)',   // violeta
+'rgba(255, 100, 178, 0.85)'     // magenta 
+];
+
+const METRIC_COLOR_MAP = {
+  uniqueVisitors: METRIC_COLORS[0],
+  totalVisits: METRIC_COLORS[1],
+  primaryLinks: METRIC_COLORS[2],
+  primaryVisits: METRIC_COLORS[3],
+  alternativeLinks: METRIC_COLORS[4],
+  alternativeVisits: METRIC_COLORS[5],
+  whatsappClicks: METRIC_COLORS[6],
+  whatsappClicksTotal: METRIC_COLORS[7]
 };
 
 async function loadAnalytics() {
@@ -327,7 +444,6 @@ async function loadAnalytics() {
     const snapshot = await getDoc(ref);
     const range = parseRangeInputs();
     const detailMode = detailSelect.value || 'hour';
-    const metric = metricSelect.value || 'totalVisits';
     breakdownTitle.textContent = DETAIL_LABELS[detailMode] || DETAIL_LABELS.hour;
 
     if (!snapshot.exists()) {
@@ -336,25 +452,56 @@ async function loadAnalytics() {
       return;
     }
 
-    const data = snapshot.data();
-    const visitors = data.visitors || {};
-    const buckets = data.buckets || {};
+    const data = snapshot.data() || {};
+    const visitors = data.visitors && typeof data.visitors === 'object' ? data.visitors : {};
+    const buckets = data.buckets && typeof data.buckets === 'object' ? data.buckets : {};
+    const selectedMetrics = Array.from(metricCheckboxes.querySelectorAll('input[type="checkbox"]:checked'))
+      .map((input) => input.value)
+      .filter((metricKey) => Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricKey));
+    const metrics = selectedMetrics.length ? selectedMetrics : ['totalVisits'];
     const bucketData = collectBuckets(buckets, range.start, range.end);
     const visitorCount = countUniqueVisitors(visitors, range.start, range.end);
     const detailItems = aggregateItems(bucketData.items, detailMode);
 
     displayTotals(bucketData.totals, visitorCount);
     renderBreakdown(detailItems);
-    renderChart(detailItems, metric);
-    messageElement.textContent = `Mostrando ${METRIC_LABELS[metric].toLowerCase()} ${DETAIL_LABELS[detailMode].toLowerCase()} desde ${startInput.value} hasta ${endInput.value}`;
+
+    let chartError = null;
+    try {
+      renderChart(detailItems, metrics);
+    } catch (chartErr) {
+      chartError = chartErr;
+      console.error('Error rendering analytics chart:', chartErr);
+    }
+
+    const metricLabel = metrics
+      .map((metricKey) => METRIC_LABELS[metricKey] || metricKey)
+      .join(', ');
+    renderLegend(metrics);
+    const detailLabel = DETAIL_LABELS[detailMode] || DETAIL_LABELS.hour;
+    messageElement.textContent = chartError
+      ? `Mostrando datos desde ${formatDateTime(startInput.value)} hasta ${formatDateTime(endInput.value)} (gráfico no disponible)`
+      : `Mostrando datos desde ${formatDateTime(startInput.value)} hasta ${formatDateTime(endInput.value)}`;
   } catch (error) {
     document.getElementById('analytics-content').innerHTML = '<p>Error cargando analytics.</p>';
     breakdownElement.innerHTML = '';
+    messageElement.textContent = `Error cargando analytics: ${error?.message || error}`;
     console.error('Error loading analytics:', error);
   }
 }
 
 globalThis.addEventListener('load', () => {
+  summaryToggle = document.getElementById('summary-toggle');
+  summaryBody = document.getElementById('summary-body');
+  visualizationToggle = document.getElementById('visualization-toggle');
+  visualizationBody = document.getElementById('visualization-body');
+  chartToggle = document.getElementById('chart-toggle');
+  chartSection = document.getElementById('chart-section');
+  tableToggle = document.getElementById('table-toggle');
+  tableSection = document.getElementById('analytics-breakdown-section');
+  // resolve metric selector now that DOM moved it
+  metricCheckboxes = document.getElementById('analytics-metric-checkboxes');
+
   rangeSelect.addEventListener('change', async () => {
     if (rangeSelect.value !== 'custom') {
       setInputsForRange(rangeSelect.value);
@@ -367,7 +514,8 @@ globalThis.addEventListener('load', () => {
     await loadAnalytics();
   });
 
-  metricSelect.addEventListener('change', async () => {
+  metricCheckboxes?.addEventListener('change', async () => {
+    syncMetricCheckboxStyles();
     await loadAnalytics();
   });
 
@@ -381,10 +529,116 @@ globalThis.addEventListener('load', () => {
     }
   });
 
+  summaryToggle?.addEventListener('click', () => {
+    const isCollapsed = summaryBody.classList.toggle('collapsed');
+    summaryToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    summaryToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar resumen' : 'Minimizar resumen';
+  });
+
+  visualizationToggle?.addEventListener('click', () => {
+    const isCollapsed = visualizationBody.classList.toggle('collapsed');
+    visualizationToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    visualizationToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar visualización' : 'Minimizar visualización';
+
+    // treat visualization as parent: when collapsing, hide metrics, chart and table and
+    // save their previous collapsed state; when expanding, restore previous states.
+    const metricsPanel = document.querySelector('.analytics-metrics-panel');
+    const chartBody = document.getElementById('chart-body');
+    const tableBody = document.getElementById('analytics-breakdown-body');
+
+    // helper to set sr-only and aria-expanded on child toggle buttons
+    function setToggleState(toggleButton, bodyEl, collapsed) {
+      if (!toggleButton || !bodyEl) return;
+      toggleButton.setAttribute('aria-expanded', String(!collapsed));
+      const sr = toggleButton.querySelector('.sr-only');
+      if (sr) sr.textContent = collapsed ? (toggleButton === chartToggle ? 'Mostrar gráfico' : 'Mostrar tabla') : (toggleButton === chartToggle ? 'Minimizar gráfico' : 'Minimizar tabla');
+    }
+
+    if (isCollapsed) {
+      // save previous states
+      if (metricsPanel) metricsPanel.dataset.prevDisplay = metricsPanel.style.display || '';
+      if (chartBody) chartBody.dataset.prevCollapsed = String(chartBody.classList.contains('collapsed'));
+      if (tableBody) tableBody.dataset.prevCollapsed = String(tableBody.classList.contains('collapsed'));
+      if (chartSection) chartSection.dataset.prevDisplay = chartSection.style.display || '';
+      if (tableSection) tableSection.dataset.prevDisplay = tableSection.style.display || '';
+
+      // remove metrics and sections from flow and force collapse children
+      if (metricsPanel) metricsPanel.style.display = 'none';
+      if (chartBody) {
+        chartBody.classList.add('collapsed');
+        setToggleState(chartToggle, chartBody, true);
+      }
+      if (tableBody) {
+        tableBody.classList.add('collapsed');
+        setToggleState(tableToggle, tableBody, true);
+      }
+      if (chartSection) chartSection.style.display = 'none';
+      if (tableSection) tableSection.style.display = 'none';
+    } else {
+      // restore previous states (if any); default to expanded
+      if (metricsPanel) {
+        const prevDisplay = metricsPanel.dataset.prevDisplay;
+        if (typeof prevDisplay !== 'undefined') {
+          metricsPanel.style.display = prevDisplay || '';
+          delete metricsPanel.dataset.prevDisplay;
+        } else {
+          metricsPanel.style.display = '';
+        }
+      }
+      if (chartSection) {
+        const prev = chartSection.dataset.prevDisplay;
+        if (typeof prev !== 'undefined') {
+          chartSection.style.display = prev || '';
+          delete chartSection.dataset.prevDisplay;
+        } else {
+          chartSection.style.display = '';
+        }
+      }
+      if (tableSection) {
+        const prev = tableSection.dataset.prevDisplay;
+        if (typeof prev !== 'undefined') {
+          tableSection.style.display = prev || '';
+          delete tableSection.dataset.prevDisplay;
+        } else {
+          tableSection.style.display = '';
+        }
+      }
+      if (chartBody) {
+        const prev = chartBody.dataset.prevCollapsed;
+        if (prev === 'true') chartBody.classList.add('collapsed'); else chartBody.classList.remove('collapsed');
+        setToggleState(chartToggle, chartBody, prev === 'true');
+        delete chartBody.dataset.prevCollapsed;
+      }
+      if (tableBody) {
+        const prev = tableBody.dataset.prevCollapsed;
+        if (prev === 'true') tableBody.classList.add('collapsed'); else tableBody.classList.remove('collapsed');
+        setToggleState(tableToggle, tableBody, prev === 'true');
+        delete tableBody.dataset.prevCollapsed;
+      }
+    }
+  });
+
+  chartToggle?.addEventListener('click', () => {
+    const chartBody = document.getElementById('chart-body');
+    const isCollapsed = chartBody.classList.toggle('collapsed');
+    chartToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    chartToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar gráfico' : 'Minimizar gráfico';
+  });
+
+  tableToggle?.addEventListener('click', () => {
+    const tableBody = document.getElementById('analytics-breakdown-body');
+    const isCollapsed = tableBody.classList.toggle('collapsed');
+    tableToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    tableToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar tabla' : 'Minimizar tabla';
+  });
+
   window.addEventListener('resize', () => {
     loadAnalytics().catch((error) => console.warn('Error actualizando gráfico al redimensionar:', error));
   });
 
+  // ensure checkbox styles reflect defaults
+  syncMetricCheckboxStyles();
   setInputsForRange('today');
   loadAnalytics();
 });
+

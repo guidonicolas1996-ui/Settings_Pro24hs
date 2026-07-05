@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body class="settings-page">
+    <div class="top-actions">
+      <a href="index.html" class="analytics-button" aria-label="Landing">🌐</a>
+      <a href="settings.html" class="analytics-button" aria-label="Configuración">⚙️</a>
+    </div>
     <div class="ambient-layer" aria-hidden="true">
       <span class="blob blob-1"></span>
       <span class="blob blob-2"></span>
@@ -26,10 +30,9 @@
                         Tráfico, fuente y comportamiento de usuarios únicos.
                         </p>
                     </div>
-                    <a href="/settings.html" class="btn btn--secondary">⚙️</a>
                 </div>
 
-                <section class="analytics-breakdown-card">
+                <section>
                 <div class="analytics-breakdown-header">
                     <div>
                         <h3>Período</h3>
@@ -69,13 +72,12 @@
                     </button>
                     </div>
                 </div>
-                </section>
-
                 <div id="analytics-message" class="analytics-message">
                 Mostrando datos para hoy por defecto.
                 </div>
+                </section>
 
-                <section class="analytics-breakdown-card">
+                <section>
                 <div class="analytics-breakdown-header">
                     <div>
                     <h3>Resumen</h3>
@@ -83,8 +85,13 @@
                         Totales registrados para el período seleccionado.
                     </p>
                     </div>
+                    <button id="summary-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                        <span class="analytics-toggle-icon">▶</span>
+                        <span class="sr-only">Minimizar resumen</span>
+                    </button>
                 </div>
 
+                <div id="summary-body" class="analytics-section__body">
                 <div id="analytics-content" class="analytics-panel">
 
                     <div class="analytics-card">
@@ -98,24 +105,41 @@
                     </div>
 
                     <div class="analytics-card">
-                    <h3>Link principal</h3>
-                    <p id="analytics-primary">Cargando...</p>
+                    <h3>Visitas únicas link principal</h3>
+                    <p id="analytics-primary-unique">Cargando...</p>
                     </div>
 
                     <div class="analytics-card">
-                    <h3>Link alternativo</h3>
-                    <p id="analytics-alternative">Cargando...</p>
+                    <h3>Visitas totales link principal</h3>
+                    <p id="analytics-primary-total">Cargando...</p>
                     </div>
 
                     <div class="analytics-card">
-                    <h3>Clicks WhatsApp</h3>
-                    <p id="analytics-whatsapp">Cargando...</p>
+                    <h3>Visitas únicas link alternativo</h3>
+                    <p id="analytics-alternative-unique">Cargando...</p>
+                    </div>
+
+                    <div class="analytics-card">
+                    <h3>Visitas totales link alternativo</h3>
+                    <p id="analytics-alternative-total">Cargando...</p>
+                    </div>
+
+                    <div class="analytics-card">
+                    <h3>Clicks únicos WhatsApp</h3>
+                    <p id="analytics-whatsapp-unique">Cargando...</p>
+                    </div>
+
+                    <div class="analytics-card">
+                    <h3>Clicks totales WhatsApp</h3>
+                    <p id="analytics-whatsapp-total">Cargando...</p>
                     </div>
 
                 </div>
+                <p class="settings-copy analytics-link-note" style="margin-top: 0.5rem;">El "link alternativo" se cuenta cuando la landing se accede con:<br /><a href="https://landing-pro24hs.vercel.app/?src=alt" target="_blank" rel="noopener noreferrer">https://landing-pro24hs.vercel.app/?src=alt</a> o similar.</p>
+                </div>
                 </section>
 
-                <section class="analytics-breakdown-card">
+                <section>
                 <div class="analytics-breakdown-header">
                     <div>
                     <h3>Visualización</h3>
@@ -123,8 +147,13 @@
                         Elegí cómo querés agrupar la información del gráfico.
                     </p>
                     </div>
+                    <button id="visualization-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                        <span class="analytics-toggle-icon">▶</span>
+                        <span class="sr-only">Minimizar visualización</span>
+                    </button>
                 </div>
 
+                <div id="visualization-body" class="analytics-section__body">
                 <div class="analytics-controls">
 
                     <div class="analytics-filter-group">
@@ -138,42 +167,62 @@
                     </select>
                     </div>
 
-                    <div class="analytics-filter-group">
-                    <label for="analytics-metric-select">Métrica</label>
-                    <select id="analytics-metric-select">
-                        <option value="totalVisits">Visitas totales</option>
-                        <option value="uniqueVisitors">Visitas únicas</option>
-                        <option value="whatsappClicks">Clicks WhatsApp</option>
-                        <option value="primaryLinks">Link principal</option>
-                        <option value="alternativeLinks">Link alternativo</option>
-                    </select>
+                                        </div>
+
+                                </div>
+
+                                <div class="analytics-metrics-panel" style="margin-top:0.5rem;margin-bottom:0.75rem;">
+                                    <label style="display:block;margin-bottom:0.5rem;font-weight:600;color:var(--color-text);">Métricas</label>
+                                    <div id="analytics-metric-checkboxes" class="analytics-metric-checkboxes analytics-metric-inline">
+                                        <label><input type="checkbox" value="uniqueVisitors" checked><span>Visitas únicas</span></label>
+                                        <label><input type="checkbox" value="totalVisits"><span>Visitas totales</span></label>
+                                        <label><input type="checkbox" value="primaryLinks"><span>Visitas únicas link principal</span></label>
+                                        <label><input type="checkbox" value="primaryVisits"><span>Visitas totales link principal</span></label>
+                                        <label><input type="checkbox" value="alternativeLinks"><span>Visitas únicas link alternativo</span></label>
+                                        <label><input type="checkbox" value="alternativeVisits"><span>Visitas totales link alternativo</span></label>
+                                        <label><input type="checkbox" value="whatsappClicks"><span>Clicks únicos WhatsApp</span></label>
+                                        <label><input type="checkbox" value="whatsappClicksTotal" checked><span>Clicks totales WhatsApp</span></label>
+                                    </div>
+                                </div>
+                <div id="chart-section" class="analytics-chart-section">
+                    <div class="analytics-breakdown-header analytics-subsection-header">
+                        <h3 id="analytics-breakdown-title">Gráfico</h3>
+                        <button id="chart-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                            <span class="analytics-toggle-icon">▶</span>
+                            <span class="sr-only">Minimizar gráfico</span>
+                        </button>
                     </div>
-
-                </div>
-                </section>
-
-                <section class="analytics-breakdown-card">
-                <div class="analytics-breakdown-header">
-                    <h3 id="analytics-breakdown-title">
-                    Detalle por hora
-                    </h3>
-                </div>
-
-                <div class="analytics-chart-card">
-                    <canvas
-                    id="analytics-chart"
-                    class="analytics-chart"
-                    width="900"
-                    height="300">
-                    </canvas>
+                    <div id="chart-body" class="analytics-section__body">
+                        <div class="analytics-chart-card">
+                            <canvas
+                                id="analytics-chart"
+                                class="analytics-chart"
+                                width="900"
+                                height="300">
+                            </canvas>
+                        </div>
+                        <div id="analytics-legend" class="analytics-chart-legend"></div>
+                    </div>
                 </div>
 
-                <div id="analytics-breakdown" class="analytics-breakdown">
-                    Cargando...
+                <div id="analytics-breakdown-section" class="analytics-breakdown-section">
+                    <div class="analytics-breakdown-header analytics-subsection-header">
+                        <h3>Tabla Comparativa (Únicas/Totales)</h3>
+                        <button id="table-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
+                            <span class="analytics-toggle-icon">▶</span>
+                            <span class="sr-only">Mostrar tabla</span>
+                        </button>
+                    </div>
+                    <div id="analytics-breakdown-body" class="analytics-section__body collapsed">
+                        <div id="analytics-breakdown" class="analytics-breakdown">
+                            Cargando...
+                        </div>
+                    </div>
+                </div>
                 </div>
                 </section>
             </section>
         </main>
-    <script type="module" src="./js/analytics.js"></script>
+    <script type="module" src="./js/analytics.js?v=2"></script>
   </body>
 </html>

@@ -192,7 +192,6 @@ async function setupCasinoForm() {
         }
 
         const newCasinoId = await saveCasino(casinoId || null, name, finalLogo, finalMascot, color);
-        console.log('Casino guardado correctamente', { newCasinoId, name });
         alert(casinoId ? '✅ Casino actualizado exitosamente' : '✅ Casino creado exitosamente');
         closeNewCasinoModal();
         resetCasinoForm();
@@ -221,6 +220,77 @@ async function renderCasinos() {
   if (!container) return;
   container.innerHTML = '';
 
+  let order = [];
+  try {
+    order = api && api.getCasinoOrder ? api.getCasinoOrder() : [];
+  } catch (e) {
+    order = [];
+  }
+  
+  if (Array.isArray(order) && order.length) {
+    order.forEach((id) => {
+      const casino = casinos[id];
+      if (!casino) return;
+      const card = document.createElement('article');
+      card.className = 'theme-card' + (casino.active ? ' is-active' : '');
+      card.setAttribute('data-theme-card', id);
+      card.innerHTML = `
+        <img src="${casino.logo}" alt="Logo ${casino.label}" class="theme-card__logo" />
+        <div>
+          <h2>${casino.label}</h2>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="width: 16px; height: 16px; background: ${casino.color}; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.3);"></div>
+            <p>${casino.color}</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; margin-left: auto;">
+          <button type="button" class="btn-small btn-edit" data-edit="${id}" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Editar</button>
+          <button type="button" class="btn-small btn-delete" data-delete="${id}" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Eliminar</button>
+          <input type="checkbox" class="theme-checkbox ${id}" name="theme-select" value="${id}" ${casino.active ? 'checked' : ''} />
+        </div>
+      `;
+      
+      const editButton = card.querySelector('[data-edit]');
+      const deleteButton = card.querySelector('[data-delete]');
+      const checkbox = card.querySelector('input[name="theme-select"][type="checkbox"]');
+      
+      if (editButton) {
+        editButton.addEventListener('click', () => openEditCasinoModal(id));
+      }
+      if (deleteButton) {
+        deleteButton.addEventListener('click', async () => {
+          if (confirm(`¿Estás seguro de que deseas eliminar "${casino.label}"?`)) {
+            if (api.removeCasino) {
+              await api.removeCasino(id);
+              await renderCasinos();
+            }
+          }
+        });
+      }
+      if (checkbox) {
+        checkbox.addEventListener('change', async () => {
+          const checkboxes = document.querySelectorAll('input[name="theme-select"][type="checkbox"]');
+          const selected = Array.from(checkboxes)
+            .filter((cb) => cb.checked)
+            .map((cb) => cb.value);
+          
+          if (!selected.length) {
+            checkbox.checked = true;
+            return;
+          }
+          
+          if (api.setActiveCasinos) {
+            await api.setActiveCasinos(selected);
+          }
+          await renderCasinos();
+        });
+      }
+      
+      container.appendChild(card);
+    });
+    initCasinoDragAndDrop(container);
+    return;
+  }
   Object.entries(casinos)
     .sort(([a], [b]) => {
       const aNum = parseInt((a.match(/(\d+)$/) || [])[0] || a, 10);
@@ -288,6 +358,163 @@ async function renderCasinos() {
 
       container.appendChild(card);
     });
+  // Initialize drag & drop after cards are in DOM
+  initCasinoDragAndDrop(container);
+}
+
+function initCasinoDragAndDrop(container) {
+  if (!container) return;
+  let isDragging = false;
+  let dragged = null;
+  let mirror = null;
+  let placeholder = null;
+  let startY = 0;
+  let offsetY = 0;
+  let rafId = null;
+  let dragPointerId = null;
+  const apiPromise = waitForCasinosApi();
+
+  function getCards() {
+    return Array.from(container.querySelectorAll('.theme-card'));
+  }
+
+  function createMirror(node, rect) {
+    const m = node.cloneNode(true);
+    m.classList.add('drag-mirror');
+    m.style.width = rect.width + 'px';
+    m.style.height = rect.height + 'px';
+    m.style.left = rect.left + 'px';
+    m.style.top = rect.top + 'px';
+    m.style.transform = 'translate3d(0,0,0)';
+    document.body.appendChild(m);
+    return m;
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const y = e.clientY;
+    offsetY = y - startY;
+    // determine where placeholder should be
+    const cards = getCards().filter(c => c !== dragged && c !== placeholder);
+    let insertBefore = null;
+    for (const c of cards) {
+      const r = c.getBoundingClientRect();
+      const midpoint = r.top + r.height / 2;
+      if (y < midpoint) {
+        insertBefore = c;
+        break;
+      }
+    }
+    if (insertBefore) {
+      if (container.firstChild !== placeholder || placeholder.nextSibling !== insertBefore) {
+        container.insertBefore(placeholder, insertBefore);
+      }
+    } else {
+      if (container.lastChild !== placeholder) {
+        container.appendChild(placeholder);
+      }
+    }
+  }
+
+  function endDrag(success) {
+    cancelAnimationFrame(rafId);
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+    // restore user-select
+    try { document.body.style.userSelect = ''; } catch (e) {}
+    if (dragged && dragged.releasePointerCapture) {
+      try { dragged.releasePointerCapture(dragPointerId); } catch (e) {}
+    }
+    if (mirror && mirror.parentNode) mirror.parentNode.removeChild(mirror);
+    if (!dragged) return;
+    dragged.classList.remove('dragging');
+    dragged.style.transition = '';
+    dragged.style.transform = '';
+    dragged.style.display = dragged.dataset.originalDisplay || '';
+    delete dragged.dataset.originalDisplay;
+    // place the dragged element into the placeholder position (replace)
+    if (placeholder && placeholder.parentNode) {
+      try {
+        placeholder.parentNode.replaceChild(dragged, placeholder);
+      } catch (e) {
+        // fallback
+        container.insertBefore(dragged, placeholder);
+        if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+      }
+    }
+    // persist new order
+    apiPromise.then(async (api) => {
+      if (api && api.setCasinoOrder) {
+        const newOrder = Array.from(container.querySelectorAll('.theme-card')).map((el) => el.getAttribute('data-theme-card'));
+        try {
+          await api.setCasinoOrder(newOrder);
+        } catch (e) {
+          console.warn('Error saving new order', e);
+        }
+      }
+    });
+    isDragging = false;
+    dragged = null;
+    mirror = null;
+    placeholder = null;
+  }
+
+  function onPointerUp(e) {
+    endDrag(true);
+  }
+
+  function startDrag(e, card) {
+    if (isDragging) return;
+    isDragging = true;
+    dragged = card;
+    const rect = card.getBoundingClientRect();
+    startY = e.clientY;
+    // create placeholder
+    placeholder = document.createElement('div');
+    placeholder.className = 'theme-card placeholder';
+    placeholder.style.height = rect.height + 'px';
+    placeholder.style.width = rect.width + 'px';
+    placeholder.style.boxSizing = 'border-box';
+    // replace the dragged card with the placeholder so it leaves no blank gap
+    container.replaceChild(placeholder, card);
+    card.classList.add('dragging');
+    card.dataset.originalDisplay = card.style.display || '';
+    card.style.display = 'none';
+    // prevent text selection while dragging
+    try { document.body.style.userSelect = 'none'; } catch (e) {}
+    // capture pointer
+    let pointerId = e.pointerId || (e.pointerId === 0 ? 0 : null);
+    if (pointerId != null && card.setPointerCapture) {
+      try { card.setPointerCapture(pointerId); } catch (err) {}
+      dragPointerId = pointerId;
+    }
+    mirror = createMirror(card, rect);
+
+    // animate mirror via RAF for smoothness
+    function animate() {
+      if (mirror) {
+        mirror.style.transform = `translate3d(0, ${offsetY}px, 0)`;
+      }
+      rafId = requestAnimationFrame(animate);
+    }
+    rafId = requestAnimationFrame(animate);
+
+    document.addEventListener('pointermove', onPointerMove, { passive: false });
+    document.addEventListener('pointerup', onPointerUp);
+  }
+
+  // attach pointer handlers
+  container.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest('.theme-card');
+    if (!card) return;
+    // prevent starting drag when clicking edit/delete buttons or inputs
+    if (e.target.closest('button') || e.target.closest('input')) return;
+    // only primary button
+    if (e.button && e.button !== 0) return;
+    e.preventDefault();
+    startDrag(e, card);
+  });
 }
 
 function resetCasinoForm() {

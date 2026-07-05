@@ -16,6 +16,7 @@ const LOCAL_STORAGE_CASINOS_KEY = 'dynamicCasinos';
 const USE_REMOTE_STORAGE = typeof window !== 'undefined' && window.location.protocol !== 'file:';
 
 let dynamicCasinos = {};
+let dynamicCasinoOrder = [];
 
 // Firebase
 import { db } from "./firebase.js";
@@ -249,7 +250,10 @@ function ensureBucket(current, dateKey, hourKey) {
     totalVisits: 0,
     primaryLinks: 0,
     alternativeLinks: 0,
-    whatsappClicks: 0
+    primaryVisits: 0,
+    alternativeVisits: 0,
+    whatsappClicks: 0,
+    whatsappClicksTotal: 0
   };
   return current.buckets[dateKey][hourKey];
 }
@@ -301,7 +305,10 @@ async function registerAnalyticsVisit() {
         totalVisits: 0,
         primaryLinks: 0,
         alternativeLinks: 0,
-        whatsappClicks: 0
+        primaryVisits: 0,
+        alternativeVisits: 0,
+        whatsappClicks: 0,
+        whatsappClicksTotal: 0
       },
       visitors: {},
       buckets: {}
@@ -310,7 +317,8 @@ async function registerAnalyticsVisit() {
     const visitors = current.visitors || {};
     const existing = visitors[visitorId];
     const isNewVisitor = !existing;
-    const sourceKey = source === 'alternative' ? 'alternativeLinks' : 'primaryLinks';
+    const sourceCountKey = source === 'alternative' ? 'alternativeLinks' : 'primaryLinks';
+    const sourceTotalKey = source === 'alternative' ? 'alternativeVisits' : 'primaryVisits';
     const previousSourceCount = existing?.sources?.[source] || 0;
     const sameHour = existing?.lastSeen?.slice(0, 13) === currentHour;
 
@@ -318,7 +326,7 @@ async function registerAnalyticsVisit() {
       current.totals.uniqueVisitors += 1;
     }
     if (!sameHour && previousSourceCount === 0) {
-      current.totals[sourceKey] = (current.totals[sourceKey] || 0) + 1;
+      current.totals[sourceCountKey] = (current.totals[sourceCountKey] || 0) + 1;
     }
 
     const updated = {
@@ -338,12 +346,15 @@ async function registerAnalyticsVisit() {
     visitors[visitorId] = updated;
     current.visitors = visitors;
     current.totals.totalVisits = (current.totals.totalVisits || 0) + 1;
+    current.totals[sourceTotalKey] = (current.totals[sourceTotalKey] || 0) + 1;
 
     const { dateKey, hourKey } = getBucketKeys(new Date(timestamp));
     const bucket = ensureBucket(current, dateKey, hourKey);
+    bucket.totalVisits = (bucket.totalVisits || 0) + 1;
+    bucket[sourceTotalKey] = (bucket[sourceTotalKey] || 0) + 1;
     if (!sameHour) {
       bucket.uniqueVisitors += 1;
-      bucket[sourceKey] = (bucket[sourceKey] || 0) + 1;
+      bucket[sourceCountKey] = (bucket[sourceCountKey] || 0) + 1;
     }
     current.buckets[dateKey][hourKey] = bucket;
 
@@ -368,7 +379,10 @@ async function registerAnalyticsWhatsappClick() {
         totalVisits: 0,
         primaryLinks: 0,
         alternativeLinks: 0,
-        whatsappClicks: 0
+        primaryVisits: 0,
+        alternativeVisits: 0,
+        whatsappClicks: 0,
+        whatsappClicksTotal: 0
       },
       visitors: {},
       buckets: {}
@@ -382,6 +396,7 @@ async function registerAnalyticsWhatsappClick() {
     if (!whatsappAlready) {
       current.totals.whatsappClicks = (current.totals.whatsappClicks || 0) + 1;
     }
+    current.totals.whatsappClicksTotal = (current.totals.whatsappClicksTotal || 0) + 1;
 
     const updated = {
       ...existing,
@@ -400,6 +415,7 @@ async function registerAnalyticsWhatsappClick() {
 
     const { dateKey, hourKey } = getBucketKeys(new Date(timestamp));
     const bucket = ensureBucket(current, dateKey, hourKey);
+    bucket.whatsappClicksTotal = (bucket.whatsappClicksTotal || 0) + 1;
     if (!sameHourClick) {
       bucket.whatsappClicks += 1;
     }
@@ -440,6 +456,11 @@ async function deleteCloudinaryImage(deleteToken) {
 async function loadDynamicCasinos() {
   if (!USE_REMOTE_STORAGE) {
     dynamicCasinos = getLocalDynamicCasinos();
+    // load order from localStorage if present
+    try {
+      const order = JSON.parse(localStorage.getItem(LOCAL_STORAGE_CASINOS_KEY + ':order') || 'null');
+      if (Array.isArray(order)) dynamicCasinoOrder = order;
+    } catch (e) {}
     return dynamicCasinos;
   }
 
@@ -449,6 +470,20 @@ async function loadDynamicCasinos() {
     dynamicCasinos = config.casinos || getLocalDynamicCasinos();
     if (!dynamicCasinos || typeof dynamicCasinos !== 'object') {
       dynamicCasinos = getLocalDynamicCasinos();
+    }
+    // load persisted order if present
+    if (config.casinoOrder && Array.isArray(config.casinoOrder)) {
+      dynamicCasinoOrder = config.casinoOrder;
+    } else {
+      // fallback: build order from keys (preserve previous behavior)
+      dynamicCasinoOrder = Object.keys(dynamicCasinos || {}).sort((a, b) => {
+        const aNum = parseInt((a.match(/(\d+)$/) || [])[0] || a, 10);
+        const bNum = parseInt((b.match(/(\d+)$/) || [])[0] || b, 10);
+        if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
+          return aNum - bNum;
+        }
+        return a.localeCompare(b);
+      });
     }
     return dynamicCasinos;
   } catch (error) {
@@ -461,6 +496,10 @@ async function loadDynamicCasinos() {
 async function saveDynamicCasinos() {
   console.debug('saveDynamicCasinos start', { dynamicCasinos });
   setLocalDynamicCasinos(dynamicCasinos);
+  try {
+    // persist order locally as well
+    localStorage.setItem(LOCAL_STORAGE_CASINOS_KEY + ':order', JSON.stringify(dynamicCasinoOrder || []));
+  } catch (e) {}
 
   if (!USE_REMOTE_STORAGE) {
     return;
@@ -471,7 +510,8 @@ async function saveDynamicCasinos() {
     const currentConfig = snapshot.exists() ? snapshot.data() : {};
     const newConfig = {
       ...currentConfig,
-      casinos: dynamicCasinos
+      casinos: dynamicCasinos,
+      casinoOrder: dynamicCasinoOrder
     };
     await setDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), newConfig);
     console.debug('saveDynamicCasinos success', { newConfig });
@@ -581,6 +621,11 @@ function setCheckboxStates(activeCasinoIds) {
 }
 
 function getSortedCasinoIds() {
+  // If we have a persisted order array, use it (filter to existing ids)
+  if (Array.isArray(dynamicCasinoOrder) && dynamicCasinoOrder.length) {
+    return dynamicCasinoOrder.filter(id => dynamicCasinos[id]);
+  }
+
   return Object.keys(dynamicCasinos).sort((a, b) => {
     const aNum = parseInt((a.match(/(\d+)$/) || [])[0] || a, 10);
     const bNum = parseInt((b.match(/(\d+)$/) || [])[0] || b, 10);
@@ -814,6 +859,18 @@ async function observeRemoteConfig() {
 
       if (config.casinos && typeof config.casinos === 'object') {
         dynamicCasinos = config.casinos;
+        if (config.casinoOrder && Array.isArray(config.casinoOrder)) {
+          dynamicCasinoOrder = config.casinoOrder;
+        } else {
+          dynamicCasinoOrder = Object.keys(dynamicCasinos || {}).sort((a, b) => {
+            const aNum = parseInt((a.match(/(\d+)$/) || [])[0] || a, 10);
+            const bNum = parseInt((b.match(/(\d+)$/) || [])[0] || b, 10);
+            if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            return a.localeCompare(b);
+          });
+        }
         activeThemes = getActiveCasinos();
         activeTheme = activeThemes[0] || getDefaultCasino();
         setCheckboxStates(activeThemes);
@@ -971,6 +1028,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateCasinoActive,
     getCasinos: () => dynamicCasinos,
     saveDynamicCasinos,
+    getCasinoOrder: () => Array.isArray(dynamicCasinoOrder) ? dynamicCasinoOrder.slice() : [],
+    setCasinoOrder: async (order) => {
+      if (Array.isArray(order)) {
+        dynamicCasinoOrder = order.filter(id => dynamicCasinos[id]);
+        try {
+          await saveDynamicCasinos();
+        } catch (e) {
+          console.warn('Error saving casino order', e);
+        }
+      }
+      return dynamicCasinoOrder;
+    },
     applyTheme,
     setActiveCasinos
   };
@@ -989,6 +1058,18 @@ const landingSettingsAPI = {
   removeCasino,
   updateCasinoActive,
   getCasinos: () => dynamicCasinos,
+  getCasinoOrder: () => Array.isArray(dynamicCasinoOrder) ? dynamicCasinoOrder.slice() : [],
+  setCasinoOrder: async (order) => {
+    if (Array.isArray(order)) {
+      dynamicCasinoOrder = order.filter(id => dynamicCasinos[id]);
+      try {
+        await saveDynamicCasinos();
+      } catch (e) {
+        console.warn('Error saving casino order', e);
+      }
+    }
+    return dynamicCasinoOrder;
+  },
   saveDynamicCasinos,
   loadDynamicCasinos,
   setActiveCasinos,
