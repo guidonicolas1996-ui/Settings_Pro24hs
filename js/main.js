@@ -930,17 +930,14 @@ window.casinosReady = loadDynamicCasinos().catch((error) => {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Esperar a que los casinos remotos estén cargados o fallback local esté listo
-  await window.casinosReady;
-
-  const firebaseConfig = await getRemoteConfig().catch((error) => {
-    console.warn('Error cargando config remota al iniciar:', error);
-    return null;
-  });
-
-  if (firebaseConfig && firebaseConfig.casinos && typeof firebaseConfig.casinos === 'object') {
-    dynamicCasinos = firebaseConfig.casinos;
+  const localCasinos = getLocalDynamicCasinos();
+  if (localCasinos && typeof localCasinos === 'object' && Object.keys(localCasinos).length) {
+    dynamicCasinos = localCasinos;
   }
+
+  renderContent();
+  setViewportHeight();
+  applyRandomBackground();
 
   activeThemes = getActiveCasinos();
   if (!activeThemes.length) {
@@ -952,27 +949,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeTheme = getDefaultCasino();
   }
 
-  // Load landing content from remote config if available, otherwise from localStorage
-  try {
-    if (firebaseConfig && firebaseConfig.landingContent) {
-      setLandingContent(firebaseConfig.landingContent, false);
-    } else {
-      const stored = getStoredLandingContent();
-      if (stored) setLandingContent(stored, false);
-    }
-  } catch (e) {
-    console.warn('Error cargando landingContent inicial', e);
-  }
-  // Notify listeners that landingContent is ready
-  try {
-    window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: landingContent }));
-  } catch (e) {
-    // ignore
-  }
-
-  renderContent();
-  setViewportHeight();
-  applyRandomBackground();
   applyTheme(activeTheme);
   setCheckboxStates(activeThemes);
 
@@ -1018,7 +994,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
         }
 
-        const primary = setActiveCasinos(selected);
+        const primary = await setActiveCasinos(selected);
         applyTheme(primary);
       });
     });
@@ -1034,6 +1010,52 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!window.location.pathname.includes('settings') && activeThemes.length > 1) {
     window.setInterval(rotateTheme, 5000);
   }
+
+  void (async () => {
+    try {
+      const [casinosResult, firebaseConfigResult] = await Promise.allSettled([
+        window.casinosReady,
+        getRemoteConfig()
+      ]);
+
+      if (casinosResult.status === 'fulfilled' && casinosResult.value && typeof casinosResult.value === 'object') {
+        dynamicCasinos = casinosResult.value;
+      }
+
+      const firebaseConfig = firebaseConfigResult.status === 'fulfilled' ? firebaseConfigResult.value : null;
+      if (firebaseConfig && firebaseConfig.casinos && typeof firebaseConfig.casinos === 'object') {
+        dynamicCasinos = firebaseConfig.casinos;
+      }
+
+      if (firebaseConfig && firebaseConfig.landingContent) {
+        setLandingContent(firebaseConfig.landingContent, false);
+      } else {
+        const stored = getStoredLandingContent();
+        if (stored) setLandingContent(stored, false);
+      }
+
+      activeThemes = getActiveCasinos();
+      if (!activeThemes.length) {
+        activeThemes = [getDefaultCasino()];
+      }
+      activeTheme = activeThemes[0];
+
+      if (!activeTheme || !dynamicCasinos[activeTheme]) {
+        activeTheme = getDefaultCasino();
+      }
+
+      applyTheme(activeTheme);
+      setCheckboxStates(activeThemes);
+
+      try {
+        window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: landingContent }));
+      } catch (e) {
+        // ignore
+      }
+    } catch (error) {
+      console.warn('Error cargando datos remotos en segundo plano:', error);
+    }
+  })();
 
   // Exponer API global
   window.casinosAPI = {
