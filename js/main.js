@@ -37,6 +37,17 @@ const FIRESTORE_DOCUMENT = "landing";
 const ANALYTICS_COLLECTION = "analytics";
 const ANALYTICS_DOCUMENT = "landing";
 
+function getCloudinaryTransformation(type) {
+  switch (type) {
+    case 'logo':
+      return 'c_pad,w_644,h_226,b_transparent,f_png';
+    case 'mascot':
+      return 'c_pad,w_851,h_1032,b_transparent,f_png';
+    default:
+      return 'c_pad,b_transparent,f_png';
+  }
+}
+
 // Generador de variaciones de color
 function generateColorVariations(baseColor) {
   const rgb = hexToRgb(baseColor);
@@ -149,6 +160,8 @@ async function uploadImageFile(source, casinoId, type) {
     formData.append('folder', `${CLOUDINARY_FOLDER}/${casinoId}`);
     formData.append('public_id', `${type}-${Date.now()}`);
     formData.append('resource_type', 'image');
+    formData.append('transformation', getCloudinaryTransformation(type));
+    formData.append('format', 'png');
     if (includeDeleteToken) {
       formData.append('return_delete_token', 'true');
     }

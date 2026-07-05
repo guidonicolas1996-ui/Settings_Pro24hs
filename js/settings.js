@@ -172,10 +172,7 @@ async function setupCasinoForm() {
           return;
         }
 
-        const compressedLogo = logoData ? await compressImage(logoData, 400, 400, 0.7) : finalLogo;
-        const compressedMascot = mascotData ? await compressImage(mascotData, 600, 600, 0.7) : finalMascot;
-
-        const newCasinoId = await saveCasino(casinoId || null, name, compressedLogo, compressedMascot, color);
+        const newCasinoId = await saveCasino(casinoId || null, name, finalLogo, finalMascot, color);
         console.log('Casino guardado correctamente', { newCasinoId, name });
         alert(casinoId ? '✅ Casino actualizado exitosamente' : '✅ Casino creado exitosamente');
         closeNewCasinoModal();
