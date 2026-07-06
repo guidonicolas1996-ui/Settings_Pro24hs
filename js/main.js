@@ -272,17 +272,65 @@ function getBucketKeys(date = new Date()) {
 function ensureBucket(current, dateKey, hourKey) {
   current.buckets = current.buckets || {};
   current.buckets[dateKey] = current.buckets[dateKey] || {};
-  current.buckets[dateKey][hourKey] = current.buckets[dateKey][hourKey] || {
+  current.buckets[dateKey][hourKey] = current.buckets[dateKey][hourKey] || {};
+  const bucket = current.buckets[dateKey][hourKey];
+  const template = {
     uniqueVisitors: 0,
     totalVisits: 0,
     primaryLinks: 0,
     alternativeLinks: 0,
     primaryVisits: 0,
     alternativeVisits: 0,
+    alt1Links: 0,
+    alt2Links: 0,
+    alt3Links: 0,
+    alt4Links: 0,
+    alt5Links: 0,
+    alt1Visits: 0,
+    alt2Visits: 0,
+    alt3Visits: 0,
+    alt4Visits: 0,
+    alt5Visits: 0,
     whatsappClicks: 0,
     whatsappClicksTotal: 0
   };
-  return current.buckets[dateKey][hourKey];
+
+  Object.keys(template).forEach((key) => {
+    if (bucket[key] == null) {
+      bucket[key] = template[key];
+    }
+  });
+
+  return bucket;
+}
+
+function ensureAnalyticsTotals(totals) {
+  const template = {
+    uniqueVisitors: 0,
+    totalVisits: 0,
+    primaryLinks: 0,
+    alternativeLinks: 0,
+    primaryVisits: 0,
+    alternativeVisits: 0,
+    alt1Links: 0,
+    alt2Links: 0,
+    alt3Links: 0,
+    alt4Links: 0,
+    alt5Links: 0,
+    alt1Visits: 0,
+    alt2Visits: 0,
+    alt3Visits: 0,
+    alt4Visits: 0,
+    alt5Visits: 0,
+    whatsappClicks: 0,
+    whatsappClicksTotal: 0
+  };
+
+  Object.keys(template).forEach((key) => {
+    if (totals[key] == null) {
+      totals[key] = template[key];
+    }
+  });
 }
 
 async function getIpAddress() {
@@ -320,7 +368,19 @@ async function registerAnalyticsVisit() {
   const visitorId = await getPersistentVisitorId();
   const ip = await getIpAddress();
   const device = getDeviceMetadata(ip);
-  const source = new URLSearchParams(window.location.search).get('src') === 'alt' ? 'alternative' : 'primary';
+  const srcParamRaw = new URLSearchParams(window.location.search).get('src') || '';
+  const srcParam = String(srcParamRaw).trim().toLowerCase();
+  const primarySources = new Set(['', 'primary', 'main']);
+  const altMatch = srcParam.match(/^alt(?:[_-]?(\d))?$/);
+  const source = primarySources.has(srcParam)
+    ? 'primary'
+    : altMatch
+    ? altMatch[1]
+      ? `alt${altMatch[1]}`
+      : 'alt1'
+    : 'primary';
+
+  console.log('[analytics] registerAnalyticsVisit src:', { srcParamRaw, srcParam, source });
   const timestamp = new Date().toISOString();
   const currentHour = timestamp.slice(0, 13);
   const analyticsRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOCUMENT);
@@ -335,6 +395,16 @@ async function registerAnalyticsVisit() {
         alternativeLinks: 0,
         primaryVisits: 0,
         alternativeVisits: 0,
+        alt1Links: 0,
+        alt2Links: 0,
+        alt3Links: 0,
+        alt4Links: 0,
+        alt5Links: 0,
+        alt1Visits: 0,
+        alt2Visits: 0,
+        alt3Visits: 0,
+        alt4Visits: 0,
+        alt5Visits: 0,
         whatsappClicks: 0,
         whatsappClicksTotal: 0
       },
@@ -342,11 +412,16 @@ async function registerAnalyticsVisit() {
       buckets: {}
     };
 
-    const visitors = current.visitors || {};
+    current.totals = current.totals || {};
+    ensureAnalyticsTotals(current.totals);
+    current.visitors = current.visitors || {};
+    current.buckets = current.buckets || {};
+
+    const visitors = current.visitors;
     const existing = visitors[visitorId];
     const isNewVisitor = !existing;
-    const sourceCountKey = source === 'alternative' ? 'alternativeLinks' : 'primaryLinks';
-    const sourceTotalKey = source === 'alternative' ? 'alternativeVisits' : 'primaryVisits';
+    const sourceCountKey = source === 'primary' ? 'primaryLinks' : source === 'alt1' ? 'alt1Links' : source === 'alt2' ? 'alt2Links' : source === 'alt3' ? 'alt3Links' : source === 'alt4' ? 'alt4Links' : source === 'alt5' ? 'alt5Links' : 'alternativeLinks';
+    const sourceTotalKey = source === 'primary' ? 'primaryVisits' : source === 'alt1' ? 'alt1Visits' : source === 'alt2' ? 'alt2Visits' : source === 'alt3' ? 'alt3Visits' : source === 'alt4' ? 'alt4Visits' : source === 'alt5' ? 'alt5Visits' : 'alternativeVisits';
     const previousSourceCount = existing?.sources?.[source] || 0;
     // debug logs to help verify per-source counting behavior
     console.debug('registerAnalyticsVisit: before update', { visitorId, source, previousSourceCount, existingSources: existing?.sources });
@@ -381,18 +456,29 @@ async function registerAnalyticsVisit() {
     console.debug('registerAnalyticsVisit: after update', { visitorId, updatedSources: updated.sources });
     current.totals.totalVisits = (current.totals.totalVisits || 0) + 1;
     current.totals[sourceTotalKey] = (current.totals[sourceTotalKey] || 0) + 1;
+    if (source !== 'primary') {
+      current.totals.alternativeLinks = (current.totals.alternativeLinks || 0) + 1;
+      current.totals.alternativeVisits = (current.totals.alternativeVisits || 0) + 1;
+    }
 
     const { dateKey, hourKey } = getBucketKeys(new Date(timestamp));
     const bucket = ensureBucket(current, dateKey, hourKey);
     bucket.totalVisits = (bucket.totalVisits || 0) + 1;
     bucket[sourceTotalKey] = (bucket[sourceTotalKey] || 0) + 1;
+    if (source !== 'primary') {
+      bucket.alternativeLinks = (bucket.alternativeLinks || 0) + 1;
+      bucket.alternativeVisits = (bucket.alternativeVisits || 0) + 1;
+    }
     if (!sameHour) {
       bucket.uniqueVisitors += 1;
     }
     // For per-source unique counts within the bucket, increment if this visitor
-    // has not used this source before (so primary/alternative are independent).
+    // has not used this source before.
     if (previousSourceCount === 0) {
       bucket[sourceCountKey] = (bucket[sourceCountKey] || 0) + 1;
+      if (source !== 'primary') {
+        bucket.alternativeLinks = (bucket.alternativeLinks || 0) + 1;
+      }
     }
     current.buckets[dateKey][hourKey] = bucket;
 

@@ -400,6 +400,33 @@ Page layout
   margin-top: 1.25rem;
 }
 
+/* Analytics comparison small badges */
+.analytics-compare {
+  font-size: 0.78rem; /* slightly smaller */
+  vertical-align: baseline;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  opacity: 0.95;
+  padding-left: 0.18rem;
+}
+.analytics-compare--up {
+  color: var(--theme-success);
+}
+.analytics-compare--down {
+  color: #ff4567; /* red */
+}
+.analytics-compare--neutral {
+  color: var(--color-muted);
+}
+.analytics-compare-arrow {
+  font-size: 0.82rem;
+  line-height: 1;
+}
+.analytics-compare-val {
+  font-weight: 600;
+}
+
 /* ===========================
 WhatsApp CTA
 =========================== */
@@ -858,11 +885,27 @@ Footer
   color: var(--color-muted);
 }
 
+.analytics-card p.analytics-card-subtitle {
+  margin: 0 0 0.35rem;
+  font-size: 0.65rem;
+  color: #ffffff;
+  line-height: 1.2;
+  opacity: 0.75;
+  word-break: break-word;
+}
+
 .analytics-card p {
   margin: 0;
   font-size: 1.85rem;
   font-weight: 700;
   color: var(--color-text);
+}
+
+.analytics-summary-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 1.2rem 0;
 }
 
 .analytics-breakdown-card {

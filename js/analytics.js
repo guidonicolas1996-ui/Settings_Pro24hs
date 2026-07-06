@@ -17,6 +17,7 @@ let summaryToggle;
 let summaryBody;
 let visualizationToggle;
 let visualizationBody;
+let linksToggle;
 let chartToggle;
 let chartSection;
 let tableToggle;
@@ -163,6 +164,16 @@ function collectBuckets(buckets, rangeStart, rangeEnd) {
     alternativeLinks: 0,
     primaryVisits: 0,
     alternativeVisits: 0,
+    alt1Links: 0,
+    alt2Links: 0,
+    alt3Links: 0,
+    alt4Links: 0,
+    alt5Links: 0,
+    alt1Visits: 0,
+    alt2Visits: 0,
+    alt3Visits: 0,
+    alt4Visits: 0,
+    alt5Visits: 0,
     whatsappClicks: 0,
     whatsappClicksTotal: 0
   };
@@ -178,6 +189,29 @@ function collectBuckets(buckets, rangeStart, rangeEnd) {
       }
       const [year, month, day] = dateKey.split('-');
       const displayDate = `${day}/${month}`;
+      const altDetailSum = [
+        (bucket.alt1Links || 0),
+        (bucket.alt2Links || 0),
+        (bucket.alt3Links || 0),
+        (bucket.alt4Links || 0),
+        (bucket.alt5Links || 0),
+        (bucket.alt1Visits || 0),
+        (bucket.alt2Visits || 0),
+        (bucket.alt3Visits || 0),
+        (bucket.alt4Visits || 0),
+        (bucket.alt5Visits || 0)
+      ].reduce((sum, value) => sum + value, 0);
+      const useAltDetails = altDetailSum > 0;
+      const sourceAlt1Links = useAltDetails ? bucket.alt1Links || 0 : bucket.alternativeLinks || 0;
+      const sourceAlt2Links = useAltDetails ? bucket.alt2Links || 0 : 0;
+      const sourceAlt3Links = useAltDetails ? bucket.alt3Links || 0 : 0;
+      const sourceAlt4Links = useAltDetails ? bucket.alt4Links || 0 : 0;
+      const sourceAlt5Links = useAltDetails ? bucket.alt5Links || 0 : 0;
+      const sourceAlt1Visits = useAltDetails ? bucket.alt1Visits || 0 : bucket.alternativeVisits || 0;
+      const sourceAlt2Visits = useAltDetails ? bucket.alt2Visits || 0 : 0;
+      const sourceAlt3Visits = useAltDetails ? bucket.alt3Visits || 0 : 0;
+      const sourceAlt4Visits = useAltDetails ? bucket.alt4Visits || 0 : 0;
+      const sourceAlt5Visits = useAltDetails ? bucket.alt5Visits || 0 : 0;
 
       totals.uniqueVisitors += bucket.uniqueVisitors || 0;
       totals.totalVisits += bucket.totalVisits || 0;
@@ -187,11 +221,31 @@ function collectBuckets(buckets, rangeStart, rangeEnd) {
       totals.alternativeVisits += bucket.alternativeVisits || 0;
       totals.whatsappClicks += bucket.whatsappClicks || 0;
       totals.whatsappClicksTotal += bucket.whatsappClicksTotal || 0;
+      totals.alt1Links += sourceAlt1Links;
+      totals.alt2Links += sourceAlt2Links;
+      totals.alt3Links += sourceAlt3Links;
+      totals.alt4Links += sourceAlt4Links;
+      totals.alt5Links += sourceAlt5Links;
+      totals.alt1Visits += sourceAlt1Visits;
+      totals.alt2Visits += sourceAlt2Visits;
+      totals.alt3Visits += sourceAlt3Visits;
+      totals.alt4Visits += sourceAlt4Visits;
+      totals.alt5Visits += sourceAlt5Visits;
       items.push({
         label: `${displayDate} ${hourKey}:00`,
         dateKey,
         hourKey,
-        ...bucket
+        ...bucket,
+        alt1Links: sourceAlt1Links,
+        alt2Links: sourceAlt2Links,
+        alt3Links: sourceAlt3Links,
+        alt4Links: sourceAlt4Links,
+        alt5Links: sourceAlt5Links,
+        alt1Visits: sourceAlt1Visits,
+        alt2Visits: sourceAlt2Visits,
+        alt3Visits: sourceAlt3Visits,
+        alt4Visits: sourceAlt4Visits,
+        alt5Visits: sourceAlt5Visits
       });
     }
   }
@@ -270,6 +324,16 @@ function aggregateItems(items, mode) {
         alternativeLinks: 0,
         primaryVisits: 0,
         alternativeVisits: 0,
+        alt1Links: 0,
+        alt2Links: 0,
+        alt3Links: 0,
+        alt4Links: 0,
+        alt5Links: 0,
+        alt1Visits: 0,
+        alt2Visits: 0,
+        alt3Visits: 0,
+        alt4Visits: 0,
+        alt5Visits: 0,
         whatsappClicks: 0,
         whatsappClicksTotal: 0,
         sort: group.sort
@@ -282,6 +346,16 @@ function aggregateItems(items, mode) {
     grouped[group.key].alternativeLinks += item.alternativeLinks || 0;
     grouped[group.key].primaryVisits += item.primaryVisits || 0;
     grouped[group.key].alternativeVisits += item.alternativeVisits || 0;
+    grouped[group.key].alt1Links += item.alt1Links || 0;
+    grouped[group.key].alt2Links += item.alt2Links || 0;
+    grouped[group.key].alt3Links += item.alt3Links || 0;
+    grouped[group.key].alt4Links += item.alt4Links || 0;
+    grouped[group.key].alt5Links += item.alt5Links || 0;
+    grouped[group.key].alt1Visits += item.alt1Visits || 0;
+    grouped[group.key].alt2Visits += item.alt2Visits || 0;
+    grouped[group.key].alt3Visits += item.alt3Visits || 0;
+    grouped[group.key].alt4Visits += item.alt4Visits || 0;
+    grouped[group.key].alt5Visits += item.alt5Visits || 0;
     grouped[group.key].whatsappClicks += item.whatsappClicks || 0;
     grouped[group.key].whatsappClicksTotal += item.whatsappClicksTotal || 0;
   });
@@ -426,15 +500,63 @@ function renderBreakdown(items) {
         `;
 }
 
-function displayTotals(totals, visitorCount) {
-  document.getElementById('analytics-unique').textContent = visitorCount;
-  document.getElementById('analytics-total').textContent = totals.totalVisits || 0;
-  document.getElementById('analytics-primary-unique').textContent = totals.primaryLinks || 0;
-  document.getElementById('analytics-primary-total').textContent = totals.primaryVisits || 0;
-  document.getElementById('analytics-alternative-unique').textContent = totals.alternativeLinks || 0;
-  document.getElementById('analytics-alternative-total').textContent = totals.alternativeVisits || 0;
-  document.getElementById('analytics-whatsapp-unique').textContent = totals.whatsappClicks || 0;
-  document.getElementById('analytics-whatsapp-total').textContent = totals.whatsappClicksTotal || 0;
+function renderCompare(current, previous) {
+  // If previous is null or undefined, show neutral dash
+  if (previous == null || typeof previous !== 'number') {
+    return `&nbsp;<span class="analytics-compare analytics-compare--neutral">-</span>`;
+  }
+
+  const diff = current - previous;
+  if (diff === 0) {
+    return `&nbsp;<span class="analytics-compare analytics-compare--neutral">-</span>`;
+  }
+  const sign = diff > 0 ? '+' : '-';
+  const abs = Math.abs(diff);
+  const arrow = diff > 0 ? '▲' : '▼';
+  const cls = diff > 0 ? 'analytics-compare--up' : 'analytics-compare--down';
+  return `&nbsp;<span class="analytics-compare ${cls}"><span class="analytics-compare-arrow">${arrow}</span><span class="analytics-compare-val">${sign}${abs}</span></span>`;
+}
+
+function displayTotals(totals, visitorCount, prevTotals, prevVisitorCount) {
+  const uniqueEl = document.getElementById('analytics-unique');
+  const totalEl = document.getElementById('analytics-total');
+  const primaryUniqueEl = document.getElementById('analytics-primary-unique');
+  const primaryTotalEl = document.getElementById('analytics-primary-total');
+  const alt1UniqueEl = document.getElementById('analytics-alternative-unique-1');
+  const alt1TotalEl = document.getElementById('analytics-alternative-total-1');
+  const alt2UniqueEl = document.getElementById('analytics-alternative-unique-2');
+  const alt2TotalEl = document.getElementById('analytics-alternative-total-2');
+  const alt3UniqueEl = document.getElementById('analytics-alternative-unique-3');
+  const alt3TotalEl = document.getElementById('analytics-alternative-total-3');
+  const alt4UniqueEl = document.getElementById('analytics-alternative-unique-4');
+  const alt4TotalEl = document.getElementById('analytics-alternative-total-4');
+  const alt5UniqueEl = document.getElementById('analytics-alternative-unique-5');
+  const alt5TotalEl = document.getElementById('analytics-alternative-total-5');
+  const wppUniqueEl = document.getElementById('analytics-whatsapp-unique');
+  const wppTotalEl = document.getElementById('analytics-whatsapp-total');
+
+  const updateField = (el, html) => {
+    if (el) el.innerHTML = html;
+  };
+  // Helper to safe number
+  const safe = (v) => (typeof v === 'number' ? v : (v ? Number(v) : 0));
+
+  uniqueEl.innerHTML = `${visitorCount}${renderCompare(visitorCount, prevVisitorCount)}`;
+  totalEl.innerHTML = `${safe(totals.totalVisits)}${renderCompare(safe(totals.totalVisits), safe(prevTotals?.totalVisits))}`;
+  primaryUniqueEl.innerHTML = `${safe(totals.primaryLinks)}${renderCompare(safe(totals.primaryLinks), safe(prevTotals?.primaryLinks))}`;
+  primaryTotalEl.innerHTML = `${safe(totals.primaryVisits)}${renderCompare(safe(totals.primaryVisits), safe(prevTotals?.primaryVisits))}`;
+  updateField(alt1UniqueEl, `${safe(totals.alt1Links)}${renderCompare(safe(totals.alt1Links), safe(prevTotals?.alt1Links))}`);
+  updateField(alt1TotalEl, `${safe(totals.alt1Visits)}${renderCompare(safe(totals.alt1Visits), safe(prevTotals?.alt1Visits))}`);
+  updateField(alt2UniqueEl, `${safe(totals.alt2Links)}${renderCompare(safe(totals.alt2Links), safe(prevTotals?.alt2Links))}`);
+  updateField(alt2TotalEl, `${safe(totals.alt2Visits)}${renderCompare(safe(totals.alt2Visits), safe(prevTotals?.alt2Visits))}`);
+  updateField(alt3UniqueEl, `${safe(totals.alt3Links)}${renderCompare(safe(totals.alt3Links), safe(prevTotals?.alt3Links))}`);
+  updateField(alt3TotalEl, `${safe(totals.alt3Visits)}${renderCompare(safe(totals.alt3Visits), safe(prevTotals?.alt3Visits))}`);
+  updateField(alt4UniqueEl, `${safe(totals.alt4Links)}${renderCompare(safe(totals.alt4Links), safe(prevTotals?.alt4Links))}`);
+  updateField(alt4TotalEl, `${safe(totals.alt4Visits)}${renderCompare(safe(totals.alt4Visits), safe(prevTotals?.alt4Visits))}`);
+  updateField(alt5UniqueEl, `${safe(totals.alt5Links)}${renderCompare(safe(totals.alt5Links), safe(prevTotals?.alt5Links))}`);
+  updateField(alt5TotalEl, `${safe(totals.alt5Visits)}${renderCompare(safe(totals.alt5Visits), safe(prevTotals?.alt5Visits))}`);
+  wppUniqueEl.innerHTML = `${safe(totals.whatsappClicks)}${renderCompare(safe(totals.whatsappClicks), safe(prevTotals?.whatsappClicks))}`;
+  wppTotalEl.innerHTML = `${safe(totals.whatsappClicksTotal)}${renderCompare(safe(totals.whatsappClicksTotal), safe(prevTotals?.whatsappClicksTotal))}`;
 }
 
 const METRIC_LABELS = {
@@ -493,6 +615,13 @@ async function loadAnalytics() {
     const metrics = selectedMetrics.length ? selectedMetrics : ['totalVisits'];
     const bucketData = collectBuckets(buckets, range.start, range.end);
     const visitorCount = countUniqueVisitors(visitors, range.start, range.end);
+
+    // Calculate previous period (same duration immediately before current range)
+    const duration = range.end.getTime() - range.start.getTime();
+    const prevEnd = new Date(range.start.getTime() - 1);
+    const prevStart = new Date(prevEnd.getTime() - duration);
+    const prevBucketData = collectBuckets(buckets, prevStart, prevEnd);
+    const prevVisitorCount = countUniqueVisitors(visitors, prevStart, prevEnd);
     const detailItems = aggregateItems(bucketData.items, detailMode);
 
     // If for some reason buckets aggregation yields 0 for alternativeLinks but
@@ -500,11 +629,38 @@ async function loadAnalytics() {
     // a missing metric in the summary. Also log a sample for debugging.
     const storedTotals = snapshot.data()?.totals || {};
     const totalsToDisplay = { ...bucketData.totals };
-    if ((totalsToDisplay.alternativeLinks || 0) === 0 && (storedTotals.alternativeLinks || 0) > 0) {
-      console.warn('alternativeLinks aggregated as 0 from buckets; falling back to stored totals for display.');
-      totalsToDisplay.alternativeLinks = storedTotals.alternativeLinks;
+    const altFields = [
+      'alternativeLinks',
+      'alternativeVisits',
+      'alt1Links',
+      'alt2Links',
+      'alt3Links',
+      'alt4Links',
+      'alt5Links',
+      'alt1Visits',
+      'alt2Visits',
+      'alt3Visits',
+      'alt4Visits',
+      'alt5Visits'
+    ];
+
+    altFields.forEach((field) => {
+      if ((totalsToDisplay[field] || 0) === 0 && (storedTotals[field] || 0) > 0) {
+        console.warn(`${field} aggregated as 0 from buckets; falling back to stored totals for display.`);
+        totalsToDisplay[field] = storedTotals[field];
+      }
+    });
+
+    if ((totalsToDisplay.alt1Links || 0) === 0 && (storedTotals.alternativeLinks || 0) > 0) {
+      console.warn('alt1Links missing; using alternativeLinks for display.');
+      totalsToDisplay.alt1Links = storedTotals.alternativeLinks;
     }
-    displayTotals(totalsToDisplay, visitorCount);
+    if ((totalsToDisplay.alt1Visits || 0) === 0 && (storedTotals.alternativeVisits || 0) > 0) {
+      console.warn('alt1Visits missing; using alternativeVisits for display.');
+      totalsToDisplay.alt1Visits = storedTotals.alternativeVisits;
+    }
+
+    displayTotals(totalsToDisplay, visitorCount, prevBucketData.totals, prevVisitorCount);
 
     // Debug: if user reports alternativeLinks not working, log first few values
     if (metrics.includes('alternativeLinks')) {
@@ -540,6 +696,7 @@ function initializeEventListeners() {
   initializeElements();
   summaryToggle = document.getElementById('summary-toggle');
   summaryBody = document.getElementById('summary-body');
+  linksToggle = document.getElementById('links-toggle');
   visualizationToggle = document.getElementById('visualization-toggle');
   visualizationBody = document.getElementById('visualization-body');
   chartToggle = document.getElementById('chart-toggle');
@@ -603,6 +760,14 @@ function initializeEventListeners() {
     const isCollapsed = visualizationBody.classList.toggle('collapsed');
     visualizationToggle.setAttribute('aria-expanded', String(!isCollapsed));
     visualizationToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar visualización' : 'Minimizar visualización';
+  });
+
+  linksToggle?.addEventListener('click', () => {
+    const linksBody = document.getElementById('links-body');
+    if (!linksBody) return;
+    const isCollapsed = linksBody.classList.toggle('collapsed');
+    linksToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    linksToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar links' : 'Minimizar links';
   });
 
   chartToggle?.addEventListener('click', () => {
