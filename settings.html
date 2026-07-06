@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/css/style.css" />
     <style>body{visibility:hidden;}</style>
     <script type="module">
+      console.log('[page] settings head script loaded');
       import { ensureAuthGate } from '/js/auth.js?v=1';
       window.authOk = false;
       window.addEventListener('pageshow', (event) => {
@@ -25,7 +26,7 @@
       // Additional runtime guard: ensure stored session exists before loading modules
       try {
         if (!window.authGuard || !window.authGuard.isAuthenticated || !window.authGuard.isAuthenticated()) {
-          console.debug('[auth] settings: no stored session, redirecting');
+          console.log('[auth] settings: no stored session, redirecting');
           window.location.replace('/login.html');
         }
       } catch (e) {
@@ -156,6 +157,8 @@
     <script type="module">
       import { clearSession } from '/js/auth.js';
 
+      console.log('[page] settings bottom script start', { authOk: window.authOk, storedSession: sessionStorage.getItem('adminSession') });
+
       document.getElementById('logout-button')?.addEventListener('click', async () => {
         await clearSession();
         window.location.replace('/login.html');
@@ -167,16 +170,26 @@
         }
       });
 
-      if (window.authOk) {
-        try {
-          await import('/js/main.js');
-          await import('/js/settings.js?v=8');
-        } catch (e) {
-          console.error('[auth] failed to load settings modules', e);
-          // If imports fail, force logout and redirect to login
-          try { await import('/js/auth.js'); window.authGuard && await window.authGuard.clearSession(); } catch (_) {}
-          window.location.replace('/login.html');
+      // Ensure auth gate here too (avoid race between head and bottom modules)
+      try {
+        const { ensureAuthGate } = await import('/js/auth.js');
+        const ok = await ensureAuthGate();
+        console.log('[page] settings bottom ensureAuthGate result', ok);
+        if (ok) {
+          try {
+            console.log('[page] settings importing modules...');
+            await import('/js/main.js');
+            console.log('[page] settings imported main.js');
+            await import('/js/settings.js?v=8');
+            console.log('[page] settings imported settings.js');
+          } catch (e) {
+            console.error('[page] settings failed importing modules', e);
+          }
+        } else {
+          console.log('[page] settings bottom script: ensureAuthGate returned false');
         }
+      } catch (e) {
+        console.error('[page] settings bottom script error while ensuring auth', e);
       }
     </script>
   </body>

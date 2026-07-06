@@ -80,7 +80,7 @@ function setStoredSession(userOrEmail) {
 
   storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
   try {
-    console.debug('[auth] setStoredSession', session);
+    console.log('[auth] setStoredSession', session);
   } catch (e) {
     /* ignore */
   }
@@ -98,7 +98,7 @@ function clearStoredSession() {
   }
 
   try {
-    console.debug('[auth] clearStoredSession');
+    console.log('[auth] clearStoredSession');
   } catch (e) {
     /* ignore */
   }
@@ -122,7 +122,7 @@ function redirectToLogin() {
 
 async function clearSession() {
   try {
-    console.debug('[auth] clearSession start');
+    console.log('[auth] clearSession start');
   } catch (e) {}
   try {
     const auth = await getFirebaseAuth();
@@ -135,7 +135,7 @@ async function clearSession() {
   }
   clearStoredSession();
   try {
-    console.debug('[auth] clearSession done');
+    console.log('[auth] clearSession done');
   } catch (e) {}
 }
 
@@ -150,7 +150,7 @@ async function ensureAuthGate() {
 
   try {
     const auth = await getFirebaseAuth();
-    try { console.debug('[auth] ensureAuthGate checking user', { pathname, currentUser: !!auth.currentUser }); } catch(e){}
+    try { console.log('[auth] ensureAuthGate checking user', { pathname, currentUser: !!auth.currentUser }); } catch(e){}
     if (auth.currentUser && typeof auth.currentUser.reload === 'function') {
       try {
         await auth.currentUser.reload();
@@ -160,7 +160,7 @@ async function ensureAuthGate() {
     }
 
     const user = auth.currentUser || await waitForFirebaseUser(auth, 2500);
-    try { console.debug('[auth] ensureAuthGate user', user && { uid: user.uid, email: user.email }); } catch(e){}
+    try { console.log('[auth] ensureAuthGate user', user && { uid: user.uid, email: user.email }); } catch(e){}
 
     if (!user || !user.uid) {
       await clearSession();
@@ -194,4 +194,4 @@ window.authGuard = {
   ensureAuthGate
 };
 
-export { AUTH_STORAGE_KEY, FIREBASE_CONFIG, getStoredSession, setStoredSession, isAuthenticated, clearSession, redirectToLogin, ensureAuthGate };
+export { AUTH_STORAGE_KEY, FIREBASE_CONFIG, getStoredSession, setStoredSession, isAuthenticated, clearSession, redirectToLogin, ensureAuthGate, getFirebaseAuth };

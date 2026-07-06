@@ -629,42 +629,52 @@ if (document.readyState === 'loading') {
   initializeEventListeners();
 }
 
-globalThis.addEventListener('load', () => {
-  window.addEventListener('resize', () => {
-    loadAnalytics().catch((error) => console.warn('Error actualizando gráfico al redimensionar:', error));
-  });
+async function runOnLoad() {
+  try {
+    window.addEventListener('resize', () => {
+      loadAnalytics().catch((error) => console.warn('Error actualizando gráfico al redimensionar:', error));
+    });
 
-  syncMetricCheckboxStyles();
-  setInputsForRange('today');
-  loadAnalytics();
+    syncMetricCheckboxStyles();
+    setInputsForRange('today');
+    await loadAnalytics();
 
-  // Temporary: clear analytics data for testing
-  const clearButton = document.getElementById('analytics-clear-btn');
-  clearButton?.addEventListener('click', async () => {
-    try {
-      if (!confirm('¿Confirmás que querés borrar TODOS los datos de analytics? Esto es irreversible.')) return;
-      messageElement.textContent = 'Borrando datos...';
-      const empty = {
-        totals: {
-          uniqueVisitors: 0,
-          totalVisits: 0,
-          primaryLinks: 0,
-          alternativeLinks: 0,
-          primaryVisits: 0,
-          alternativeVisits: 0,
-          whatsappClicks: 0,
-          whatsappClicksTotal: 0
-        },
-        visitors: {},
-        buckets: {}
-      };
-      await setDoc(doc(db, 'analytics', 'landing'), empty);
-      messageElement.textContent = 'Datos borrados correctamente.';
-      await loadAnalytics();
-    } catch (error) {
-      console.error('Error borrando datos de analytics:', error);
-      messageElement.textContent = `Error borrando datos: ${error?.message || error}`;
-    }
-  });
-});
+    // Temporary: clear analytics data for testing
+    const clearButton = document.getElementById('analytics-clear-btn');
+    clearButton?.addEventListener('click', async () => {
+      try {
+        if (!confirm('¿Confirmás que querés borrar TODOS los datos de analytics? Esto es irreversible.')) return;
+        messageElement.textContent = 'Borrando datos...';
+        const empty = {
+          totals: {
+            uniqueVisitors: 0,
+            totalVisits: 0,
+            primaryLinks: 0,
+            alternativeLinks: 0,
+            primaryVisits: 0,
+            alternativeVisits: 0,
+            whatsappClicks: 0,
+            whatsappClicksTotal: 0
+          },
+          visitors: {},
+          buckets: {}
+        };
+        await setDoc(doc(db, 'analytics', 'landing'), empty);
+        messageElement.textContent = 'Datos borrados correctamente.';
+        await loadAnalytics();
+      } catch (error) {
+        console.error('Error borrando datos de analytics:', error);
+        messageElement.textContent = `Error borrando datos: ${error?.message || error}`;
+      }
+    });
+  } catch (e) {
+    console.error('[analytics] runOnLoad error', e);
+  }
+}
+
+globalThis.addEventListener('load', runOnLoad);
+// If the page already loaded before this module imported, run immediately
+if (document.readyState === 'complete') {
+  runOnLoad().catch((e) => console.error('[analytics] runOnLoad immediate error', e));
+}
 

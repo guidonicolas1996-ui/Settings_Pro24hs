@@ -46,16 +46,17 @@ async function waitForCasinosApi(timeoutMs = 5000) {
         : null;
 
     if (candidate) {
+      try { console.debug('[settings] waitForCasinosApi found candidate', candidate === window.landingSettings ? 'landingSettings' : (candidate === window.casinosAPI ? 'casinosAPI' : candidate)); } catch(e){}
       return candidate;
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   if (window.landingSettings || window.casinosAPI) {
+    try { console.debug('[settings] waitForCasinosApi fallback returning', !!window.landingSettings, !!window.casinosAPI); } catch(e){}
     return window.landingSettings || window.casinosAPI;
   }
-
-  console.error('waitForCasinosApi: no casinos API disponible.');
+  console.error('waitForCasinosApi: no casinos API disponible.', { windowLandingSettings: !!window.landingSettings, windowCasinosAPI: !!window.casinosAPI });
   return {};
 }
 
@@ -633,6 +634,23 @@ function setupSettingsPage() {
     });
   }
 
+  // When the user begins editing the CTA label, if the field value matches the
+  // originally loaded value (likely the constant), replace it with the literal
+  // 'WHATSAPP OFICIAL' as requested.
+  const ctaInput = document.getElementById('input-ctaLabel');
+  if (ctaInput) {
+    ctaInput.addEventListener('focus', () => {
+      try {
+        const orig = ctaInput.dataset.original || '';
+        if ((ctaInput.value || '') === orig) {
+          ctaInput.value = 'WHATSAPP OFICIAL';
+        }
+      } catch (e) {
+        // swallow
+      }
+    });
+  }
+
   const resetLandingButton = document.getElementById('reset-landing-content');
   if (resetLandingButton) {
     resetLandingButton.addEventListener('click', async () => {
@@ -645,13 +663,11 @@ function setupSettingsPage() {
         heroTitle: 'OBTENÉ UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMER DEPÓSITO</span>',
         heroCopy: 'Escribinos apretando el botón de abajo',
         ctaLabel: 'WHATSAPP OFICIAL',
-        whatsappUrl: 'https://www.linkify.com.ar/api/soporte?id=k6cipb',
+        // whatsappUrl intentionally omitted here; we'll preserve existing DB value when saving
         helperText: 'ATENCIÓN Y RETIROS LAS 24 HS',
         footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
         footerText2: '© 2026 el juego es solo +18. Operá con responsabilidad.'
       };
-
-      populateForm(defaults);
 
       try {
         const api = await waitForCasinosApi();
@@ -663,18 +679,28 @@ function setupSettingsPage() {
 
         const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
         const currentConfig = snapshot.exists() ? snapshot.data() : {};
-        
+        const preservedWhatsapp = currentConfig?.landingContent?.whatsappUrl || '';
+
+        const toSave = {
+          ...defaults,
+          whatsappUrl: preservedWhatsapp
+        };
+
+        // Populate form with the final values (preserving whatsapp URL)
+        populateForm(toSave);
+
         await setDoc(doc(firebaseModule.db, 'config', 'landing'), {
           ...currentConfig,
-          landingContent: defaults
+          landingContent: toSave
         });
 
+
         if (api.setLandingContent) {
-          api.setLandingContent(defaults, false);
+          api.setLandingContent(toSave, false);
         }
 
-        window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: defaults }));
-        alert('Textos restablecidos correctamente y guardados en la base de datos.');
+        window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: toSave }));
+        alert('Textos restablecidos correctamente y guardados en la base de datos. (WhatsApp URL preservada)');
       } catch (error) {
         console.error('Error reseteando textos:', error);
         alert('Error al restablecer: ' + error.message);
@@ -688,8 +714,13 @@ function populateForm(content) {
   document.getElementById('input-accessBadge').value = content.accessBadge || '';
   document.getElementById('input-heroTitle').value = content.heroTitle || '';
   document.getElementById('input-heroCopy').value = content.heroCopy || '';
-  document.getElementById('input-ctaLabel').value = content.ctaLabel || '';
-  document.getElementById('input-whatsappUrl').value = content.whatsappUrl || '';
+  const ctaEl = document.getElementById('input-ctaLabel');
+  ctaEl.value = content.ctaLabel || '';
+  // store original loaded value so we can detect edits and replace const-based defaults
+  ctaEl.dataset.original = content.ctaLabel || '';
+  if (Object.prototype.hasOwnProperty.call(content, 'whatsappUrl')) {
+    document.getElementById('input-whatsappUrl').value = content.whatsappUrl || '';
+  }
   document.getElementById('input-helperText').value = content.helperText || '';
   document.getElementById('input-footerText1').value = content.footerText1 || '';
   document.getElementById('input-footerText2').value = content.footerText2 || '';
@@ -710,15 +741,46 @@ window.addEventListener('landingContent:ready', (event) => {
   populateForm(event.detail || {});
 });
 
-window.addEventListener('DOMContentLoaded', async () => {
-  if (window.casinosReady) {
-    await window.casinosReady.catch(() => {});
+async function runOnReady() {
+  try {
+    if (window.casinosReady) {
+      await window.casinosReady.catch(() => {});
+    }
+
+    const api = await waitForCasinosApi();
+
+    // Prefer explicitly reading landingContent from Firestore so the settings
+    // form shows the database values (not the local constants) as the source
+    // of truth. Fallback to the API-provided values if Firestore read fails.
+    let landingFromDb = null;
+    try {
+      const firebaseModule = await import('./firebase.js');
+      const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+      const { doc, getDoc } = firestoreModule;
+      const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
+      if (snapshot && snapshot.exists()) {
+        const cfg = snapshot.data() || {};
+        if (cfg.landingContent && typeof cfg.landingContent === 'object') {
+          landingFromDb = cfg.landingContent;
+        }
+      }
+    } catch (e) {
+      console.warn('[settings] could not read landingContent from Firestore, falling back to API', e);
+    }
+
+    const remoteOrStored = landingFromDb || (api.getLandingContent && api.getLandingContent()) || (api.getStoredLandingContent && api.getStoredLandingContent());
+    populateForm(remoteOrStored);
+
+    initSettings();
+    await renderCasinos();
+  } catch (e) {
+    console.error('[settings] runOnReady error', e);
   }
+}
 
-  const api = await waitForCasinosApi();
-  const remoteOrStored = (api.getLandingContent && api.getLandingContent()) || (api.getStoredLandingContent && api.getStoredLandingContent());
-  populateForm(remoteOrStored);
+window.addEventListener('DOMContentLoaded', runOnReady);
 
-  initSettings();
-  await renderCasinos();
-});
+// If the script is imported after DOMContentLoaded fired, run immediately
+if (document.readyState !== 'loading') {
+  runOnReady().catch((e) => console.error('[settings] runOnReady immediate error', e));
+}

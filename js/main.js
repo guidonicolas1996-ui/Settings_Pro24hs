@@ -1404,6 +1404,7 @@ if (typeof window !== 'undefined') {
   };
 
   window.landingSettings = guardedLandingSettingsAPI;
+  try { console.log('[main] landingSettings assigned, hasActiveSession:', hasActiveSession); } catch(e){}
   window.casinosAPI = {
     ...guardedLandingSettingsAPI,
     applyTheme,
