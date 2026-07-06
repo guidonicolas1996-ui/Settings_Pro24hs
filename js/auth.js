@@ -80,6 +80,11 @@ function setStoredSession(userOrEmail) {
 
   storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
   try {
+    console.debug('[auth] setStoredSession', session);
+  } catch (e) {
+    /* ignore */
+  }
+  try {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
   } catch (error) {
     // Ignore cleanup errors.
@@ -90,6 +95,12 @@ function clearStoredSession() {
   const storage = getStorage();
   if (storage) {
     storage.removeItem(AUTH_STORAGE_KEY);
+  }
+
+  try {
+    console.debug('[auth] clearStoredSession');
+  } catch (e) {
+    /* ignore */
   }
 
   try {
@@ -111,6 +122,9 @@ function redirectToLogin() {
 
 async function clearSession() {
   try {
+    console.debug('[auth] clearSession start');
+  } catch (e) {}
+  try {
     const auth = await getFirebaseAuth();
     if (auth && typeof auth.signOut === 'function') {
       await auth.signOut();
@@ -120,6 +134,9 @@ async function clearSession() {
     console.warn('No se pudo cerrar la sesión de Firebase', error);
   }
   clearStoredSession();
+  try {
+    console.debug('[auth] clearSession done');
+  } catch (e) {}
 }
 
 async function ensureAuthGate() {
@@ -133,6 +150,7 @@ async function ensureAuthGate() {
 
   try {
     const auth = await getFirebaseAuth();
+    try { console.debug('[auth] ensureAuthGate checking user', { pathname, currentUser: !!auth.currentUser }); } catch(e){}
     if (auth.currentUser && typeof auth.currentUser.reload === 'function') {
       try {
         await auth.currentUser.reload();
@@ -142,6 +160,7 @@ async function ensureAuthGate() {
     }
 
     const user = auth.currentUser || await waitForFirebaseUser(auth, 2500);
+    try { console.debug('[auth] ensureAuthGate user', user && { uid: user.uid, email: user.email }); } catch(e){}
 
     if (!user || !user.uid) {
       await clearSession();

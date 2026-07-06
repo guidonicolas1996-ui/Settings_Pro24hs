@@ -20,11 +20,21 @@
       });
       const authOk = await ensureAuthGate();
       window.authOk = authOk;
-      if (authOk) {
-        document.body.style.visibility = 'visible';
-      } else {
-        window.location.replace('/login.html');
-      }
+                if (authOk) {
+                document.body.style.visibility = 'visible';
+            } else {
+                window.location.replace('/login.html');
+            }
+            // Additional guard: ensure stored session exists before loading analytics scripts
+            try {
+                if (!window.authGuard || !window.authGuard.isAuthenticated || !window.authGuard.isAuthenticated()) {
+                    console.debug('[auth] analytics: no stored session, redirecting');
+                    window.location.replace('/login.html');
+                }
+            } catch (e) {
+                console.warn('[auth] analytics guard error', e);
+                window.location.replace('/login.html');
+            }
     </script>
   </head>
   <body class="settings-page" data-theme="default">
@@ -254,7 +264,13 @@
             });
 
             if (window.authOk) {
-                await import('./js/analytics.js?v=3');
+                try {
+                    await import('./js/analytics.js?v=3');
+                } catch (e) {
+                    console.error('[auth] failed to load analytics module', e);
+                    try { await import('/js/auth.js'); window.authGuard && await window.authGuard.clearSession(); } catch (_) {}
+                    window.location.replace('/login.html');
+                }
             }
         </script>
   </body>

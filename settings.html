@@ -22,6 +22,16 @@
       if (authOk) {
         document.body.style.visibility = 'visible';
       }
+      // Additional runtime guard: ensure stored session exists before loading modules
+      try {
+        if (!window.authGuard || !window.authGuard.isAuthenticated || !window.authGuard.isAuthenticated()) {
+          console.debug('[auth] settings: no stored session, redirecting');
+          window.location.replace('/login.html');
+        }
+      } catch (e) {
+        console.warn('[auth] settings guard error', e);
+        window.location.replace('/login.html');
+      }
     </script>
   </head>
   <body class="settings-page">
@@ -158,8 +168,15 @@
       });
 
       if (window.authOk) {
-        await import('/js/main.js');
-        await import('/js/settings.js?v=8');
+        try {
+          await import('/js/main.js');
+          await import('/js/settings.js?v=8');
+        } catch (e) {
+          console.error('[auth] failed to load settings modules', e);
+          // If imports fail, force logout and redirect to login
+          try { await import('/js/auth.js'); window.authGuard && await window.authGuard.clearSession(); } catch (_) {}
+          window.location.replace('/login.html');
+        }
       }
     </script>
   </body>
