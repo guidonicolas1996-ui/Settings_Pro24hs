@@ -670,6 +670,7 @@ function getStoredActiveCasinos() {
 
 let activeThemes = [];
 let activeTheme = '';
+let rotationTimerId = null;
 
 function setStoredActiveCasino(casinoId) {
   // Se maneja a través de dynamicCasinos
@@ -787,6 +788,27 @@ function applyRandomBackground() {
   document.documentElement.style.setProperty('--background-image', `url("${selectedBackground}")`);
 }
 
+function stopThemeRotation() {
+  if (rotationTimerId) {
+    window.clearInterval(rotationTimerId);
+    rotationTimerId = null;
+  }
+}
+
+function refreshThemeRotation() {
+  stopThemeRotation();
+
+  if (window.location.pathname.includes('settings') || window.location.pathname.includes('analytics')) {
+    return;
+  }
+
+  if (!Array.isArray(activeThemes) || activeThemes.length <= 1) {
+    return;
+  }
+
+  rotationTimerId = window.setInterval(rotateTheme, 5000);
+}
+
 function applyTheme(casinoId) {
   const safeCasino = dynamicCasinos[casinoId] ? casinoId : getDefaultCasino();
   activeTheme = safeCasino;
@@ -819,6 +841,8 @@ function applyTheme(casinoId) {
     return;
   }
 
+  applyRandomBackground();
+
   if (mascot) {
     fadeAsset(mascot, getImageUrl(dynamicCasinos[safeCasino].mascot), dynamicCasinos[safeCasino].label);
   }
@@ -836,6 +860,8 @@ function applyTheme(casinoId) {
   document.documentElement.style.setProperty('--blob-3-color', colorVars.blob3);
   document.documentElement.style.setProperty('--blob-4-color', colorVars.blob4);
   document.documentElement.style.setProperty('--blob-5-color', colorVars.blob5);
+
+  refreshThemeRotation();
 }
 
 function rotateTheme() {
@@ -889,6 +915,7 @@ async function observeRemoteConfig() {
         activeTheme = activeThemes[0] || getDefaultCasino();
         setCheckboxStates(activeThemes);
         applyTheme(activeTheme);
+        refreshThemeRotation();
         if (window.location.pathname.includes('settings')) {
           if (typeof window.renderCasinos === 'function') {
             window.renderCasinos();
@@ -1007,9 +1034,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  if (!window.location.pathname.includes('settings') && activeThemes.length > 1) {
-    window.setInterval(rotateTheme, 5000);
-  }
+  refreshThemeRotation();
 
   void (async () => {
     try {
@@ -1046,6 +1071,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       applyTheme(activeTheme);
       setCheckboxStates(activeThemes);
+      refreshThemeRotation();
 
       try {
         window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: landingContent }));
