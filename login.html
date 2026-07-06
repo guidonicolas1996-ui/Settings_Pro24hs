@@ -70,14 +70,17 @@
         const submitButton = form.querySelector('button[type="submit"]');
         const { auth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence } = await ensureFirebase();
 
-      if (auth.currentUser) {
+        let failedAttempts = 0;
+        let lockedUntil = 0;
+
         try {
           await auth.signOut();
         } catch (logoutError) {
           console.warn('No se pudo cerrar sesión previa de Firebase en login:', logoutError);
         }
-      }
 
+        window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
 
         await setPersistence(auth, browserSessionPersistence);
 

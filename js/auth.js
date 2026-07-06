@@ -123,12 +123,18 @@ async function ensureAuthGate() {
     return true;
   }
 
+  const storedSession = getStoredSession();
+  if (!storedSession) {
+    await clearSession();
+    redirectToLogin();
+    return false;
+  }
+
   try {
     const auth = await getFirebaseAuth();
     const user = await waitForFirebaseUser(auth);
-    const storedSession = getStoredSession();
 
-    if (!user || !storedSession) {
+    if (!user || !user.uid || user.uid !== storedSession.uid) {
       await clearSession();
       redirectToLogin();
       return false;
@@ -138,7 +144,7 @@ async function ensureAuthGate() {
     return true;
   } catch (error) {
     console.warn('No se pudo validar la sesión de Firebase', error);
-    clearStoredSession();
+    await clearSession();
     redirectToLogin();
     return false;
   }
