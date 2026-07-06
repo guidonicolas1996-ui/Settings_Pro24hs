@@ -950,10 +950,14 @@ function setViewportHeight() {
   document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
 }
 
-window.casinosReady = loadDynamicCasinos().catch((error) => {
-  console.warn('Error inicializando casinos dinámicos, usando localStorage como fallback:', error);
-  dynamicCasinos = getLocalDynamicCasinos();
-  return dynamicCasinos;
+window.casinosReady = Promise.resolve().then(async () => {
+  try {
+    return await loadDynamicCasinos();
+  } catch (error) {
+    console.warn('Error inicializando casinos dinámicos, usando localStorage como fallback:', error);
+    dynamicCasinos = getLocalDynamicCasinos();
+    return dynamicCasinos;
+  }
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -980,22 +984,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   setCheckboxStates(activeThemes);
 
   if (!window.location.pathname.includes('settings') && !window.location.pathname.includes('analytics')) {
-    registerAnalyticsVisit().catch((error) => {
-      console.warn('Analytics visit failed:', error);
-    });
+    window.setTimeout(() => {
+      registerAnalyticsVisit().catch((error) => {
+        console.warn('Analytics visit failed:', error);
+      });
+    }, 150);
   }
 
   const whatsappButton = document.getElementById('whatsapp-button');
   if (whatsappButton) {
     whatsappButton.addEventListener('click', () => {
-      registerAnalyticsWhatsappClick().catch((error) => {
-        console.warn('Analytics click failed:', error);
-      });
+      window.setTimeout(() => {
+        registerAnalyticsWhatsappClick().catch((error) => {
+          console.warn('Analytics click failed:', error);
+        });
+      }, 0);
       openWhatsApp();
     });
   }
 
-  observeRemoteConfig();
+  window.setTimeout(() => {
+    observeRemoteConfig().catch((error) => console.warn('Remote config observe failed:', error));
+  }, 200);
 
   const select = document.getElementById('theme-select');
   if (select) {
@@ -1040,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const [casinosResult, firebaseConfigResult] = await Promise.allSettled([
         window.casinosReady,
-        getRemoteConfig()
+        Promise.resolve().then(() => getRemoteConfig())
       ]);
 
       if (casinosResult.status === 'fulfilled' && casinosResult.value && typeof casinosResult.value === 'object') {

@@ -6,7 +6,7 @@ Variables
   --color-surface: #110d33;
   --color-surface-strong: #1e1643;
   --color-border: rgba(255, 255, 255, 0.12);
-  --background-image: url("../img/background.png");
+  /* --background-image: url("../img/background.png"); */
   --color-primary: #7d6cff;
   --color-primary-strong: #8f80ff;
   --color-accent: #ffd166;
