@@ -1179,17 +1179,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // === PASO 3: Renderizar con valores por defecto ===
   const initialMascot = document.getElementById('active-mascot');
+  const initialBadge = document.getElementById('access-badge');
+  const initialHeroCard = document.querySelector('.hero-card');
+
+  if (initialBadge) {
+    initialBadge.classList.add('hero-header__badge--initial');
+  }
+  if (initialHeroCard) {
+    initialHeroCard.classList.add('hero-card--initial');
+  }
   if (initialMascot) {
     initialMascot.classList.add('hero-header__mascot--initial');
-    window.setTimeout(() => {
-      initialMascot.classList.remove('hero-header__mascot--initial');
-    }, 2000);
   }
 
   renderContent();
   applyTheme(activeTheme);
   refreshThemeRotation();
   applyRandomBackground();
+
+  window.setTimeout(() => {
+    initialBadge?.classList.remove('hero-header__badge--initial');
+    initialHeroCard?.classList.remove('hero-card--initial');
+    initialMascot?.classList.remove('hero-header__mascot--initial');
+  }, 2200);
 
   // === PASO 4: Setup de event listeners ===
   const whatsappButton = document.getElementById('whatsapp-button');

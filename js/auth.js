@@ -126,9 +126,10 @@ async function ensureAuthGate() {
   try {
     const auth = await getFirebaseAuth();
     const user = await waitForFirebaseUser(auth);
+    const storedSession = getStoredSession();
 
-    if (!user) {
-      clearStoredSession();
+    if (!user || !storedSession) {
+      await clearSession();
       redirectToLogin();
       return false;
     }
