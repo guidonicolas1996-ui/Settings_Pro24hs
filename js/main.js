@@ -18,24 +18,41 @@ const USE_REMOTE_STORAGE = typeof window !== 'undefined' && window.location.prot
 let dynamicCasinos = {};
 let dynamicCasinoOrder = [];
 
+// Cache para optimizar llamadas a Firebase
+let remoteConfigCache = null;
+let remoteConfigCacheTime = 0;
+const REMOTE_CONFIG_CACHE_TTL = 30000; // 30 segundos
+
 // Firebase
 let firebaseServices = null;
 
+// Pre-iniciar carga de Firebase services para tener listo antes de DOMContentLoaded
+const firebaseServicesReady = (async () => {
+  try {
+    const [{ db }, firestore] = await Promise.all([
+      import("./firebase.js"),
+      import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js")
+    ]);
+
+    firebaseServices = {
+      db,
+      ...firestore
+    };
+
+    return firebaseServices;
+  } catch (error) {
+    console.warn('Error pre-cargando Firebase services:', error);
+    return null;
+  }
+})();
+
+// Función para obtener Firebase services (espera a que esté pre-cargado)
 async function ensureFirebaseServices() {
   if (firebaseServices) {
     return firebaseServices;
   }
-
-  const [{ db }, firestore] = await Promise.all([
-    import("./firebase.js"),
-    import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js")
-  ]);
-
-  firebaseServices = {
-    db,
-    ...firestore
-  };
-
+  // Esperar a que la pre-inicialización termine
+  await firebaseServicesReady;
   return firebaseServices;
 }
 
@@ -618,13 +635,25 @@ async function updateCasinoActive(casinoId, active) {
 }
 
 async function getRemoteConfig() {
+  // Usar caché si está disponible y aún es válido
+  if (remoteConfigCache && (Date.now() - remoteConfigCacheTime) < REMOTE_CONFIG_CACHE_TTL) {
+    return remoteConfigCache;
+  }
+
   try {
     const { db, doc, getDoc } = await ensureFirebaseServices();
     const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
-    return snapshot.exists() ? snapshot.data() : null;
+    const data = snapshot.exists() ? snapshot.data() : null;
+    
+    // Actualizar caché
+    remoteConfigCache = data;
+    remoteConfigCacheTime = Date.now();
+    
+    return data;
   } catch (error) {
     console.error("Error leyendo configuración remota de Firebase:", error);
-    return null;
+    // Retornar caché antiguo si falla (aunque esté expirado)
+    return remoteConfigCache;
   }
 }
 
@@ -983,79 +1012,128 @@ window.casinosReady = Promise.resolve().then(async () => {
   }
 });
 
-// Cargar URL de WhatsApp urgentemente (PRIORIDAD UNO)
+let whatsappButtonProgressTimer = null;
+let whatsappButtonProgressValue = 0;
+
+function updateWhatsAppButtonProgress(value) {
+  const button = document.getElementById('whatsapp-button');
+  const fill = button?.querySelector('.whatsapp-button__progress-fill');
+  if (!fill) return;
+  whatsappButtonProgressValue = Math.min(100, Math.max(0, value));
+  fill.style.width = `${whatsappButtonProgressValue}%`;
+}
+
+function startWhatsAppButtonProgress() {
+  const button = document.getElementById('whatsapp-button');
+  if (!button) return;
+  button.disabled = true;
+  button.classList.add('whatsapp-button--loading');
+  button.classList.remove('whatsapp-button--ready');
+  button.setAttribute('aria-disabled', 'true');
+  updateWhatsAppButtonProgress(0);
+
+  if (whatsappButtonProgressTimer) {
+    clearInterval(whatsappButtonProgressTimer);
+  }
+
+  whatsappButtonProgressTimer = setInterval(() => {
+    if (whatsappButtonProgressValue >= 90) {
+      return;
+    }
+    updateWhatsAppButtonProgress(whatsappButtonProgressValue + Math.random() * 6 + 2);
+  }, 140);
+}
+
+function resetWhatsAppButtonProgress() {
+  const button = document.getElementById('whatsapp-button');
+  if (!button) return;
+  button.disabled = true;
+  button.classList.add('whatsapp-button--loading');
+  button.classList.remove('whatsapp-button--ready');
+  button.setAttribute('aria-disabled', 'true');
+  updateWhatsAppButtonProgress(0);
+}
+
+function completeWhatsAppButtonProgress() {
+  const button = document.getElementById('whatsapp-button');
+  if (!button) return;
+
+  if (whatsappButtonProgressTimer) {
+    clearInterval(whatsappButtonProgressTimer);
+    whatsappButtonProgressTimer = null;
+  }
+
+  updateWhatsAppButtonProgress(100);
+  button.disabled = false;
+  button.classList.remove('whatsapp-button--loading');
+  button.classList.add('whatsapp-button--ready');
+  button.removeAttribute('aria-disabled');
+}
+
+// Cargar URL de WhatsApp urgentemente (PRIORIDAD UNO - ultrarrápido)
 async function loadWhatsAppUrlUrgent() {
+  resetWhatsAppButtonProgress();
   try {
     const { db, doc, getDoc } = await ensureFirebaseServices();
+    // Timeout ultra-corto para no bloquear
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    
     const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
+    clearTimeout(timeout);
+    
     if (snapshot.exists() && snapshot.data()?.landingContent?.whatsappUrl) {
       landingContent.whatsappUrl = snapshot.data().landingContent.whatsappUrl;
-      console.debug('WhatsApp URL cargado desde Firebase');
+      console.debug('✓ WhatsApp URL cargado');
     }
   } catch (error) {
-    console.warn('Error cargando WhatsApp URL urgente:', error);
-    // Mantiene el valor por defecto si falla
+    // Error silencioso - mantiene valor por defecto
+  } finally {
+    completeWhatsAppButtonProgress();
   }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // PRIORIDAD UNO: Cargar URL de WhatsApp ANTES de renderizar contenido
-  try {
-    await loadWhatsAppUrlUrgent();
-  } catch (error) {
-    console.warn('Error cargando WhatsApp URL urgente:', error);
-  }
-
+  // === PASO 1: Cargar WhatsApp URL + disparar animación ===
+  await loadWhatsAppUrlUrgent(); // La animación se dispara en finally
+  
+  // === PASO 2: Setup local rápido ===
   const localCasinos = getLocalDynamicCasinos();
   if (localCasinos && typeof localCasinos === 'object' && Object.keys(localCasinos).length) {
     dynamicCasinos = localCasinos;
   }
 
-  renderContent();
   setViewportHeight();
-
   activeThemes = getActiveCasinos();
   if (!activeThemes.length) {
     activeThemes = [getDefaultCasino()];
   }
-  activeTheme = activeThemes[0];
+  activeTheme = activeThemes[0] || getDefaultCasino();
 
-  if (!activeTheme || !dynamicCasinos[activeTheme]) {
-    activeTheme = getDefaultCasino();
-  }
-
-  applyTheme(activeTheme);
   setCheckboxStates(activeThemes);
 
-  if (!window.location.pathname.includes('settings') && !window.location.pathname.includes('analytics')) {
-    window.setTimeout(() => {
-      registerAnalyticsVisit().catch((error) => {
-        console.warn('Analytics visit failed:', error);
-      });
-    }, 150);
-  }
+  // === PASO 3: Renderizar con valores por defecto ===
+  renderContent();
+  applyTheme(activeTheme);
+  refreshThemeRotation();
+  applyRandomBackground();
 
+  // === PASO 4: Setup de event listeners ===
   const whatsappButton = document.getElementById('whatsapp-button');
   if (whatsappButton) {
     whatsappButton.addEventListener('click', () => {
-      window.setTimeout(() => {
-        registerAnalyticsWhatsappClick().catch((error) => {
-          console.warn('Analytics click failed:', error);
-        });
-      }, 0);
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(() => registerAnalyticsWhatsappClick().catch(() => {}));
+      } else {
+        registerAnalyticsWhatsappClick().catch(() => {});
+      }
       openWhatsApp();
     });
   }
 
-  window.setTimeout(() => {
-    observeRemoteConfig().catch((error) => console.warn('Remote config observe failed:', error));
-  }, 200);
-
   const select = document.getElementById('theme-select');
   if (select) {
-    select.addEventListener('change', (event) => {
-      applyTheme(event.target.value);
-    });
+    select.addEventListener('change', (event) => applyTheme(event.target.value));
   }
 
   const checkboxInputs = document.querySelectorAll('input[name="theme-select"][type="checkbox"]');
@@ -1088,39 +1166,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  refreshThemeRotation();
-  applyRandomBackground();
-
+  // === PASO 5: Cargar casinos + textos en paralelo ===
   void (async () => {
     try {
-      const [casinosResult, firebaseConfigResult] = await Promise.allSettled([
+      const [casinosResult, configResult] = await Promise.allSettled([
         window.casinosReady,
-        Promise.resolve().then(() => getRemoteConfig())
+        getRemoteConfig()
       ]);
 
-      if (casinosResult.status === 'fulfilled' && casinosResult.value && typeof casinosResult.value === 'object') {
+      // Procesar casinos
+      if (casinosResult.status === 'fulfilled' && casinosResult.value) {
         dynamicCasinos = casinosResult.value;
       }
 
-      const firebaseConfig = firebaseConfigResult.status === 'fulfilled' ? firebaseConfigResult.value : null;
-      if (firebaseConfig && firebaseConfig.casinos && typeof firebaseConfig.casinos === 'object') {
-        dynamicCasinos = firebaseConfig.casinos;
+      // Procesar config y textos
+      const config = configResult.status === 'fulfilled' ? configResult.value : null;
+      if (config?.casinos) {
+        dynamicCasinos = config.casinos;
       }
 
-      if (firebaseConfig && firebaseConfig.landingContent) {
-        setLandingContent(firebaseConfig.landingContent, false);
-      } else {
-        const stored = getStoredLandingContent();
-        if (stored) setLandingContent(stored, false);
+      // Aplicar textos si hay cambios
+      if (config?.landingContent) {
+        setLandingContent(config.landingContent, false);
       }
 
+      // Actualizar tema si cambió
       activeThemes = getActiveCasinos();
-      if (!activeThemes.length) {
-        activeThemes = [getDefaultCasino()];
-      }
-      activeTheme = activeThemes[0];
+      if (!activeThemes.length) activeThemes = [getDefaultCasino()];
+      activeTheme = activeThemes[0] || getDefaultCasino();
 
-      if (!activeTheme || !dynamicCasinos[activeTheme]) {
+      if (!dynamicCasinos[activeTheme]) {
         activeTheme = getDefaultCasino();
       }
 
@@ -1128,14 +1203,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       setCheckboxStates(activeThemes);
       refreshThemeRotation();
 
-      try {
-        window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: landingContent }));
-      } catch (e) {
-        // ignore
+      // Disparar evento de listo
+      window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: landingContent }));
+
+      // Analytics en idle
+      if (!window.location.pathname.includes('settings') && !window.location.pathname.includes('analytics')) {
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(() => registerAnalyticsVisit().catch(() => {}));
+        } else {
+          registerAnalyticsVisit().catch(() => {});
+        }
       }
     } catch (error) {
-      console.warn('Error cargando datos remotos en segundo plano:', error);
+      console.warn('Error cargando datos:', error);
     }
+
+    // Observar cambios en tiempo real
+    observeRemoteConfig().catch(() => {});
   })();
 
   // Exponer API global

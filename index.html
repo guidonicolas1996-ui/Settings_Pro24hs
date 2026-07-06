@@ -36,10 +36,13 @@
           <p id="hero-copy">Escribinos apretando el botón de abajo</span></span></p>
 
           <div class="hero-card__actions">
-            <button type="button" class="whatsapp-button" id="whatsapp-button" aria-label="Abrir WhatsApp">
+            <button type="button" class="whatsapp-button whatsapp-button--loading" id="whatsapp-button" aria-label="Abrir WhatsApp" disabled>
               <span class="button-aura"></span>
               <img src="img/whatsapp.png" alt="" aria-hidden="true" />
               <span id="cta-label">WHATSAPP OFICIAL</span>
+              <span class="whatsapp-button__progress">
+                <span class="whatsapp-button__progress-fill"></span>
+              </span>
             </button>
             <p class="helper-text" id="helper-text">ATENCIÓN Y RETIROS LAS 24 HS</p>
           </div>
@@ -52,6 +55,6 @@
       </main>
     </div>
 
-    <script type="module" src="js/main.js?v=6"></script>
+    <script type="module" src="js/main.js?v=13"></script>
   </body>
 </html>

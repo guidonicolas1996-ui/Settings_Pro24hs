@@ -314,7 +314,7 @@ Page layout
 
 .hero-card h1 {
   margin: 0 0 0.9rem;
-  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
   line-height: 1.2;
   text-align: center;
   letter-spacing: 0.01em;
@@ -353,6 +353,7 @@ WhatsApp CTA
   justify-content: center;
   gap: 0.8rem;
   width: 100%;
+  min-height: 4.2rem;
   border: 0;
   border-radius: 999px;
   padding: 1rem 1.25rem;
@@ -363,9 +364,42 @@ WhatsApp CTA
   background: linear-gradient(135deg, var(--theme-success), #1da751);
   box-shadow: 0 16px 32px rgba(37, 211, 102, 0.25);
   cursor: pointer;
-  transition: transform var(--transition), box-shadow var(--transition);
-  animation: whatsapp-glow 1.8s ease-in-out infinite;
-  overflow: visible;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition), opacity var(--transition);
+  overflow: hidden;
+}
+
+.whatsapp-button--loading {
+  background: linear-gradient(135deg, rgba(90, 97, 114, 0.95), rgba(67, 74, 95, 0.95));
+  color: #eef2ff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.whatsapp-button--loading::before,
+.whatsapp-button--loading::after {
+  opacity: 0;
+}
+
+.whatsapp-button--loading .whatsapp-button__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0.35rem;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 0 0 999px 999px;
+  overflow: hidden;
+}
+
+.whatsapp-button--loading .whatsapp-button__progress-fill {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(37, 211, 102, 0.95), rgba(72, 255, 140, 0.85));
+  transition: width 0.18s ease;
+}
+
+.whatsapp-button--ready {
+  background: linear-gradient(135deg, var(--theme-success), #1da751);
 }
 
 .whatsapp-button::before,
@@ -1359,6 +1393,28 @@ Settings / auth / analytics page
 /* ===========================
 Animations
 =========================== */
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes whatsappScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
 @keyframes whatsapp-glow {
   0%,
