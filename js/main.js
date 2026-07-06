@@ -1182,26 +1182,51 @@ document.addEventListener('DOMContentLoaded', async () => {
   const initialBadge = document.getElementById('access-badge');
   const initialHeroCard = document.querySelector('.hero-card');
 
-  if (initialBadge) {
-    initialBadge.classList.add('hero-header__badge--initial');
-  }
-  if (initialHeroCard) {
-    initialHeroCard.classList.add('hero-card--initial');
-  }
-  if (initialMascot) {
-    initialMascot.classList.add('hero-header__mascot--initial');
-  }
-
   renderContent();
   applyTheme(activeTheme);
   refreshThemeRotation();
   applyRandomBackground();
 
-  window.setTimeout(() => {
-    initialBadge?.classList.remove('hero-header__badge--initial');
-    initialHeroCard?.classList.remove('hero-card--initial');
-    initialMascot?.classList.remove('hero-header__mascot--initial');
-  }, 2200);
+  const startInitialAnimations = () => {
+    if (initialBadge) {
+      initialBadge.classList.add('hero-header__badge--initial');
+    }
+    if (initialHeroCard) {
+      initialHeroCard.classList.add('hero-card--initial');
+    }
+    if (initialMascot) {
+      initialMascot.classList.add('hero-header__mascot--initial');
+    }
+
+    window.setTimeout(() => {
+      initialBadge?.classList.remove('hero-header__badge--initial');
+      initialHeroCard?.classList.remove('hero-card--initial');
+      initialMascot?.classList.remove('hero-header__mascot--initial');
+    }, 2600);
+  };
+
+  const showBrandMark = () => {
+    const logosWrapper = document.querySelector('.brand-mark');
+    if (logosWrapper) {
+      logosWrapper.classList.add('brand-mark--ready');
+    }
+  };
+
+  const startVisuals = () => {
+    startInitialAnimations();
+    showBrandMark();
+  };
+
+  if (initialMascot) {
+    if (initialMascot.complete && initialMascot.naturalWidth > 1) {
+      startVisuals();
+    } else {
+      initialMascot.addEventListener('load', startVisuals, { once: true });
+      setTimeout(startVisuals, 750);
+    }
+  } else {
+    startVisuals();
+  }
 
   // === PASO 4: Setup de event listeners ===
   const whatsappButton = document.getElementById('whatsapp-button');
