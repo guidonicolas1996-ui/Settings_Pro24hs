@@ -6,10 +6,10 @@ let landingContent = {
   ctaLabel: 'WHATSAPP OFICIAL',
   helperText: 'ATENCIÓN Y RETIROS LAS 24 HS',
   footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
-  footerText2: '© 2026 el juego es solo +18. Operá con responsabilidad.'
+  footerText2: '© 2026 el juego es solo +18. Operá con responsabilidad.',
+  whatsappUrl: ''
 };
 
-const WHATSAPP_URL = 'https://www.linkify.com.ar/api/soporte?id=k6cipb';
 const MAX_CASINOS = 5;
 const BACKGROUND_IMAGES = ['/img/background1.png', '/img/background2.png', '/img/background3.png', '/img/background4.png', '/img/background5.png'];
 const LOCAL_STORAGE_CASINOS_KEY = 'dynamicCasinos';
@@ -966,7 +966,7 @@ async function saveRemoteConfig(config) {
 // End Firebase
 
 function openWhatsApp() {
-  window.open(WHATSAPP_URL, '_blank', 'noopener,noreferrer');
+  window.open(landingContent.whatsappUrl, '_blank', 'noopener,noreferrer');
 }
 
 function setViewportHeight() {
@@ -983,7 +983,25 @@ window.casinosReady = Promise.resolve().then(async () => {
   }
 });
 
+// Cargar URL de WhatsApp urgentemente (PRIORIDAD UNO)
+async function loadWhatsAppUrlUrgent() {
+  try {
+    const { db, doc, getDoc } = await ensureFirebaseServices();
+    const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
+    if (snapshot.exists() && snapshot.data()?.landingContent?.whatsappUrl) {
+      landingContent.whatsappUrl = snapshot.data().landingContent.whatsappUrl;
+      console.debug('WhatsApp URL cargado desde Firebase');
+    }
+  } catch (error) {
+    console.warn('Error cargando WhatsApp URL urgente:', error);
+    // Mantiene el valor por defecto si falla
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  // PRIORIDAD UNO: Cargar URL de WhatsApp en paralelo (no espera)
+  loadWhatsAppUrlUrgent().catch(() => {});
+
   const localCasinos = getLocalDynamicCasinos();
   if (localCasinos && typeof localCasinos === 'object' && Object.keys(localCasinos).length) {
     dynamicCasinos = localCasinos;

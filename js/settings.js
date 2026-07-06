@@ -612,6 +612,7 @@ function setupSettingsPage() {
         heroTitle: document.getElementById('input-heroTitle').value,
         heroCopy: document.getElementById('input-heroCopy').value,
         ctaLabel: document.getElementById('input-ctaLabel').value,
+        whatsappUrl: document.getElementById('input-whatsappUrl').value,
         helperText: document.getElementById('input-helperText').value,
         footerText1: document.getElementById('input-footerText1').value,
         footerText2: document.getElementById('input-footerText2').value
@@ -644,6 +645,7 @@ function setupSettingsPage() {
         heroTitle: 'OBTENÉ UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMER DEPÓSITO</span>',
         heroCopy: 'Escribinos apretando el botón de abajo',
         ctaLabel: 'WHATSAPP OFICIAL',
+        whatsappUrl: 'https://www.linkify.com.ar/api/soporte?id=k6cipb',
         helperText: 'ATENCIÓN Y RETIROS LAS 24 HS',
         footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
         footerText2: '© 2026 el juego es solo +18. Operá con responsabilidad.'
@@ -687,6 +689,7 @@ function populateForm(content) {
   document.getElementById('input-heroTitle').value = content.heroTitle || '';
   document.getElementById('input-heroCopy').value = content.heroCopy || '';
   document.getElementById('input-ctaLabel').value = content.ctaLabel || '';
+  document.getElementById('input-whatsappUrl').value = content.whatsappUrl || '';
   document.getElementById('input-helperText').value = content.helperText || '';
   document.getElementById('input-footerText1').value = content.footerText1 || '';
   document.getElementById('input-footerText2').value = content.footerText2 || '';
