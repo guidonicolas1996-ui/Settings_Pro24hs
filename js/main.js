@@ -991,7 +991,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderContent();
   setViewportHeight();
-  applyRandomBackground();
 
   activeThemes = getActiveCasinos();
   if (!activeThemes.length) {
@@ -1068,6 +1067,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   refreshThemeRotation();
+  applyRandomBackground();
 
   void (async () => {
     try {
