@@ -629,6 +629,7 @@ if (document.readyState === 'loading') {
   initializeEventListeners();
 }
 
+globalThis.addEventListener('load', () => {
   window.addEventListener('resize', () => {
     loadAnalytics().catch((error) => console.warn('Error actualizando gráfico al redimensionar:', error));
   });
@@ -636,7 +637,6 @@ if (document.readyState === 'loading') {
   syncMetricCheckboxStyles();
   setInputsForRange('today');
   loadAnalytics();
-
 
   // Temporary: clear analytics data for testing
   const clearButton = document.getElementById('analytics-clear-btn');
@@ -666,117 +666,5 @@ if (document.readyState === 'loading') {
       messageElement.textContent = `Error borrando datos: ${error?.message || error}`;
     }
   });
-
-  summaryToggle?.addEventListener('click', () => {
-    const isCollapsed = summaryBody.classList.toggle('collapsed');
-    summaryToggle.setAttribute('aria-expanded', String(!isCollapsed));
-    summaryToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar resumen' : 'Minimizar resumen';
-  });
-
-  visualizationToggle?.addEventListener('click', () => {
-    const isCollapsed = visualizationBody.classList.toggle('collapsed');
-    visualizationToggle.setAttribute('aria-expanded', String(!isCollapsed));
-    visualizationToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar visualización' : 'Minimizar visualización';
-
-    // treat visualization as parent: when collapsing, hide metrics, chart and table and
-    // save their previous collapsed state; when expanding, restore previous states.
-    const metricsPanel = document.querySelector('.analytics-metrics-panel');
-    const chartBody = document.getElementById('chart-body');
-    const tableBody = document.getElementById('analytics-breakdown-body');
-
-    // helper to set sr-only and aria-expanded on child toggle buttons
-    function setToggleState(toggleButton, bodyEl, collapsed) {
-      if (!toggleButton || !bodyEl) return;
-      toggleButton.setAttribute('aria-expanded', String(!collapsed));
-      const sr = toggleButton.querySelector('.sr-only');
-      if (sr) sr.textContent = collapsed ? (toggleButton === chartToggle ? 'Mostrar gráfico' : 'Mostrar tabla') : (toggleButton === chartToggle ? 'Minimizar gráfico' : 'Minimizar tabla');
-    }
-
-    if (isCollapsed) {
-      // save previous states
-      if (metricsPanel) metricsPanel.dataset.prevDisplay = metricsPanel.style.display || '';
-      if (chartBody) chartBody.dataset.prevCollapsed = String(chartBody.classList.contains('collapsed'));
-      if (tableBody) tableBody.dataset.prevCollapsed = String(tableBody.classList.contains('collapsed'));
-      if (chartSection) chartSection.dataset.prevDisplay = chartSection.style.display || '';
-      if (tableSection) tableSection.dataset.prevDisplay = tableSection.style.display || '';
-
-      // remove metrics and sections from flow and force collapse children
-      if (metricsPanel) metricsPanel.style.display = 'none';
-      if (chartBody) {
-        chartBody.classList.add('collapsed');
-        setToggleState(chartToggle, chartBody, true);
-      }
-      if (tableBody) {
-        tableBody.classList.add('collapsed');
-        setToggleState(tableToggle, tableBody, true);
-      }
-      if (chartSection) chartSection.style.display = 'none';
-      if (tableSection) tableSection.style.display = 'none';
-    } else {
-      // restore previous states (if any); default to expanded
-      if (metricsPanel) {
-        const prevDisplay = metricsPanel.dataset.prevDisplay;
-        if (typeof prevDisplay !== 'undefined') {
-          metricsPanel.style.display = prevDisplay || '';
-          delete metricsPanel.dataset.prevDisplay;
-        } else {
-          metricsPanel.style.display = '';
-        }
-      }
-      if (chartSection) {
-        const prev = chartSection.dataset.prevDisplay;
-        if (typeof prev !== 'undefined') {
-          chartSection.style.display = prev || '';
-          delete chartSection.dataset.prevDisplay;
-        } else {
-          chartSection.style.display = '';
-        }
-      }
-      if (tableSection) {
-        const prev = tableSection.dataset.prevDisplay;
-        if (typeof prev !== 'undefined') {
-          tableSection.style.display = prev || '';
-          delete tableSection.dataset.prevDisplay;
-        } else {
-          tableSection.style.display = '';
-        }
-      }
-      if (chartBody) {
-        const prev = chartBody.dataset.prevCollapsed;
-        if (prev === 'true') chartBody.classList.add('collapsed'); else chartBody.classList.remove('collapsed');
-        setToggleState(chartToggle, chartBody, prev === 'true');
-        delete chartBody.dataset.prevCollapsed;
-      }
-      if (tableBody) {
-        const prev = tableBody.dataset.prevCollapsed;
-        if (prev === 'true') tableBody.classList.add('collapsed'); else tableBody.classList.remove('collapsed');
-        setToggleState(tableToggle, tableBody, prev === 'true');
-        delete tableBody.dataset.prevCollapsed;
-      }
-    }
-  });
-
-  chartToggle?.addEventListener('click', () => {
-    const chartBody = document.getElementById('chart-body');
-    const isCollapsed = chartBody.classList.toggle('collapsed');
-    chartToggle.setAttribute('aria-expanded', String(!isCollapsed));
-    chartToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar gráfico' : 'Minimizar gráfico';
-  });
-
-  tableToggle?.addEventListener('click', () => {
-    const tableBody = document.getElementById('analytics-breakdown-body');
-    const isCollapsed = tableBody.classList.toggle('collapsed');
-    tableToggle.setAttribute('aria-expanded', String(!isCollapsed));
-    tableToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar tabla' : 'Minimizar tabla';
-  });
-
-  window.addEventListener('resize', () => {
-    loadAnalytics().catch((error) => console.warn('Error actualizando gráfico al redimensionar:', error));
-  });
-
-  // ensure checkbox styles reflect defaults
-  syncMetricCheckboxStyles();
-  setInputsForRange('today');
-  loadAnalytics();
 });
 

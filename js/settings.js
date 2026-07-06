@@ -651,16 +651,17 @@ function setupSettingsPage() {
 
       populateForm(defaults);
 
-      const api = await waitForCasinosApi();
       try {
-        const [firebaseModule, firestoreModule] = await Promise.all([
-          import('./firebase.js'),
-          import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js')
-        ]);
+        const api = await waitForCasinosApi();
+
+        const firebaseModule = await import('./firebase.js');
+        const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
 
         const { doc, getDoc, setDoc } = firestoreModule;
+
         const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
         const currentConfig = snapshot.exists() ? snapshot.data() : {};
+        
         await setDoc(doc(firebaseModule.db, 'config', 'landing'), {
           ...currentConfig,
           landingContent: defaults
