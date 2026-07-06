@@ -98,7 +98,8 @@ function isAuthenticated() {
 
 function redirectToLogin() {
   if (window.location.pathname.includes('login.html')) return;
-  window.location.replace('/login.html');
+  const loginUrl = new URL('/login.html', window.location.href).href;
+  window.location.replace(loginUrl);
 }
 
 async function clearSession() {

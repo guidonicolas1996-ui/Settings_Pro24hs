@@ -8,9 +8,13 @@
     <title>Settings - Casino Oficial</title>
     <link rel="icon" type="image/png" href="/img/favicon.png" />
     <link rel="stylesheet" href="/css/style.css" />
+    <style>body{visibility:hidden;}</style>
     <script type="module">
       import { ensureAuthGate } from '/js/auth.js?v=1';
-      await ensureAuthGate();
+      const authOk = await ensureAuthGate();
+      if (authOk) {
+        document.body.style.visibility = 'visible';
+      }
     </script>
   </head>
   <body class="settings-page">
