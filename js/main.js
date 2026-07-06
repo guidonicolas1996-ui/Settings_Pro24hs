@@ -999,8 +999,12 @@ async function loadWhatsAppUrlUrgent() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // PRIORIDAD UNO: Cargar URL de WhatsApp en paralelo (no espera)
-  loadWhatsAppUrlUrgent().catch(() => {});
+  // PRIORIDAD UNO: Cargar URL de WhatsApp ANTES de renderizar contenido
+  try {
+    await loadWhatsAppUrlUrgent();
+  } catch (error) {
+    console.warn('Error cargando WhatsApp URL urgente:', error);
+  }
 
   const localCasinos = getLocalDynamicCasinos();
   if (localCasinos && typeof localCasinos === 'object' && Object.keys(localCasinos).length) {

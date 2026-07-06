@@ -434,7 +434,8 @@ Settings form styles
   color: var(--color-muted);
 }
 
-#landing-content-form textarea {
+#landing-content-form textarea,
+#landing-content-form input[type="url"] {
   width: 100%;
   min-height: 3rem;
   padding: 0.7rem 0.85rem;
@@ -445,9 +446,16 @@ Settings form styles
   resize: vertical;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
   transition: box-shadow var(--transition), transform var(--transition);
+  font-family: "Montserrat", "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-#landing-content-form textarea:focus {
+#landing-content-form input[type="url"] {
+  resize: none;
+  min-height: 2.6rem;
+}
+
+#landing-content-form textarea:focus,
+#landing-content-form input[type="url"]:focus {
   outline: none;
   box-shadow: 0 6px 22px rgba(0,0,0,0.6), 0 0 0 4px var(--theme-glow-1);
   transform: translateY(-2px);
