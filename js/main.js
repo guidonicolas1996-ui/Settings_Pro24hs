@@ -1172,11 +1172,24 @@ const landingSettingsAPI = {
 };
 
 if (typeof window !== 'undefined') {
-  window.landingSettings = landingSettingsAPI;
-  window.casinosAPI = {
+  const authGuard = window.authGuard || null;
+  const hasActiveSession = authGuard && typeof authGuard.isAuthenticated === 'function' ? authGuard.isAuthenticated() : false;
+  const guardedLandingSettingsAPI = hasActiveSession ? landingSettingsAPI : {
     ...landingSettingsAPI,
+    addCasino: async () => { throw new Error('Acceso no autorizado'); },
+    removeCasino: async () => { throw new Error('Acceso no autorizado'); },
+    updateCasinoActive: async () => { throw new Error('Acceso no autorizado'); },
+    saveDynamicCasinos: async () => { throw new Error('Acceso no autorizado'); },
+    setActiveCasinos: async () => { throw new Error('Acceso no autorizado'); },
+    setLandingContent: () => { throw new Error('Acceso no autorizado'); },
+    saveRemoteConfig: async () => { throw new Error('Acceso no autorizado'); }
+  };
+
+  window.landingSettings = guardedLandingSettingsAPI;
+  window.casinosAPI = {
+    ...guardedLandingSettingsAPI,
     applyTheme,
-    setActiveCasinos
+    setActiveCasinos: guardedLandingSettingsAPI.setActiveCasinos
   };
 }
 

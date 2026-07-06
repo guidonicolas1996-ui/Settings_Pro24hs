@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Login de administración" />
+    <meta name="theme-color" content="#060b1d" />
+    <title>Login - Casino Oficial</title>
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="settings-page" data-theme="default">
+    <div class="top-actions">
+      <a href="index.html" class="analytics-button" aria-label="Landing">🌐</a>
+    </div>
+    <div class="ambient-layer" aria-hidden="true">
+      <span class="blob blob-1"></span>
+      <span class="blob blob-2"></span>
+      <span class="blob blob-3"></span>
+      <span class="blob blob-4"></span>
+      <span class="blob blob-5"></span>
+    </div>
+    <main class="login-shell">
+      <section class="settings-card login-card" aria-labelledby="login-title">
+        <div>
+          <p class="settings-eyebrow">Administración</p>
+          <h1 id="login-title">Acceso administrativo</h1>
+        </div>
+        <p class="login-helper">Ingresá tus credenciales para ingresar.</p>
+        <form id="login-form" class="login-form">
+          <label class="login-field">
+            <span>Email</span>
+            <input id="login-user" name="user" type="email" autocomplete="username" required />
+          </label>
+          <label class="login-field">
+            <span>Contraseña</span>
+            <input id="login-pass" name="pass" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit" class="btn btn--primary">Entrar</button>
+        </form>
+        <div id="login-message" class="login-message"></div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { AUTH_STORAGE_KEY, setStoredSession } from '/js/auth.js';
+
+      async function ensureFirebase() {
+        const [{ initializeApp }, { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence }] = await Promise.all([
+          import('https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js'),
+          import('https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js')
+        ]);
+
+        const firebaseConfig = {
+          apiKey: 'AIzaSyBxduoIjvtM7arjMzKfwqDl4Rt-3eVogf8',
+          authDomain: 'landing-pro24.firebaseapp.com',
+          projectId: 'landing-pro24',
+          messagingSenderId: '705239660423',
+          appId: '1:705239660423:web:f91ef0cc5e345791fb4522'
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        return { auth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence };
+      }
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        const form = document.getElementById('login-form');
+        const message = document.getElementById('login-message');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const { auth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence } = await ensureFirebase();
+
+        window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
+
+        await setPersistence(auth, browserSessionPersistence);
+
+        onAuthStateChanged(auth, (user) => {
+          if (user && window.location.pathname.includes('/login.html')) {
+            setStoredSession(user);
+          }
+        });
+
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const email = document.getElementById('login-user').value.trim();
+          const pass = document.getElementById('login-pass').value;
+          if (!email || pass.length < 4) {
+            message.textContent = 'Ingresá email y contraseña válidos.';
+            return;
+          }
+
+          submitButton.disabled = true;
+          submitButton.textContent = 'Validando...';
+          message.textContent = 'Validando...';
+
+          try {
+            const credentials = await signInWithEmailAndPassword(auth, email, pass);
+            setStoredSession(credentials.user);
+            window.location.href = 'settings.html';
+          } catch (error) {
+            console.error(error);
+            message.textContent = 'Usuario o contraseña incorrectos.';
+          } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Entrar';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

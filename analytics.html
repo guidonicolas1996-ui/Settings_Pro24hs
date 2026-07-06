@@ -8,9 +8,18 @@
     <title>Analytics - Casino Oficial</title>
     <link rel="icon" type="image/png" href="/img/favicon.png" />
     <link rel="stylesheet" href="/css/style.css" />
+    <script>
+      (function () {
+        const session = window.sessionStorage.getItem('adminSession');
+        if (!session) {
+          window.location.replace('/login.html');
+        }
+      })();
+    </script>
   </head>
-  <body class="settings-page">
+  <body class="settings-page" data-theme="default">
     <div class="top-actions">
+      <button type="button" id="logout-button" class="analytics-button" aria-label="Cerrar sesión">🚪</button>
       <a href="index.html" class="analytics-button" aria-label="Landing">🌐</a>
       <a href="settings.html" class="analytics-button" aria-label="Configuración">⚙️</a>
     </div>
@@ -72,13 +81,11 @@
                     </button>
                     </div>
                 </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
+                                <div class="analytics-toolbar">
                                     <div id="analytics-message" class="analytics-message">
                 Mostrando datos para hoy por defecto.
                                     </div>
-                                    <div>
-                                        <button id="analytics-clear-btn" style="background:#c23; color:#fff; border:none; padding:0.5rem 0.75rem; border-radius:8px; cursor:pointer; font-weight:600;">BORRAR DATOS</button>
-                                    </div>
+                                    <button id="analytics-clear-btn" class="btn analytics-clear-btn">BORRAR DATOS</button>
                                 </div>
                 </section>
 
@@ -228,6 +235,13 @@
                 </section>
             </section>
         </main>
+    <script type="module">
+      import { clearSession } from '/js/auth.js';
+      document.getElementById('logout-button')?.addEventListener('click', async () => {
+        await clearSession();
+        window.location.replace('/login.html');
+      });
+    </script>
     <script type="module" src="./js/analytics.js?v=2"></script>
   </body>
 </html>

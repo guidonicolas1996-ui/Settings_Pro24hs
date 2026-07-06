@@ -8,9 +8,18 @@
     <title>Settings - Casino Oficial</title>
     <link rel="icon" type="image/png" href="/img/favicon.png" />
     <link rel="stylesheet" href="/css/style.css" />
+    <script>
+      (function () {
+        const session = window.sessionStorage.getItem('adminSession');
+        if (!session) {
+          window.location.replace('/login.html');
+        }
+      })();
+    </script>
   </head>
   <body class="settings-page">
     <div class="top-actions">
+      <button type="button" id="logout-button" class="analytics-button" aria-label="Cerrar sesión">🚪</button>
       <a href="index.html" class="analytics-button" aria-label="Landing">🌐</a>
       <a href="analytics.html" class="analytics-button" aria-label="Analiticas">📊</a>
     </div>
@@ -123,6 +132,13 @@
     <script>
       window.casinosAPI = window.casinosAPI || {};
       window.landingSettings = window.landingSettings || {};
+    </script>
+    <script type="module">
+      import { clearSession } from '/js/auth.js';
+      document.getElementById('logout-button')?.addEventListener('click', async () => {
+        await clearSession();
+        window.location.replace('/login.html');
+      });
     </script>
     <script type="module" src="/js/main.js"></script>
     <script type="module" src="/js/settings.js"></script>
