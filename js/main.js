@@ -269,6 +269,66 @@ function getBucketKeys(date = new Date()) {
   return { dateKey, hourKey, bucketKey: `${dateKey}:${hourKey}` };
 }
 
+function normalizeAnalyticsSource(rawSource) {
+  const srcParam = String(rawSource ?? '').trim().toLowerCase();
+  const primarySources = new Set(['', 'primary', 'main', 'principal']);
+  if (primarySources.has(srcParam)) {
+    return 'primary';
+  }
+
+  const altMatch = srcParam.match(/^alt(?:[_-]?([1-5]))?$/);
+  if (altMatch) {
+    return altMatch[1] ? `alt${altMatch[1]}` : 'alt1';
+  }
+
+  const legacyAltMatch = srcParam.match(/^alternative(?:[_-]?([1-5]))?$/);
+  if (legacyAltMatch) {
+    return legacyAltMatch[1] ? `alt${legacyAltMatch[1]}` : 'alt1';
+  }
+
+  return 'primary';
+}
+
+function getAnalyticsSourceKeys(source) {
+  if (source === 'alt1') {
+    return { sourceCountKey: 'alt1Links', sourceTotalKey: 'alt1Visits', isAlternative: true };
+  }
+  if (source === 'alt2') {
+    return { sourceCountKey: 'alt2Links', sourceTotalKey: 'alt2Visits', isAlternative: true };
+  }
+  if (source === 'alt3') {
+    return { sourceCountKey: 'alt3Links', sourceTotalKey: 'alt3Visits', isAlternative: true };
+  }
+  if (source === 'alt4') {
+    return { sourceCountKey: 'alt4Links', sourceTotalKey: 'alt4Visits', isAlternative: true };
+  }
+  if (source === 'alt5') {
+    return { sourceCountKey: 'alt5Links', sourceTotalKey: 'alt5Visits', isAlternative: true };
+  }
+
+  return { sourceCountKey: 'primaryLinks', sourceTotalKey: 'primaryVisits', isAlternative: false };
+}
+
+function getAnalyticsSourceWhatsappKeys(source) {
+  if (source === 'alt1') {
+    return { sourceUniqueKey: 'alt1WhatsappClicks', sourceTotalKey: 'alt1WhatsappClicksTotal' };
+  }
+  if (source === 'alt2') {
+    return { sourceUniqueKey: 'alt2WhatsappClicks', sourceTotalKey: 'alt2WhatsappClicksTotal' };
+  }
+  if (source === 'alt3') {
+    return { sourceUniqueKey: 'alt3WhatsappClicks', sourceTotalKey: 'alt3WhatsappClicksTotal' };
+  }
+  if (source === 'alt4') {
+    return { sourceUniqueKey: 'alt4WhatsappClicks', sourceTotalKey: 'alt4WhatsappClicksTotal' };
+  }
+  if (source === 'alt5') {
+    return { sourceUniqueKey: 'alt5WhatsappClicks', sourceTotalKey: 'alt5WhatsappClicksTotal' };
+  }
+
+  return { sourceUniqueKey: 'primaryWhatsappClicks', sourceTotalKey: 'primaryWhatsappClicksTotal' };
+}
+
 function ensureBucket(current, dateKey, hourKey) {
   current.buckets = current.buckets || {};
   current.buckets[dateKey] = current.buckets[dateKey] || {};
@@ -278,9 +338,9 @@ function ensureBucket(current, dateKey, hourKey) {
     uniqueVisitors: 0,
     totalVisits: 0,
     primaryLinks: 0,
-    alternativeLinks: 0,
     primaryVisits: 0,
-    alternativeVisits: 0,
+    primaryWhatsappClicks: 0,
+    primaryWhatsappClicksTotal: 0,
     alt1Links: 0,
     alt2Links: 0,
     alt3Links: 0,
@@ -291,6 +351,16 @@ function ensureBucket(current, dateKey, hourKey) {
     alt3Visits: 0,
     alt4Visits: 0,
     alt5Visits: 0,
+    alt1WhatsappClicks: 0,
+    alt2WhatsappClicks: 0,
+    alt3WhatsappClicks: 0,
+    alt4WhatsappClicks: 0,
+    alt5WhatsappClicks: 0,
+    alt1WhatsappClicksTotal: 0,
+    alt2WhatsappClicksTotal: 0,
+    alt3WhatsappClicksTotal: 0,
+    alt4WhatsappClicksTotal: 0,
+    alt5WhatsappClicksTotal: 0,
     whatsappClicks: 0,
     whatsappClicksTotal: 0
   };
@@ -309,9 +379,9 @@ function ensureAnalyticsTotals(totals) {
     uniqueVisitors: 0,
     totalVisits: 0,
     primaryLinks: 0,
-    alternativeLinks: 0,
     primaryVisits: 0,
-    alternativeVisits: 0,
+    primaryWhatsappClicks: 0,
+    primaryWhatsappClicksTotal: 0,
     alt1Links: 0,
     alt2Links: 0,
     alt3Links: 0,
@@ -322,6 +392,16 @@ function ensureAnalyticsTotals(totals) {
     alt3Visits: 0,
     alt4Visits: 0,
     alt5Visits: 0,
+    alt1WhatsappClicks: 0,
+    alt2WhatsappClicks: 0,
+    alt3WhatsappClicks: 0,
+    alt4WhatsappClicks: 0,
+    alt5WhatsappClicks: 0,
+    alt1WhatsappClicksTotal: 0,
+    alt2WhatsappClicksTotal: 0,
+    alt3WhatsappClicksTotal: 0,
+    alt4WhatsappClicksTotal: 0,
+    alt5WhatsappClicksTotal: 0,
     whatsappClicks: 0,
     whatsappClicksTotal: 0
   };
@@ -369,18 +449,10 @@ async function registerAnalyticsVisit() {
   const ip = await getIpAddress();
   const device = getDeviceMetadata(ip);
   const srcParamRaw = new URLSearchParams(window.location.search).get('src') || '';
-  const srcParam = String(srcParamRaw).trim().toLowerCase();
-  const primarySources = new Set(['', 'primary', 'main']);
-  const altMatch = srcParam.match(/^alt(?:[_-]?(\d))?$/);
-  const source = primarySources.has(srcParam)
-    ? 'primary'
-    : altMatch
-    ? altMatch[1]
-      ? `alt${altMatch[1]}`
-      : 'alt1'
-    : 'primary';
+  const source = normalizeAnalyticsSource(srcParamRaw);
+  const { sourceCountKey, sourceTotalKey, isAlternative } = getAnalyticsSourceKeys(source);
 
-  console.log('[analytics] registerAnalyticsVisit src:', { srcParamRaw, srcParam, source });
+  console.log('[analytics] registerAnalyticsVisit src:', { srcParamRaw, source, sourceCountKey, sourceTotalKey, isAlternative });
   const timestamp = new Date().toISOString();
   const currentHour = timestamp.slice(0, 13);
   const analyticsRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOCUMENT);
@@ -392,9 +464,7 @@ async function registerAnalyticsVisit() {
         uniqueVisitors: 0,
         totalVisits: 0,
         primaryLinks: 0,
-        alternativeLinks: 0,
         primaryVisits: 0,
-        alternativeVisits: 0,
         alt1Links: 0,
         alt2Links: 0,
         alt3Links: 0,
@@ -412,16 +482,11 @@ async function registerAnalyticsVisit() {
       buckets: {}
     };
 
-    current.totals = current.totals || {};
     ensureAnalyticsTotals(current.totals);
-    current.visitors = current.visitors || {};
-    current.buckets = current.buckets || {};
 
-    const visitors = current.visitors;
+    const visitors = current.visitors || {};
     const existing = visitors[visitorId];
     const isNewVisitor = !existing;
-    const sourceCountKey = source === 'primary' ? 'primaryLinks' : source === 'alt1' ? 'alt1Links' : source === 'alt2' ? 'alt2Links' : source === 'alt3' ? 'alt3Links' : source === 'alt4' ? 'alt4Links' : source === 'alt5' ? 'alt5Links' : 'alternativeLinks';
-    const sourceTotalKey = source === 'primary' ? 'primaryVisits' : source === 'alt1' ? 'alt1Visits' : source === 'alt2' ? 'alt2Visits' : source === 'alt3' ? 'alt3Visits' : source === 'alt4' ? 'alt4Visits' : source === 'alt5' ? 'alt5Visits' : 'alternativeVisits';
     const previousSourceCount = existing?.sources?.[source] || 0;
     // debug logs to help verify per-source counting behavior
     console.debug('registerAnalyticsVisit: before update', { visitorId, source, previousSourceCount, existingSources: existing?.sources });
@@ -456,19 +521,11 @@ async function registerAnalyticsVisit() {
     console.debug('registerAnalyticsVisit: after update', { visitorId, updatedSources: updated.sources });
     current.totals.totalVisits = (current.totals.totalVisits || 0) + 1;
     current.totals[sourceTotalKey] = (current.totals[sourceTotalKey] || 0) + 1;
-    if (source !== 'primary') {
-      current.totals.alternativeLinks = (current.totals.alternativeLinks || 0) + 1;
-      current.totals.alternativeVisits = (current.totals.alternativeVisits || 0) + 1;
-    }
 
     const { dateKey, hourKey } = getBucketKeys(new Date(timestamp));
     const bucket = ensureBucket(current, dateKey, hourKey);
     bucket.totalVisits = (bucket.totalVisits || 0) + 1;
     bucket[sourceTotalKey] = (bucket[sourceTotalKey] || 0) + 1;
-    if (source !== 'primary') {
-      bucket.alternativeLinks = (bucket.alternativeLinks || 0) + 1;
-      bucket.alternativeVisits = (bucket.alternativeVisits || 0) + 1;
-    }
     if (!sameHour) {
       bucket.uniqueVisitors += 1;
     }
@@ -476,9 +533,6 @@ async function registerAnalyticsVisit() {
     // has not used this source before.
     if (previousSourceCount === 0) {
       bucket[sourceCountKey] = (bucket[sourceCountKey] || 0) + 1;
-      if (source !== 'primary') {
-        bucket.alternativeLinks = (bucket.alternativeLinks || 0) + 1;
-      }
     }
     current.buckets[dateKey][hourKey] = bucket;
 
@@ -491,7 +545,8 @@ async function registerAnalyticsWhatsappClick() {
   const visitorId = await getPersistentVisitorId();
   const ip = await getIpAddress();
   const device = getDeviceMetadata(ip);
-  const source = new URLSearchParams(window.location.search).get('src') === 'alt' ? 'alternative' : 'primary';
+  const source = normalizeAnalyticsSource(new URLSearchParams(window.location.search).get('src'));
+  const { sourceUniqueKey, sourceTotalKey } = getAnalyticsSourceWhatsappKeys(source);
   const timestamp = new Date().toISOString();
   const currentHour = timestamp.slice(0, 13);
   const analyticsRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOCUMENT);
@@ -503,9 +558,29 @@ async function registerAnalyticsWhatsappClick() {
         uniqueVisitors: 0,
         totalVisits: 0,
         primaryLinks: 0,
-        alternativeLinks: 0,
         primaryVisits: 0,
-        alternativeVisits: 0,
+        primaryWhatsappClicks: 0,
+        primaryWhatsappClicksTotal: 0,
+        alt1Links: 0,
+        alt2Links: 0,
+        alt3Links: 0,
+        alt4Links: 0,
+        alt5Links: 0,
+        alt1Visits: 0,
+        alt2Visits: 0,
+        alt3Visits: 0,
+        alt4Visits: 0,
+        alt5Visits: 0,
+        alt1WhatsappClicks: 0,
+        alt2WhatsappClicks: 0,
+        alt3WhatsappClicks: 0,
+        alt4WhatsappClicks: 0,
+        alt5WhatsappClicks: 0,
+        alt1WhatsappClicksTotal: 0,
+        alt2WhatsappClicksTotal: 0,
+        alt3WhatsappClicksTotal: 0,
+        alt4WhatsappClicksTotal: 0,
+        alt5WhatsappClicksTotal: 0,
         whatsappClicks: 0,
         whatsappClicksTotal: 0
       },
@@ -517,11 +592,16 @@ async function registerAnalyticsWhatsappClick() {
     const existing = visitors[visitorId];
     const whatsappAlready = existing?.whatsappClicked || false;
     const sameHourClick = existing?.lastWhatsappClickHour === currentHour;
+    const previousSourceClickCount = existing?.whatsappSources?.[source] || 0;
 
     if (!whatsappAlready) {
       current.totals.whatsappClicks = (current.totals.whatsappClicks || 0) + 1;
     }
     current.totals.whatsappClicksTotal = (current.totals.whatsappClicksTotal || 0) + 1;
+    if (previousSourceClickCount === 0) {
+      current.totals[sourceUniqueKey] = (current.totals[sourceUniqueKey] || 0) + 1;
+    }
+    current.totals[sourceTotalKey] = (current.totals[sourceTotalKey] || 0) + 1;
 
     const updated = {
       ...existing,
@@ -531,6 +611,10 @@ async function registerAnalyticsWhatsappClick() {
       visits: existing?.visits || 0,
       sources: existing?.sources || {},
       whatsappClicked: true,
+      whatsappSources: {
+        ...(existing?.whatsappSources || {}),
+        [source]: (existing?.whatsappSources?.[source] || 0) + 1
+      },
       lastSource: source,
       lastWhatsappClickHour: currentHour
     };
@@ -544,6 +628,10 @@ async function registerAnalyticsWhatsappClick() {
     if (!sameHourClick) {
       bucket.whatsappClicks += 1;
     }
+    if (previousSourceClickCount === 0) {
+      bucket[sourceUniqueKey] = (bucket[sourceUniqueKey] || 0) + 1;
+    }
+    bucket[sourceTotalKey] = (bucket[sourceTotalKey] || 0) + 1;
     current.buckets = current.buckets || {};
     current.buckets[dateKey][hourKey] = bucket;
 

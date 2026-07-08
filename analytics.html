@@ -95,18 +95,15 @@
                     <input id="analytics-end" type="datetime-local" />
                     </div>
 
-                    <div class="analytics-filter-group analytics-filter-group--button">
-                    <label>&nbsp;</label>
-                    <button id="analytics-refresh" class="btn btn--primary">
-                        Mostrar
-                    </button>
-                    </div>
                 </div>
                                 <div class="analytics-toolbar">
                                     <div id="analytics-message" class="analytics-message">
                 Mostrando datos para hoy por defecto.
                                     </div>
-                                    <button id="analytics-clear-btn" class="btn analytics-clear-btn">BORRAR DATOS</button>
+                                    <div class="analytics-breakdown-actions">
+                                        <button id="analytics-generate-btn" class="btn analytics-clear-btn">GENERAR DATOS DE PRUEBA</button>
+                                        <button id="analytics-clear-btn" class="btn analytics-clear-btn">BORRAR DATOS</button>
+                                    </div>
                                 </div>
                 </section>
 
@@ -155,85 +152,13 @@
                       <h3>Links</h3>
                       <p class="settings-copy">Resumen de visitas por link principal y links alternativos.</p>
                     </div>
-                    <button id="links-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                    <button id="links-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
                       <span class="analytics-toggle-icon">▶</span>
-                      <span class="sr-only">Minimizar links</span>
+                      <span class="sr-only">Mostrar links</span>
                     </button>
                   </div>
-                  <div id="links-body" class="analytics-section__body">
-                    <div class="analytics-panel">
-                      <div class="analytics-card">
-                        <h3>Visitas únicas link principal</h3>
-                        <!-- <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=main</p> -->
-                        <p id="analytics-primary-unique">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas totales link principal</h3>
-                        <!-- <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=main</p> -->
-                        <p id="analytics-primary-total">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas únicas link alternativo 1</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt1</p>
-                        <p id="analytics-alternative-unique-1">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas totales link alternativo 1</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt1</p>
-                        <p id="analytics-alternative-total-1">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas únicas link alternativo 2</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt2</p>
-                        <p id="analytics-alternative-unique-2">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas totales link alternativo 2</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt2</p>
-                        <p id="analytics-alternative-total-2">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas únicas link alternativo 3</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt3</p>
-                        <p id="analytics-alternative-unique-3">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas totales link alternativo 3</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt3</p>
-                        <p id="analytics-alternative-total-3">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas únicas link alternativo 4</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt4</p>
-                        <p id="analytics-alternative-unique-4">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas totales link alternativo 4</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt4</p>
-                        <p id="analytics-alternative-total-4">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas únicas link alternativo 5</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt5</p>
-                        <p id="analytics-alternative-unique-5">Cargando...</p>
-                      </div>
-
-                      <div class="analytics-card">
-                        <h3>Visitas totales link alternativo 5</h3>
-                        <p class="analytics-card-subtitle">https://landing-pro24hs.vercel.app/?src=alt5</p>
-                        <p id="analytics-alternative-total-5">Cargando...</p>
-                      </div>
-                    </div>
+                  <div id="links-body" class="analytics-section__body collapsed">
+                    <div id="analytics-links-summary" class="analytics-links-summary"></div>
                   </div>
                 </div>
                 </div>
@@ -272,16 +197,87 @@
                                 </div>
 
                                 <div class="analytics-metrics-panel" style="margin-top:0.5rem;margin-bottom:0.75rem;">
-                                    <label style="display:block;margin-bottom:0.5rem;font-weight:600;color:var(--color-text);">Métricas</label>
+                                    <div class="analytics-metrics-toolbar">
+                                        <label style="display:block;margin-bottom:0;font-weight:600;color:var(--color-text);">Métricas</label>
+                                        <div class="analytics-metric-actions">
+                                            <button type="button" class="analytics-inline-toggle analytics-inline-toggle--subtle analytics-metric-preset-button" data-preset="summary">Resumen</button>
+                                            <button type="button" class="analytics-inline-toggle analytics-inline-toggle--subtle analytics-metric-preset-button" data-preset="visits">Visitas</button>
+                                            <button type="button" class="analytics-inline-toggle analytics-inline-toggle--subtle analytics-metric-preset-button" data-preset="whatsapp">WhatsApp</button>
+                                            <button type="button" class="analytics-inline-toggle analytics-inline-toggle--subtle analytics-metric-preset-button" data-preset="all">Todo</button>
+                                        </div>
+                                        <button id="analytics-alt-detail-toggle" type="button" class="analytics-inline-toggle" aria-expanded="false">
+                                            Detalle de links
+                                        </button>
+                                    </div>
                                     <div id="analytics-metric-checkboxes" class="analytics-metric-checkboxes analytics-metric-inline">
-                                        <label><input type="checkbox" value="uniqueVisitors" checked><span>Visitas únicas</span></label>
-                                        <label><input type="checkbox" value="totalVisits"><span>Visitas totales</span></label>
-                                        <label><input type="checkbox" value="primaryLinks"><span>Visitas únicas link principal</span></label>
-                                        <label><input type="checkbox" value="primaryVisits"><span>Visitas totales link principal</span></label>
-                                        <label><input type="checkbox" value="alternativeLinks"><span>Visitas únicas link alternativo</span></label>
-                                        <label><input type="checkbox" value="alternativeVisits"><span>Visitas totales link alternativo</span></label>
-                                        <label><input type="checkbox" value="whatsappClicks" checked><span>Clicks únicos WhatsApp</span></label>
-                                        <label><input type="checkbox" value="whatsappClicksTotal"><span>Clicks totales WhatsApp</span></label>
+                                        <div class="analytics-metric-group">
+                                            <div class="analytics-metric-group__title">Generales</div>
+                                            <div class="analytics-metric-group__list">
+                                                <label><input type="checkbox" value="uniqueVisitors" checked><span>Visitas únicas</span></label>
+                                                <label><input type="checkbox" value="totalVisits"><span>Visitas totales</span></label>
+                                                <label><input type="checkbox" value="whatsappClicks" checked><span>Clicks únicos WhatsApp</span></label>
+                                                <label><input type="checkbox" value="whatsappClicksTotal"><span>Clicks totales WhatsApp</span></label>
+                                            </div>
+                                        </div>
+                                        <div class="analytics-metric-group">
+                                            <div class="analytics-metric-group__title">Links</div>
+                                            <div class="analytics-metric-group__list analytics-metric-group__list--stacked">
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Principal</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="primaryLinks"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="primaryVisits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="primaryWhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="primaryWhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 1</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt1Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt1Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt1WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt1WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 2</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt2Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt2Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt2WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt2WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 3</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt3Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt3Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt3WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt3WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 4</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt4Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt4Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt4WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt4WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 5</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt5Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt5Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt5WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt5WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                 <div id="chart-section" class="analytics-chart-section">
@@ -308,10 +304,12 @@
                 <div id="analytics-breakdown-section" class="analytics-breakdown-section">
                     <div class="analytics-breakdown-header analytics-subsection-header">
                         <h3>Tabla Comparativa (Únicas/Totales)</h3>
-                        <button id="table-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
-                            <span class="analytics-toggle-icon">▶</span>
-                            <span class="sr-only">Mostrar tabla</span>
-                        </button>
+                        <div class="analytics-breakdown-actions">
+                            <button id="table-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
+                                <span class="analytics-toggle-icon">▶</span>
+                                <span class="sr-only">Mostrar tabla</span>
+                            </button>
+                        </div>
                     </div>
                     <div id="analytics-breakdown-body" class="analytics-section__body collapsed">
                         <div id="analytics-breakdown" class="analytics-breakdown">
@@ -341,7 +339,7 @@
                 if (ok) {
                     try {
                         console.log('[page] analytics importing module...');
-                        await import('./js/analytics.js?v=3');
+                        await import('./js/analytics.js?v=5');
                         console.log('[page] analytics imported analytics.js');
                     } catch (e) {
                         console.error('[page] analytics failed to load analytics module', e);
