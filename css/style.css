@@ -1,4 +1,6 @@
-﻿/* ===========================
+﻿@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+
+/* ===========================
 Variables
 =========================== */
 :root {
@@ -97,7 +99,7 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  font-family: "Montserrat", "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "Syne", "Segoe UI", Roboto, Arial, sans-serif;
   color: var(--color-text);
   background-image: linear-gradient(140deg, rgba(6, 11, 29, 0.96) 0%, rgba(12, 20, 48, 0.96) 55%, rgba(20, 15, 53, 0.96) 100%), var(--background-image);
   background-size: cover;
@@ -988,10 +990,11 @@ Page layout
 
 .hero-card h1 {
   margin: 0 0 0.9rem;
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-size: clamp(1.45rem, 3.6vw, 2rem);
   line-height: 1.2;
   text-align: center;
   letter-spacing: 0.01em;
+  font-weight: 700;
 }
 
 .gradient-text {
@@ -1052,26 +1055,39 @@ WhatsApp CTA
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
-  width: 100%;
-  min-height: 4.2rem;
-  border: 0;
+  gap: 0.9rem;
+  width: min(100%, 24rem);
+  min-height: 4.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
-  padding: 1rem 1.25rem;
-  color: white;
+  padding: 1rem 1.5rem;
+  color: #ffffff;
   font-weight: 800;
-  font-size: clamp(1.25rem, 2.2vw, 1.1rem);
-  letter-spacing: 0.02em;
-  background: linear-gradient(135deg, var(--theme-success), #1da751);
-  box-shadow: 0 16px 32px rgba(37, 211, 102, 0.25);
+  font-size: clamp(1rem, 1.8vw, 1.18rem);
+  letter-spacing: 0.03em;
+  background: linear-gradient(135deg, #12b04b 0%, #0faa4b 55%, #19e160 100%);
+  background-size: 240% 240%;
+  background-position: 0% center;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   cursor: pointer;
-  transition: transform var(--transition), box-shadow var(--transition), background var(--transition), opacity var(--transition);
+  transition: transform 180ms ease, box-shadow 180ms ease, background-position 220ms ease, filter 180ms ease, opacity 180ms ease;
   overflow: hidden;
+  backdrop-filter: blur(6px);
 }
 
 .whatsapp-button > * {
   position: relative;
   z-index: 1;
+}
+
+.whatsapp-button .button-aura {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 24% 45%, rgba(255, 255, 255, 0.18), transparent 30%), radial-gradient(circle at 75% 45%, rgba(15, 148, 69, 0.16), transparent 42%);
+  opacity: 0.9;
+  transition: opacity 220ms ease;
 }
 
 .whatsapp-button__progress {
@@ -1082,8 +1098,8 @@ WhatsApp CTA
   pointer-events: none;
   z-index: 0;
   opacity: 0;
-  background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   transition: opacity 180ms ease, box-shadow 180ms ease;
 }
 
@@ -1092,9 +1108,9 @@ WhatsApp CTA
 }
 
 .whatsapp-button--loading {
-  background: linear-gradient(135deg, rgba(28, 33, 43, 0.98), rgba(18, 22, 31, 0.98));
-  color: rgba(240, 245, 255, 0.95);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 14px 28px rgba(0, 0, 0, 0.18);
+  background: linear-gradient(135deg, rgba(7, 89, 52, 0.96), rgba(17, 124, 60, 0.98));
+  color: rgba(245, 255, 245, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 34px rgba(0, 0, 0, 0.22);
 }
 
 .whatsapp-button--loading::before,
@@ -1107,13 +1123,13 @@ WhatsApp CTA
   inset: 0;
   width: 0%;
   height: 100%;
-  background: linear-gradient(90deg, rgba(0, 231, 139, 0.95), rgba(37, 211, 102, 0.95));
-  box-shadow: inset 0 0 30px rgba(37, 211, 102, 0.32);
+  background: linear-gradient(90deg, rgba(84, 255, 153, 0.92), rgba(0, 215, 93, 0.92));
+  box-shadow: inset 0 0 30px rgba(33, 221, 114, 0.36);
   transition: width 220ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .whatsapp-button--ready {
-  background: linear-gradient(135deg, var(--theme-success), #1da751);
+  background: linear-gradient(135deg, #18c969, #13a24d);
 }
 
 .whatsapp-button::before,
@@ -1126,25 +1142,49 @@ WhatsApp CTA
 .whatsapp-button::before {
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 72%);
-  opacity: 0.22;
-  transform: scale(0.8);
-  animation: whatsapp-halo 1.8s ease-in-out infinite;
+  background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.35), transparent 42%);
+  opacity: 0.35;
+  transform: scale(0.96);
 }
 
-.whatsapp-button::after { 
-    inset: -18px; 
-    border-radius: 999px; 
-    background: radial-gradient(circle, rgba(211, 37, 196, 0.2), rgba(37, 211, 60, 0) 70%); 
-    z-index: -1; 
-    opacity: 0; 
-    animation: whatsapp-ring 1.8s ease-in-out infinite; 
+.whatsapp-button::after {
+  inset: -14px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(37, 211, 102, 0.14), transparent 58%);
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.whatsapp-button:hover::after,
+.whatsapp-button:focus-visible::after {
+  opacity: 0.36;
+  transform: scale(1.04);
 }
 
 .whatsapp-button:hover,
 .whatsapp-button:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: 0 0 18px 4px rgba(37, 211, 102, 0.24), 0 18px 34px rgba(37, 211, 102, 0.32);
+  transform: translateY(-1px) scale(1.06);
+  box-shadow: 0 22px 32px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.26);
+  background-position: 95% center;
+  filter: saturate(1.28) brightness(1.03);
+}
+
+.whatsapp-button:hover::before,
+.whatsapp-button:focus-visible::before {
+  opacity: 0.60;
+}
+
+.whatsapp-button:hover::after,
+.whatsapp-button:focus-visible::after {
+  opacity: 0.42;
+  transform: scale(1.08);
+}
+
+.whatsapp-button:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, #0a8c3d 0%, #0f9c44 55%, #13d559 100%);
 }
 
 /* ===========================
@@ -1194,7 +1234,7 @@ Settings form styles
   resize: vertical;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
   transition: box-shadow var(--transition), transform var(--transition);
-  font-family: "Montserrat", "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "Syne", "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 #landing-content-form input[type="url"] {
@@ -1248,8 +1288,9 @@ Settings form styles
 }
 
 .whatsapp-button img {
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.18));
 }
 
 /* ===========================
