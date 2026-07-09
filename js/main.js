@@ -476,7 +476,7 @@ async function registerAnalyticsVisit() {
   const source = hydrateAnalyticsSourceFromUrl();
   const { sourceCountKey, sourceTotalKey, isAlternative } = getAnalyticsSourceKeys(source);
 
-  console.log('[analytics] registerAnalyticsVisit src:', { srcParamRaw, source, sourceCountKey, sourceTotalKey, isAlternative });
+  console.log('[analytics] registerAnalyticsVisit src:', { source, sourceCountKey, sourceTotalKey, isAlternative });
   const timestamp = new Date().toISOString();
   const currentHour = timestamp.slice(0, 13);
   const analyticsRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOCUMENT);
