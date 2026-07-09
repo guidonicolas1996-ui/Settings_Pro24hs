@@ -1,12 +1,12 @@
 /* Configuración principal de textos y destino del botón */
 let landingContent = {
   accessBadge: 'ACCESO VIP',
-  heroTitle: 'OBTENÉ UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMERA CARGA</span>',
+  heroTitle: 'OBTEN UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMERA CARGA</span>',
   heroCopy: 'Escribinos apretando el botón de abajo',
   ctaLabel: 'CARGANDO PROMOCIÓN...',
-  helperText: 'CARGAS Y RETIROS AL INSTANTE - ATENCIÓN 24/7',
+  helperText: 'CARGAS Y RETIROS AL INSTANTE',
   footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
-  footerText2: '© 2026 el juego es solo +18. Operá con responsabilidad.',
+  footerText2: 'Advertencia de juego responsable (+18) - © 2026',
   whatsappUrl: ''
 };
 
@@ -269,6 +269,8 @@ function getBucketKeys(date = new Date()) {
   return { dateKey, hourKey, bucketKey: `${dateKey}:${hourKey}` };
 }
 
+let activeAnalyticsSource = 'primary';
+
 function normalizeAnalyticsSource(rawSource) {
   const srcParam = String(rawSource ?? '').trim().toLowerCase();
   const primarySources = new Set(['', 'primary', 'main', 'principal']);
@@ -287,6 +289,27 @@ function normalizeAnalyticsSource(rawSource) {
   }
 
   return 'primary';
+}
+
+function hydrateAnalyticsSourceFromUrl() {
+  const srcParamRaw = new URLSearchParams(window.location.search).get('src') || '';
+  const source = normalizeAnalyticsSource(srcParamRaw);
+  activeAnalyticsSource = source;
+
+  if (source !== 'primary') {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('src');
+    const cleanUrl = `${url.pathname}${url.search}${url.hash}`;
+    if (window.location.pathname + window.location.search + window.location.hash !== cleanUrl) {
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }
+
+  return activeAnalyticsSource;
+}
+
+function getActiveAnalyticsSource() {
+  return activeAnalyticsSource || 'primary';
 }
 
 function getAnalyticsSourceKeys(source) {
@@ -448,8 +471,7 @@ async function registerAnalyticsVisit() {
   const visitorId = await getPersistentVisitorId();
   const ip = await getIpAddress();
   const device = getDeviceMetadata(ip);
-  const srcParamRaw = new URLSearchParams(window.location.search).get('src') || '';
-  const source = normalizeAnalyticsSource(srcParamRaw);
+  const source = getActiveAnalyticsSource();
   const { sourceCountKey, sourceTotalKey, isAlternative } = getAnalyticsSourceKeys(source);
 
   console.log('[analytics] registerAnalyticsVisit src:', { srcParamRaw, source, sourceCountKey, sourceTotalKey, isAlternative });
@@ -545,7 +567,7 @@ async function registerAnalyticsWhatsappClick() {
   const visitorId = await getPersistentVisitorId();
   const ip = await getIpAddress();
   const device = getDeviceMetadata(ip);
-  const source = normalizeAnalyticsSource(new URLSearchParams(window.location.search).get('src'));
+  const source = getActiveAnalyticsSource();
   const { sourceUniqueKey, sourceTotalKey } = getAnalyticsSourceWhatsappKeys(source);
   const timestamp = new Date().toISOString();
   const currentHour = timestamp.slice(0, 13);
@@ -1437,6 +1459,8 @@ async function loadWhatsAppUrlUrgent() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  hydrateAnalyticsSourceFromUrl();
+
   // === PASO 1: Iniciar carga del WhatsApp URL en background ===
   loadWhatsAppUrlUrgent(); // No bloquea el render
   

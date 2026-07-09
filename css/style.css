@@ -276,12 +276,12 @@ Page layout
 .mascot-carousel__item {
   grid-area: 1 / 1;
   position: relative;
-  width: min(100%, 16rem);
+  width: min(100%, 15.2rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.35rem;
+  gap: 0.25rem;
   transform-origin: center center;
   transform-style: preserve-3d;
   backface-visibility: hidden;
@@ -295,10 +295,10 @@ Page layout
 
 .mascot-carousel__logo {
   display: block;
-  width: clamp(7.5rem, 21vw, 10.2rem);
+  width: clamp(6.6rem, 18vw, 9rem);
   height: auto;
   object-fit: contain;
-  margin-bottom: 0.1rem;
+  margin-bottom: 0;
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
   transform: translateZ(0);
   image-rendering: auto;
@@ -307,12 +307,12 @@ Page layout
 
 .mascot-carousel__image {
   display: block;
-  width: min(100%, 16rem);
+  width: min(100%, 14.5rem);
 }
 
 .mascot-carousel__item--left {
   transform: translateX(-8.2rem) translateZ(-70px) rotateY(22deg) scale(0.72);
-  opacity: 0.35;
+  opacity: 0.25;
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.75)) saturate(0.9);
   z-index: 1;
 }
@@ -326,7 +326,7 @@ Page layout
 
 .mascot-carousel__item--right {
   transform: translateX(8.2rem) translateZ(-70px) rotateY(-22deg) scale(0.72);
-  opacity: 0.35;
+  opacity: 0.25;
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.75)) saturate(0.9);
   z-index: 1;
 }
@@ -428,7 +428,6 @@ Page layout
   position: relative;
   border-radius: var(--radius-lg);
 
-  padding-top: clamp(1.35rem, 3vw, 2rem);
   padding-left: clamp(1.8rem, 4vw, 2.5rem);
   padding-right: clamp(1.8rem, 4vw, 2.5rem);
 
@@ -1940,10 +1939,6 @@ Responsive
     gap: 0.65rem;
   }
 
-  .hero-card,
-  .settings-card {
-    padding: 1.2rem;
-  }
 }
 
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
