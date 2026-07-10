@@ -1190,13 +1190,12 @@ Page layout
 
 .promo-banner__right {
   position: absolute;
-  inset: 0;
+  inset: 0 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   padding-right: clamp(1rem, 2vw, 1.4rem);
   width: min(26rem, 100%);
-  right: 0;
   pointer-events: none;
   overflow: visible;
 }
@@ -1231,7 +1230,7 @@ Page layout
   .promo-banner__right .mascot-carousel {
     width: min(100%, 24rem);
     max-width: 100%;
-    transform: translateX(8%);
+    transform: translateX(20%);
     overflow: visible;
     min-height: 18rem;
     padding-bottom: 1rem;
