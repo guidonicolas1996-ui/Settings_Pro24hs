@@ -1355,6 +1355,32 @@ Page layout
   margin: 0 auto;
 }
 
+@media (max-width: 640px) {
+  .logo-carousel {
+    width: min(20rem, 100%);
+    max-width: 100%;
+    min-height: 6.5rem;
+    padding: 0.5rem 0;
+  }
+
+  .logo-carousel .mascot-carousel__item {
+    width: min(9rem, 90vw);
+  }
+
+  .logo-carousel .mascot-carousel__item--left {
+    transform: translateX(-6.8rem) translateZ(-60px) rotateY(20deg) scale(0.68);
+  }
+
+  .logo-carousel .mascot-carousel__item--right {
+    transform: translateX(6.8rem) translateZ(-60px) rotateY(-20deg) scale(0.68);
+  }
+
+  .logo-carousel .mascot-carousel__logo {
+    width: min(7rem, 24vw);
+    max-width: 7rem;
+  }
+}
+
 /* Analytics comparison small badges */
 .analytics-compare {
   font-size: 0.78rem; /* slightly smaller */
