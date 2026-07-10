@@ -1238,7 +1238,7 @@ Page layout
 
   .promo-banner__right .mascot-carousel {
     width: 100%;
-    transform: translateX(10%);
+    transform: translateX(30%);
     overflow: hidden;
   }
 }
