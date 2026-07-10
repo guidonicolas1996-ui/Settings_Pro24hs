@@ -1130,7 +1130,7 @@ Page layout
   max-width: 36rem;
   width: min(100%, 36rem);
   margin: 0 auto;
-  min-height: 20.5rem;
+  min-height: 13.3rem;
   overflow: visible;
 }
 
@@ -1218,7 +1218,7 @@ Page layout
   .promo-banner {
     display: block;
     padding-right: clamp(1.6rem, 2.5vw, 2.3rem);
-    min-height: 21.5rem;
+    min-height: 14rem;
   }
 
   .promo-banner__left {
