@@ -1217,8 +1217,8 @@ Page layout
   }
 
   .promo-banner__left {
-    width: min(60vw, 22rem);
-    max-width: 60vw;
+    width: min(50vw, 22rem);
+    max-width: 50vw;
   }
 
   .promo-banner__right {
