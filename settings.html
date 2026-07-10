@@ -72,28 +72,48 @@
         <p class="settings-eyebrow">Textos de la página</p>
         <p class="settings-copy">Modificá los textos que se muestran en la landing.</p>
         <form id="landing-content-form">
-          <label>Título
+          <label>
+            <span class="settings-label">Título</span>
             <textarea id="input-heroTitle" name="heroTitle" rows="3"></textarea>
           </label>
-          <label>Subtítulo
+          <label>
+            <span class="settings-label">Subtítulo</span>
             <textarea id="input-heroCopy" name="heroCopy" rows="2"></textarea>
           </label>
-          <label>Texto Botón WhatsApp
+          <label>
+            <span class="settings-label">Texto de banner (etiqueta)</span>
+            <textarea id="input-promoLabel" name="promoLabel" rows="2"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Título de banner</span>
+            <textarea id="input-promoTitle" name="promoTitle" rows="3"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Texto de banner (nota)</span>
+            <textarea id="input-promoNote" name="promoNote" rows="2"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Texto Botón WhatsApp</span>
             <textarea id="input-ctaLabel" name="ctaLabel" rows="2"></textarea>
           </label>
-          <label>URL WhatsApp
+          <label>
+            <span class="settings-label">URL WhatsApp</span>
             <input type="url" id="input-whatsappUrl" name="whatsappUrl" placeholder="https://..." />
           </label>
-          <label>Texto Aclarativo
+          <label>
+            <span class="settings-label">Texto Aclarativo</span>
             <textarea id="input-helperText" name="helperText" rows="2"></textarea>
           </label>
-          <label>Badge Central
+          <label>
+            <span class="settings-label">Badge Central</span>
             <textarea id="input-accessBadge" name="accessBadge" rows="2"></textarea>
           </label>
-          <label>Footer Informativo
+          <label>
+            <span class="settings-label">Footer Informativo</span>
             <textarea id="input-footerText1" name="footerText1" rows="2"></textarea>
           </label>
-          <label>Footer Obligatorio
+          <label>
+            <span class="settings-label">Footer Obligatorio</span>
             <textarea id="input-footerText2" name="footerText2" rows="2"></textarea>
           </label>
           <div class="settings-actions">
@@ -180,7 +200,7 @@
             console.log('[page] settings importing modules...');
             await import('/js/main.js');
             console.log('[page] settings imported main.js');
-            await import('/js/settings.js?v=8');
+            await import('/js/settings.js?v=9');
             console.log('[page] settings imported settings.js');
           } catch (e) {
             console.error('[page] settings failed importing modules', e);

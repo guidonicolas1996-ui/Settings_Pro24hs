@@ -1,8 +1,11 @@
 /* Configuración principal de textos y destino del botón */
 let landingContent = {
   accessBadge: 'ACCESO VIP',
-  heroTitle: 'OBTEN UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMERA CARGA</span>',
+  heroTitle: 'BIENVENIDO A TU <span class="gradient-text">CASINO DE CONFIANZA</span>',
   heroCopy: 'Escribinos apretando el botón de abajo',
+  promoLabel: 'PARA USUARIOS NUEVOS',
+  promoTitle: '<span class="gradient-text">EXTRA</span> DE BONO EN TU <span class="gradient-text">PRIMER CARGA</span>',
+  promoNote: 'CARGAS Y RETIROS AL INSTANTE',
   ctaLabel: 'CARGANDO PROMOCIÓN...',
   helperText: 'CARGAS Y RETIROS AL INSTANTE',
   footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
@@ -1045,10 +1048,16 @@ function renderContent() {
   const helperText = document.getElementById('helper-text');
   const footerText1 = document.getElementById('footer-text1');
   const footerText2 = document.getElementById('footer-text2');
+  const promoLabel = document.getElementById('promoLabel');
+  const promoTitle = document.getElementById('promoTitle');
+  const promoNote = document.getElementById('promoNote');
 
   if (accessBadge) accessBadge.textContent = landingContent.accessBadge;
   if (heroTitle) heroTitle.innerHTML = landingContent.heroTitle;
   if (heroCopy) heroCopy.textContent = landingContent.heroCopy;
+  if (promoLabel) promoLabel.textContent = landingContent.promoLabel;
+  if (promoTitle) promoTitle.innerHTML = landingContent.promoTitle;
+  if (promoNote) promoNote.textContent = landingContent.promoNote;
   if (ctaLabel) ctaLabel.textContent = landingContent.ctaLabel;
   if (helperText) helperText.textContent = landingContent.helperText;
   if (footerText1) footerText1.textContent = landingContent.footerText1;

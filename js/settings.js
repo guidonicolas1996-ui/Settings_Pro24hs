@@ -1,4 +1,5 @@
 // M�dulo de scripts espec�ficos de settings.html
+console.log('[settings] settings.js loaded');
 
 function compressImage(base64String, maxWidth = 600, maxHeight = 600, quality = 0.8) {
   return new Promise((resolve) => {
@@ -39,9 +40,9 @@ function compressImage(base64String, maxWidth = 600, maxHeight = 600, quality = 
 async function waitForCasinosApi(timeoutMs = 5000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const candidate = window.landingSettings && (window.landingSettings.addCasino || window.landingSettings.getCasinos || window.landingSettings.setActiveCasinos)
+    const candidate = window.landingSettings && (window.landingSettings.addCasino || window.landingSettings.getCasinos || window.landingSettings.setActiveCasinos || window.landingSettings.saveRemoteConfig || window.landingSettings.setLandingContent)
       ? window.landingSettings
-      : (window.casinosAPI && (window.casinosAPI.addCasino || window.casinosAPI.getCasinos || window.casinosAPI.setActiveCasinos))
+      : (window.casinosAPI && (window.casinosAPI.addCasino || window.casinosAPI.getCasinos || window.casinosAPI.setActiveCasinos || window.casinosAPI.saveRemoteConfig || window.casinosAPI.setLandingContent))
         ? window.casinosAPI
         : null;
 
@@ -580,6 +581,7 @@ function closeNewCasinoModal() {
 }
 
 function setupSettingsPage() {
+  console.log('[settings] setupSettingsPage called');
   const openButton = document.getElementById('open-new-casino');
   const closeButton = document.getElementById('close-new-casino');
   const modal = document.getElementById('new-casino-modal');
@@ -605,13 +607,20 @@ function setupSettingsPage() {
   });
 
   const saveLandingButton = document.getElementById('save-landing-content');
+  console.log('[settings] saveLandingButton lookup', { button: saveLandingButton });
   if (saveLandingButton) {
+    console.log('[settings] saveLandingButton found and handler attached');
     saveLandingButton.addEventListener('click', async () => {
+      console.log('[settings] saveLandingButton clicked');
       const api = await waitForCasinosApi();
+      console.log('[settings] waitForCasinosApi returned', api);
       const payload = {
         accessBadge: document.getElementById('input-accessBadge').value,
         heroTitle: document.getElementById('input-heroTitle').value,
         heroCopy: document.getElementById('input-heroCopy').value,
+        promoLabel: document.getElementById('input-promoLabel').value,
+        promoTitle: document.getElementById('input-promoTitle').value,
+        promoNote: document.getElementById('input-promoNote').value,
         ctaLabel: document.getElementById('input-ctaLabel').value,
         whatsappUrl: document.getElementById('input-whatsappUrl').value,
         helperText: document.getElementById('input-helperText').value,
@@ -623,13 +632,25 @@ function setupSettingsPage() {
         api.setLandingContent(payload, false);
       }
       try {
-        if (api.saveRemoteConfig) {
-          await api.saveRemoteConfig({ landingContent: payload });
-        }
+        console.log('[settings] starting Firebase save');
+        const firebaseModule = await import('./firebase.js');
+        console.log('[settings] imported firebase module', firebaseModule);
+        const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+        console.log('[settings] imported firestore module', firestoreModule);
+        const { doc, getDoc, setDoc } = firestoreModule;
+        const docRef = doc(firebaseModule.db, 'config', 'landing');
+        console.log('[settings] docRef created', docRef);
+        console.log('[settings] saving landingContent payload', payload);
+        const snapshot = await getDoc(docRef);
+        const currentConfig = snapshot.exists() ? snapshot.data() : {};
+        console.log('[settings] currentConfig before save', currentConfig);
+        await setDoc(docRef, { landingContent: payload }, { merge: true });
+        const savedSnapshot = await getDoc(docRef);
+        console.log('[settings] saved landingContent to Firebase', savedSnapshot.exists() ? savedSnapshot.data() : null);
         alert('Textos guardados correctamente.');
       } catch (error) {
-        console.warn('No se pudo guardar de forma remota', error);
-        alert('Error guardando en remoto.');
+        console.error('[settings] No se pudo guardar de forma remota', error);
+        alert('Error guardando en remoto: ' + (error.message || 'ver consola'));
       }
     });
   }
@@ -662,6 +683,9 @@ function setupSettingsPage() {
         accessBadge: 'ACCESO VIP',
         heroTitle: 'OBTENÉ UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMER DEPÓSITO</span>',
         heroCopy: 'Escribinos apretando el botón de abajo',
+        promoLabel: 'PARA USUARIOS NUEVOS',
+        promoTitle: '<span class="gradient-text">100%</span> DE BONO EN TU <span class="gradient-text">PRIMERA CARGA</span>',
+        promoNote: 'CARGAS Y RETIROS AL INSTANTE',
         ctaLabel: 'WHATSAPP OFICIAL',
         // whatsappUrl intentionally omitted here; we'll preserve existing DB value when saving
         helperText: 'ATENCIÓN Y RETIROS LAS 24 HS',
@@ -714,6 +738,9 @@ function populateForm(content) {
   document.getElementById('input-accessBadge').value = content.accessBadge || '';
   document.getElementById('input-heroTitle').value = content.heroTitle || '';
   document.getElementById('input-heroCopy').value = content.heroCopy || '';
+  document.getElementById('input-promoLabel').value = content.promoLabel || '';
+  document.getElementById('input-promoTitle').value = content.promoTitle || '';
+  document.getElementById('input-promoNote').value = content.promoNote || '';
   const ctaEl = document.getElementById('input-ctaLabel');
   ctaEl.value = content.ctaLabel || '';
   // store original loaded value so we can detect edits and replace const-based defaults
@@ -727,6 +754,7 @@ function populateForm(content) {
 }
 
 function initSettings() {
+  console.log('[settings] initSettings called');
   setupFilePreview('casino-logo', 'logo-preview');
   setupFilePreview('casino-mascot', 'mascot-preview');
   setupCasinoForm();
@@ -742,12 +770,14 @@ window.addEventListener('landingContent:ready', (event) => {
 });
 
 async function runOnReady() {
+  console.log('[settings] runOnReady start', { readyState: document.readyState });
   try {
     if (window.casinosReady) {
       await window.casinosReady.catch(() => {});
     }
 
     const api = await waitForCasinosApi();
+    console.log('[settings] runOnReady got api', api);
 
     // Prefer explicitly reading landingContent from Firestore so the settings
     // form shows the database values (not the local constants) as the source
