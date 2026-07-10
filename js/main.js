@@ -1327,12 +1327,14 @@ function updateMascotCarousel(casinoId, carouselId = 'mascot-carousel', hasMasco
   animateItem(center, 'mascot-carousel__item--animate-center-to-left');
   animateItem(right, 'mascot-carousel__item--animate-right-to-center');
 
-  if (effectiveCount <= 3) {
-    animateItem(left, 'mascot-carousel__item--animate-left-to-right');
-  } else {
+  const useHiddenFlow = carouselId === 'logo-carousel' || effectiveCount > 3;
+
+  if (useHiddenFlow) {
     animateItem(left, 'mascot-carousel__item--animate-left-to-hidden');
     animateItem(hidden1, 'mascot-carousel__item--animate-hidden-to-right');
     setState(hidden2, 'mascot-carousel__item--hidden-behind');
+  } else {
+    animateItem(left, 'mascot-carousel__item--animate-left-to-right');
   }
 
   void left.offsetWidth;
