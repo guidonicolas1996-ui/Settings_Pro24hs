@@ -13,38 +13,83 @@
     <div class="top-actions">
       <a href="settings.html" class="analytics-button" aria-label="Configuración">⚙️</a>
     </div>
+    <!-- Blobs de Colores
     <div class="ambient-layer" aria-hidden="true">
       <span class="blob blob-1"></span>
       <span class="blob blob-2"></span>
       <span class="blob blob-3"></span>
       <span class="blob blob-4"></span>
       <span class="blob blob-5"></span>
-    </div>
+    </div> 
+    -->
 
     <div class="page-shell">
       <header class="hero-header">
-        <div class="mascot-carousel" id="mascot-carousel" aria-live="polite">
-          <div id="mascot-left" class="mascot-carousel__item mascot-carousel__item--left" aria-hidden="true">
-            <img src="img/logo_view.png" alt="" class="mascot-carousel__logo" />
-            <img src="img/mascot.png" alt="" class="hero-header__mascot mascot-carousel__image" />
-          </div>
-          <div id="active-mascot" class="mascot-carousel__item mascot-carousel__item--center">
-            <img src="img/logo_view.png" alt="" class="mascot-carousel__logo" />
-            <img src="img/mascot.png" alt="" class="hero-header__mascot mascot-carousel__image" />
-          </div>
-          <div id="mascot-right" class="mascot-carousel__item mascot-carousel__item--right" aria-hidden="true">
-            <img src="img/logo_view.png" alt="" class="mascot-carousel__logo" />
-            <img src="img/mascot.png" alt="" class="hero-header__mascot mascot-carousel__image" />
-          </div>
-        </div>
+        <section class="hero-card" aria-labelledby="hero-title">
+          <h1 id="hero-title">OBTEN UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMERA CARGA</span></h1>
+          <p class="helper-text" id="helper-text">CARGAS Y RETIROS AL INSTANTE</p>
+        </section>
         <!-- <p class="hero-header__badge" id="access-badge">ACCESO VIP</p> -->
       </header>
       
       <main class="main-content">
+        <!-- Circulo 100%
+
+        <div class="highlight-block">
+          <div class="highlight-visual">
+            <div class="highlight-ring highlight-ring--glow"></div>
+            <div class="highlight-ring highlight-ring--spin"></div>
+            <div class="highlight-ring highlight-ring--border"></div>
+            <div class="highlight-ring highlight-ring--haze"></div>
+            <div class="highlight-copy">
+              <div class="highlight-copy__label">PARA USUARIOS NUEVOS</div>
+              <div class="highlight-copy__value gradient-text">100%</div>
+              <div class="highlight-copy__sub">BONO DE BIENVENIDA</div>
+            </div>
+            <div class="highlight-orb highlight-orb--moon">$</div>
+            <div class="highlight-orb highlight-orb--icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="highlight-orb__icon" aria-hidden="true"><path d="M12 2C9 6 4 9.5 4 14a4.5 4.5 0 007.1 3.66C10.8 19.5 10 20.5 8.5 21h7c-1.5-.5-2.3-1.5-2.6-3.34A4.5 4.5 0 0020 14c0-4.5-5-8-8-12z"></path></svg>
+            </div>
+            <div class="highlight-orb highlight-orb--left">$</div>
+            <div class="highlight-orb highlight-orb--percent">%</div>
+          </div>
+        </div> 
+        
+        -->
+        <div class="promo-banner">
+          <div class="promo-banner__left">
+            <p class="promo-banner__label">PARA USUARIOS NUEVOS</p>
+            <h2 class="promo-banner__title">100% DE BONO EN TU PRIMERA CARGA</h2>
+            <p class="promo-banner__note">CARGAS Y RETIROS AL INSTANTE</p>
+          </div>
+          <div class="promo-banner__right">
+            <div class="mascot-carousel" id="mascot-carousel" aria-live="polite">
+              <div id="mascot-left" class="mascot-carousel__item mascot-carousel__item--left" aria-hidden="true">
+                <img src="img/mascot.png" alt="" class="hero-header__mascot mascot-carousel__image" />
+              </div>
+              <div id="active-mascot" class="mascot-carousel__item mascot-carousel__item--center">
+                <img src="img/mascot.png" alt="" class="hero-header__mascot mascot-carousel__image" />
+              </div>
+              <div id="mascot-right" class="mascot-carousel__item mascot-carousel__item--right" aria-hidden="true">
+                <img src="img/mascot.png" alt="" class="hero-header__mascot mascot-carousel__image" />
+              </div>
+            </div>
+          </div>
+        </div>
         <section class="hero-card" aria-labelledby="hero-title">
-          <h1 id="hero-title">OBTEN UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMERA CARGA</span></h1>
           <!-- <p id="hero-copy">Escribinos apretando el botón de abajo</span></span></p> -->
           <div class="hero-card__actions">
+            <div class="logo-carousel" id="logo-carousel" aria-live="polite">
+              <div id="logo-left" class="mascot-carousel__item mascot-carousel__item--left" aria-hidden="true">
+                <img src="img/logo_view.png" alt="" class="mascot-carousel__logo" />
+              </div>
+              <div id="active-logo" class="mascot-carousel__item mascot-carousel__item--center">
+                <img src="img/logo_view.png" alt="" class="mascot-carousel__logo" />
+              </div>
+              <div id="logo-right" class="mascot-carousel__item mascot-carousel__item--right" aria-hidden="true">
+                <img src="img/logo_view.png" alt="" class="mascot-carousel__logo" />
+              </div>
+            </div>
             <button type="button" class="whatsapp-button whatsapp-button--loading" id="whatsapp-button" aria-label="Abrir WhatsApp" disabled>
               <span class="button-aura"></span>
               <img src="img/whatsapp.png" alt="" aria-hidden="true" />
@@ -53,7 +98,6 @@
                 <span class="whatsapp-button__progress-fill"></span>
               </span>
             </button>
-            <p class="helper-text" id="helper-text">CARGAS Y RETIROS AL INSTANTE</p>
           </div>
         </section>
 

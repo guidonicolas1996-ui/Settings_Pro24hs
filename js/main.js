@@ -1081,9 +1081,10 @@ function setLandingContent(content, saveRemote = true) {
   return landingContent;
 }
 
-function getMascotCarouselItems() {
-  const carousel = document.getElementById('mascot-carousel');
+function getCarouselItems(carouselId, hasMascot = true) {
+  const carousel = document.getElementById(carouselId);
   if (!carousel) return null;
+  const hasLogo = !hasMascot;
 
   const createItem = (id, cssClass, ariaHidden = false) => {
     const item = document.createElement('div');
@@ -1094,51 +1095,31 @@ function getMascotCarouselItems() {
       item.setAttribute('aria-hidden', 'true');
     }
 
-    const logo = document.createElement('img');
-    logo.className = 'mascot-carousel__logo';
-    logo.alt = '';
-    item.appendChild(logo);
+    if (hasLogo) {
+      const logo = document.createElement('img');
+      logo.className = 'mascot-carousel__logo';
+      logo.alt = '';
+      item.appendChild(logo);
+    }
 
-    const mascot = document.createElement('img');
-    mascot.className = 'hero-header__mascot mascot-carousel__image';
-    mascot.alt = '';
-    item.appendChild(mascot);
+    if (hasMascot) {
+      const mascot = document.createElement('img');
+      mascot.className = 'hero-header__mascot mascot-carousel__image';
+      mascot.alt = '';
+      item.appendChild(mascot);
+    }
 
     return item;
   };
 
-  let left = document.getElementById('mascot-left');
-  let center = document.getElementById('active-mascot');
-  let right = document.getElementById('mascot-right');
-  let hidden1 = document.getElementById('mascot-hidden-1');
-  let hidden2 = document.getElementById('mascot-hidden-2');
-
-  if (!left) {
-    left = createItem('mascot-left', 'mascot-carousel__item--left', true);
-    carousel.appendChild(left);
-  }
-
-  if (!center) {
-    center = createItem('active-mascot', 'mascot-carousel__item--center');
-    carousel.appendChild(center);
-  }
-
-  if (!right) {
-    right = createItem('mascot-right', 'mascot-carousel__item--right', true);
-    carousel.appendChild(right);
-  }
-
-  if (!hidden1) {
-    hidden1 = createItem('mascot-hidden-1', 'mascot-carousel__item--hidden', true);
-    carousel.appendChild(hidden1);
-  }
-
-  if (!hidden2) {
-    hidden2 = createItem('mascot-hidden-2', 'mascot-carousel__item--hidden', true);
-    carousel.appendChild(hidden2);
-  }
+  const left = document.getElementById(`${carouselId === 'mascot-carousel' ? 'mascot' : 'logo'}-left`);
+  const center = document.getElementById(`${carouselId === 'mascot-carousel' ? 'active-mascot' : 'active-logo'}`);
+  const right = document.getElementById(`${carouselId === 'mascot-carousel' ? 'mascot' : 'logo'}-right`);
+  const hidden1 = document.getElementById(`${carouselId === 'mascot-carousel' ? 'mascot-hidden-1' : 'logo-hidden-1'}`);
+  const hidden2 = document.getElementById(`${carouselId === 'mascot-carousel' ? 'mascot-hidden-2' : 'logo-hidden-2'}`);
 
   const ensureMascotImage = (item) => {
+    if (!hasMascot) return null;
     let mascot = item.querySelector('.mascot-carousel__image');
     if (!mascot) {
       mascot = document.createElement('img');
@@ -1162,31 +1143,51 @@ function getMascotCarouselItems() {
       logo.alt = '';
       item.insertBefore(logo, item.firstChild);
     }
+
+    if (!logo.getAttribute('data-default-src')) {
+      logo.setAttribute('data-default-src', logo.getAttribute('src') || '/img/logo_view.png');
+    }
+
     return logo;
   };
 
-  ensureMascotImage(left);
-  ensureMascotImage(center);
-  ensureMascotImage(right);
-  ensureMascotImage(hidden1);
-  ensureMascotImage(hidden2);
-  ensureLogoImage(left);
-  ensureLogoImage(center);
-  ensureLogoImage(right);
-  ensureLogoImage(hidden1);
-  ensureLogoImage(hidden2);
+  const ensureItem = (existing, id, cssClass, ariaHidden) => {
+    if (existing) return existing;
+    const item = createItem(id, cssClass, ariaHidden);
+    carousel.appendChild(item);
+    return item;
+  };
 
-  return { left, center, right, hidden1, hidden2 };
+  const leftItem = ensureItem(left, `${carouselId === 'mascot-carousel' ? 'mascot' : 'logo'}-left`, 'mascot-carousel__item--left', true);
+  const centerItem = ensureItem(center, `${carouselId === 'mascot-carousel' ? 'active-mascot' : 'active-logo'}`, 'mascot-carousel__item--center');
+  const rightItem = ensureItem(right, `${carouselId === 'mascot-carousel' ? 'mascot' : 'logo'}-right`, 'mascot-carousel__item--right', true);
+  const hidden1Item = ensureItem(hidden1, `${carouselId === 'mascot-carousel' ? 'mascot-hidden-1' : 'logo-hidden-1'}`, 'mascot-carousel__item--hidden', true);
+  const hidden2Item = ensureItem(hidden2, `${carouselId === 'mascot-carousel' ? 'mascot-hidden-2' : 'logo-hidden-2'}`, 'mascot-carousel__item--hidden', true);
+
+  [leftItem, centerItem, rightItem, hidden1Item, hidden2Item].forEach((item) => {
+    if (hasMascot) {
+      ensureMascotImage(item);
+    }
+    if (!hasMascot) {
+      ensureLogoImage(item);
+    }
+  });
+
+  return { left: leftItem, center: centerItem, right: rightItem, hidden1: hidden1Item, hidden2: hidden2Item };
 }
 
-function updateMascotCarousel(casinoId) {
+function getMascotCarouselItems() {
+  return getCarouselItems('mascot-carousel', true);
+}
+
+function updateMascotCarousel(casinoId, carouselId = 'mascot-carousel', hasMascot = true) {
   const themeIds = Array.isArray(activeThemes) && activeThemes.length
     ? activeThemes
     : [casinoId || getDefaultCasino()];
 
   if (!themeIds.length) return;
 
-  const items = getMascotCarouselItems();
+  const items = getCarouselItems(carouselId, hasMascot);
   if (!items) return;
 
   const { left, center, right, hidden1, hidden2 } = items;
@@ -1226,21 +1227,23 @@ function updateMascotCarousel(casinoId) {
   };
 
   const applyImagesForTheme = (item, themeId) => {
-    const mascot = item.querySelector('.mascot-carousel__image');
     const logo = item.querySelector('.mascot-carousel__logo');
-    const fallbackUrl = mascot?.getAttribute('data-default-src') || mascot?.getAttribute('src') || '/img/mascot.png';
-    const mascotUrl = getImageUrl(dynamicCasinos[themeId]?.mascot) || fallbackUrl;
+    const mascot = hasMascot ? item.querySelector('.mascot-carousel__image') : null;
+    const logoFallbackUrl = logo?.getAttribute('data-default-src') || logo?.getAttribute('src') || '/img/logo_view.png';
+    const logoUrl = getImageUrl(dynamicCasinos[themeId]?.logo) || logoFallbackUrl;
+
+    if (logo && !hasMascot) {
+      logo.src = logoUrl;
+      logo.alt = dynamicCasinos[themeId]?.label || '';
+      logo.setAttribute('data-casino-id', themeId);
+    }
 
     if (mascot) {
+      const mascotFallbackUrl = mascot?.getAttribute('data-default-src') || mascot?.getAttribute('src') || '/img/mascot.png';
+      const mascotUrl = getImageUrl(dynamicCasinos[themeId]?.mascot) || mascotFallbackUrl;
       mascot.src = mascotUrl;
       mascot.alt = dynamicCasinos[themeId]?.label || '';
       mascot.setAttribute('data-casino-id', themeId);
-    }
-
-    if (logo) {
-      logo.src = getImageUrl(dynamicCasinos[themeId]?.logo) || '/img/logo_view.png';
-      logo.alt = dynamicCasinos[themeId]?.label || '';
-      logo.setAttribute('data-casino-id', themeId);
     }
 
     item.setAttribute('data-casino-id', themeId);
@@ -1383,6 +1386,7 @@ function applyTheme(casinoId) {
 
   if (mascot) {
     updateMascotCarousel(safeCasino);
+    updateMascotCarousel(safeCasino, 'logo-carousel', false);
   }
 
   // Aplicar color del casino y blobs
