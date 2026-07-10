@@ -1219,7 +1219,12 @@ Page layout
 @media (max-width: 900px) {
   .promo-banner {
     display: block;
-    padding-right: clamp(1.6rem, 2.5vw, 2.3rem);
+    padding-right: clamp(1.2rem, 2.5vw, 2rem);
+    min-height: auto;
+  }
+
+  .promo-banner__left {
+    padding-left: clamp(1rem, 2vw, 1.4rem);
   }
 
   .promo-banner__right {
@@ -1228,12 +1233,22 @@ Page layout
     top: auto;
     transform: none;
     width: 100%;
-    margin-top: 1.5rem;
+    margin-top: 1.4rem;
     pointer-events: auto;
   }
 
   .promo-banner__right .mascot-carousel {
     width: 100%;
+    transform: none;
+  }
+
+  .promo-banner__right .mascot-carousel .mascot-carousel__item {
+    width: min(100%, 16rem);
+  }
+
+  .promo-banner__title {
+    max-width: 100%;
+    font-size: clamp(1.15rem, 4vw, 1.9rem);
   }
 }
 
@@ -2817,13 +2832,34 @@ Responsive
 
 @media (max-width: 640px) {
   .page-shell {
-    padding-inline: 0.8rem;
+    padding-inline: 0.9rem;
   }
 
   .hero-header {
-    gap: 0.65rem;
+    gap: 0.75rem;
   }
 
+  .hero-card h1 {
+    font-size: clamp(1.2rem, 5vw, 1.65rem);
+  }
+
+  .promo-banner {
+    padding: 1.3rem 1rem 1.4rem;
+    min-height: auto;
+  }
+
+  .promo-banner__title {
+    font-size: clamp(1.05rem, 4.5vw, 1.75rem);
+  }
+
+  .promo-banner__right .mascot-carousel {
+    transform: none !important;
+    width: 100%;
+  }
+
+  .promo-banner__right .mascot-carousel .mascot-carousel__item {
+    width: min(100%, 14rem);
+  }
 }
 
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
