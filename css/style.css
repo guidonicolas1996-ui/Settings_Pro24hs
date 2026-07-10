@@ -1204,7 +1204,7 @@ Page layout
 .promo-banner__right .mascot-carousel {
   width: min(26rem, 100%);
   max-width: 100%;
-  transform: translateX(18%);
+  transform: translateX(30%);
   overflow: visible;
   padding-bottom: 1rem;
   min-height: 18.5rem;
