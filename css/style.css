@@ -1071,7 +1071,7 @@ Page layout
   #logo-carousel .mascot-carousel__item--animate-center-to-left,
   #logo-carousel .mascot-carousel__item--animate-right-to-center,
   #logo-carousel .mascot-carousel__item--animate-left-to-right {
-    animation-duration: 2000ms !important;
+    animation-duration: 2500ms !important;
   }
 
   @keyframes mascot-carousel-center-to-left {

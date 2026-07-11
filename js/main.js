@@ -1099,7 +1099,7 @@ function getMascotCarouselItems() {
   return getCarouselItems('mascot-carousel', true);
 }
 
-function updateMascotCarousel(casinoId, carouselId = 'mascot-carousel', hasMascot = true) {
+function updateMascotCarousel(casinoId, carouselId = 'mascot-carousel', hasMascot = true, animate = true) {
   const themeIds = Array.isArray(activeThemes) && activeThemes.length
     ? activeThemes
     : [casinoId || getDefaultCasino()];
@@ -1127,7 +1127,7 @@ function updateMascotCarousel(casinoId, carouselId = 'mascot-carousel', hasMasco
   const previousThemeId = center.getAttribute('data-casino-id') || currentThemeId;
   const previousIndex = themeIds.indexOf(previousThemeId);
   const isNextStep = previousIndex >= 0 && normalizeIndex(safeIndex - previousIndex, count) === 1;
-  const shouldAnimate = previousThemeId && previousThemeId !== currentThemeId && count > 1 && isNextStep;
+  const shouldAnimate = animate && previousThemeId && previousThemeId !== currentThemeId && count > 1 && isNextStep;
 
   const currentSlotThemes = {
     hidden1: getThemeAtOffset(previousIndex >= 0 ? previousIndex : safeIndex, 2),
@@ -1319,7 +1319,8 @@ function refreshThemeRotation() {
   rotationTimerId = window.setInterval(rotateTheme, 5000);
 }
 
-function applyTheme(casinoId) {
+function applyTheme(casinoId, options = {}) {
+  const { animate = true } = options;
   const safeCasino = dynamicCasinos[casinoId] ? casinoId : getDefaultCasino();
   activeTheme = safeCasino;
   document.body.setAttribute('data-theme', safeCasino);
@@ -1339,8 +1340,8 @@ function applyTheme(casinoId) {
   //applyRandomBackground();
 
   if (mascot) {
-    updateMascotCarousel(safeCasino);
-    updateMascotCarousel(safeCasino, 'logo-carousel', false);
+    updateMascotCarousel(safeCasino, 'mascot-carousel', true, animate);
+    updateMascotCarousel(safeCasino, 'logo-carousel', false, animate);
   }
 
   // Aplicar color del casino
@@ -1608,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const initialHeroCard = document.querySelector('.hero-card');
 
   renderContent();
-  applyTheme(activeTheme);
+  applyTheme(activeTheme, { animate: false });
   refreshThemeRotation();
   applyRandomBackground();
 
@@ -1732,7 +1733,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         activeTheme = getDefaultCasino();
       }
 
-      applyTheme(activeTheme);
+      applyTheme(activeTheme, { animate: false });
       setCheckboxStates(activeThemes);
       refreshThemeRotation();
 
