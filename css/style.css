@@ -1061,6 +1061,19 @@ Page layout
     animation-name: logo-carousel-left-to-right-mobile !important;
   }
 
+  .mascot-carousel__item--animate-center-to-left,
+  .mascot-carousel__item--animate-right-to-center,
+  .mascot-carousel__item--animate-left-to-right,
+  .mascot-carousel__item--animate-left-to-hidden,
+  .mascot-carousel__item--animate-hidden-to-right,
+  #logo-carousel .mascot-carousel__item--animate-left-to-hidden,
+  #logo-carousel .mascot-carousel__item--animate-hidden-to-right,
+  #logo-carousel .mascot-carousel__item--animate-center-to-left,
+  #logo-carousel .mascot-carousel__item--animate-right-to-center,
+  #logo-carousel .mascot-carousel__item--animate-left-to-right {
+    animation-duration: 1500ms !important;
+  }
+
   @keyframes mascot-carousel-center-to-left {
     0% {
       transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
