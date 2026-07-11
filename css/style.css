@@ -1085,7 +1085,7 @@ Page layout
       opacity: 0.25;
     }
     100% {
-      transform: translate3d(0, 0, -120px) scale(0.5);
+      transform: translate3d(-5rem, 0, -60px) rotateY(20deg) scale(0.68);
       opacity: 0;
     }
   }
