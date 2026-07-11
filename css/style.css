@@ -1027,6 +1027,7 @@ Page layout
 
   .mascot-carousel__item--left {
     transform: translateX(-5rem) translateZ(-60px) rotateY(20deg) scale(0.68);
+    transition: none;
   }
 
   .mascot-carousel__item--right {
@@ -1079,9 +1080,13 @@ Page layout
       transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
       opacity: 1;
     }
-    100% {
+    80% {
       transform: translate3d(-5rem, 0, -60px) rotateY(20deg) scale(0.68);
       opacity: 0.25;
+    }
+    100% {
+      transform: translate3d(0, 0, -120px) scale(0.5);
+      opacity: 0;
     }
   }
 
@@ -1109,6 +1114,10 @@ Page layout
 
   @keyframes mascot-carousel-left-to-hidden {
     0% {
+      transform: translate3d(-5rem, 0, -60px) rotateY(20deg) scale(0.68);
+      opacity: 0.25;
+    }
+    80% {
       transform: translate3d(-5rem, 0, -60px) rotateY(20deg) scale(0.68);
       opacity: 0.25;
     }
