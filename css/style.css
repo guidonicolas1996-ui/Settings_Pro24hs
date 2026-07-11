@@ -1042,23 +1042,23 @@ Page layout
   }
 
   #logo-carousel .mascot-carousel__item--animate-left-to-hidden {
-    animation-name: logo-carousel-left-to-hidden-mobile;
+    animation-name: logo-carousel-left-to-hidden-mobile !important;
   }
 
   #logo-carousel .mascot-carousel__item--animate-hidden-to-right {
-    animation-name: logo-carousel-hidden-to-right-mobile;
+    animation-name: logo-carousel-hidden-to-right-mobile !important;
   }
 
   #logo-carousel .mascot-carousel__item--animate-center-to-left {
-    animation-name: logo-carousel-center-to-left-mobile;
+    animation-name: logo-carousel-center-to-left-mobile !important;
   }
 
   #logo-carousel .mascot-carousel__item--animate-right-to-center {
-    animation-name: logo-carousel-right-to-center-mobile;
+    animation-name: logo-carousel-right-to-center-mobile !important;
   }
 
   #logo-carousel .mascot-carousel__item--animate-left-to-right {
-    animation-name: logo-carousel-left-to-right-mobile;
+    animation-name: logo-carousel-left-to-right-mobile !important;
   }
 
   @keyframes mascot-carousel-center-to-left {
