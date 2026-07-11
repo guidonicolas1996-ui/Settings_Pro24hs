@@ -1407,7 +1407,7 @@ async function observeRemoteConfig() {
         activeThemes = getActiveCasinos();
         activeTheme = activeThemes[0] || getDefaultCasino();
         setCheckboxStates(activeThemes);
-        applyTheme(activeTheme);
+        applyTheme(activeTheme, { animate: false });
         refreshThemeRotation();
         if (window.location.pathname.includes('settings')) {
           if (typeof window.renderCasinos === 'function') {
