@@ -588,6 +588,35 @@ Footer
   color: var(--color-text);
 }
 
+.analytics-compare {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-weight: 700;
+}
+
+.analytics-compare--up {
+  color: #22c55e;
+}
+
+.analytics-compare--down {
+  color: #f87171;
+}
+
+.analytics-compare--neutral {
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.analytics-compare-arrow {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.analytics-compare-val {
+  line-height: 1;
+}
+
 @media (max-width: 960px) {
   .analytics-controls {
     grid-template-columns: 1fr;
