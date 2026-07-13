@@ -89,10 +89,10 @@
       .home-actions {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1rem;
+        gap: 1.2rem;
         width: 100%;
         height: 100%;
-        padding: 1.2rem;
+        padding: 1.5rem 1.2rem;
         box-sizing: border-box;
       }
 
@@ -105,13 +105,17 @@
         width: 100%;
         min-height: 0;
         padding: 1rem;
-        border-radius: 28px;
+        border-radius: 16px;
         text-decoration: none;
         color: #f7f8fe;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
-        transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border: 2px solid;
+        border-color: rgba(212, 175, 55, 0.6);
+        box-shadow: 
+          0 0 25px rgba(212, 175, 55, 0.35),
+          inset 0 0 20px rgba(100, 180, 255, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
       }
@@ -121,7 +125,7 @@
         content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent 70%);
+        background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent 70%);
         pointer-events: none;
       }
 
@@ -129,13 +133,41 @@
       .home-link:focus-visible,
       .link-pill:hover,
       .link-pill:focus-visible {
-        transform: translateY(-2px);
-        background: rgba(255, 255, 255, 0.1);
-        box-shadow: 0 24px 46px rgba(0, 0, 0, 0.28);
+        transform: translateY(-4px);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+        border-color: rgba(212, 175, 55, 0.8);
+        box-shadow: 
+          0 0 40px rgba(212, 175, 55, 0.6),
+          inset 0 0 30px rgba(100, 180, 255, 0.15),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
       }
 
       .home-link--landing {
-        background: rgba(255, 20, 147, 0.2);
+        background: linear-gradient(135deg, rgba(138, 43, 226, 0.35), rgba(75, 0, 130, 0.25));
+        border-color: rgba(200, 100, 255, 0.8);
+        box-shadow: 
+          0 0 25px rgba(200, 100, 255, 0.4),
+          inset 0 0 20px rgba(138, 43, 226, 0.15),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      .home-link--landing:hover {
+        background: linear-gradient(135deg, rgba(138, 43, 226, 0.5), rgba(75, 0, 130, 0.35));
+        border-color: rgba(200, 100, 255, 1);
+        box-shadow: 
+          0 0 40px rgba(200, 100, 255, 0.65),
+          inset 0 0 30px rgba(138, 43, 226, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      }
+
+      .landing-text {
+        position: relative;
+        z-index: 1;
+        font-weight: 700;
+        font-size: 0.9rem;
+        line-height: 1.2;
+        text-align: center;
+        letter-spacing: 0.05em;
       }
 
       .home-link .icon-bubble {
@@ -151,6 +183,17 @@
         border-radius: 50%;
         background: rgba(255,255,255,0.08);
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+      }
+
+      .home-link .icon-image {
+        position: relative;
+        z-index: 1;
+        max-width: clamp(8rem, 20vw, 12rem);
+        max-height: clamp(8rem, 20vw, 12rem);
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        object-position: center;
       }
 
       .link-pill .alt-emoji {
@@ -187,11 +230,23 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 0.2rem;
+        gap: 0.3rem;
         min-height: 8rem;
-        border-radius: 22px;
-        background: rgba(255, 255, 255, 0.04);
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
         padding: 0.8rem 1rem;
+        border: 2px solid rgba(100, 180, 255, 0.6);
+        box-shadow: 
+          0 0 20px rgba(100, 180, 255, 0.3),
+          inset 0 0 15px rgba(100, 180, 255, 0.08);
+      }
+      
+      .link-pill:hover,
+      .link-pill:focus-visible {
+        border-color: rgba(100, 180, 255, 0.9);
+        box-shadow: 
+          0 0 30px rgba(100, 180, 255, 0.5),
+          inset 0 0 20px rgba(100, 180, 255, 0.12);
       }
 
       .home-footer {
@@ -260,9 +315,109 @@
           padding: 0 1rem 1rem;
         }
       }
+
+      /* Blob Background Animation */
+      .blob-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .blob {
+        position: absolute;
+        filter: blur(80px);
+        opacity: 0.3;
+      }
+
+      .blob-1 {
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle at 30% 40%, rgba(100, 180, 255, 1), rgba(100, 180, 255, 0.15) 70%);
+        border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+        top: -20%;
+        left: -10%;
+        animation: blob-float-1 8s ease-in-out infinite;
+      }
+
+      .blob-2 {
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle at 30% 40%, rgba(138, 43, 226, 0.8), rgba(138, 43, 226, 0.1) 70%);
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        top: 50%;
+        right: -5%;
+        animation: blob-float-2 10s ease-in-out infinite;
+      }
+
+      .blob-3 {
+        width: 350px;
+        height: 350px;
+        background: radial-gradient(circle at 30% 40%, rgba(212, 175, 55, 0.7), rgba(212, 175, 55, 0.1) 70%);
+        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        bottom: -10%;
+        left: 40%;
+        animation: blob-float-3 12s ease-in-out infinite;
+      }
+
+      @keyframes blob-float-1 {
+        0%, 100% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+        25% {
+          transform: translate(80px, -120px) rotate(90deg);
+        }
+        50% {
+          transform: translate(-100px, 80px) rotate(180deg);
+        }
+        75% {
+          transform: translate(-120px, -100px) rotate(270deg);
+        }
+      }
+
+      @keyframes blob-float-2 {
+        0%, 100% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+        25% {
+          transform: translate(-100px, 90px) rotate(-90deg);
+        }
+        50% {
+          transform: translate(110px, -120px) rotate(-180deg);
+        }
+        75% {
+          transform: translate(90px, 100px) rotate(-270deg);
+        }
+      }
+
+      @keyframes blob-float-3 {
+        0%, 100% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+        33% {
+          transform: translate(120px, -80px) rotate(120deg);
+        }
+        66% {
+          transform: translate(-110px, 100px) rotate(240deg);
+        }
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+      }
     </style>
   </head>
   <body class="settings-page">
+    <div class="blob-container">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
     <main class="home-shell">
       <div class="home-phone">
         <section class="home-card" aria-labelledby="home-title">
@@ -273,10 +428,10 @@
           </div>
           <p class="home-section-label">Acciones rápidas</p>
           <div class="home-actions">
-            <a class="home-link" href="./settings.html" aria-label="Configuración"><span class="icon-bubble">⚙️</span></a>
-            <a class="home-link" href="./analytics.html" aria-label="Analytics"><span class="icon-bubble">📊</span></a>
-            <a class="home-link home-link--landing" href="https://landing-vip24hs.vercel.app" target="_blank" rel="noopener noreferrer" aria-label="Landing"><span class="icon-bubble">🌐</span></a>
-            <a class="home-link" href="#" aria-label="Más"><span class="icon-bubble">💎</span></a>
+            <a class="home-link" href="./settings.html" aria-label="Configuración"><img src="./img/buttons/Settings.png" alt="Configuración" class="icon-image"></a>
+            <a class="home-link" href="./analytics.html" aria-label="Analytics"><img src="./img/buttons/Analytics.png" alt="Analytics" class="icon-image"></a>
+            <a class="home-link home-link--landing" href="https://landing-vip24hs.vercel.app" target="_blank" rel="noopener noreferrer" aria-label="Landing"><img src="./img/buttons/Landing.png" alt="Landing" class="icon-image"></a>
+            <a class="home-link" href="#" aria-label="Más"><img src="./img/buttons/VIP.png" alt="VIP" class="icon-image"></a>
           </div>
         </section>
 
