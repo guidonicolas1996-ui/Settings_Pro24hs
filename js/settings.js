@@ -587,53 +587,94 @@ function setupSettingsPage() {
   
   // ===== NEW: Multi-config management =====
   let currentConfig = 'general'; // Track active config tab
+  let currentLandingContentState = null;
+  let configLoadRequestId = 0;
   const configSelector = document.getElementById('config-selector');
+  const configButtons = Array.from(configSelector ? configSelector.querySelectorAll('.config-toggle__button') : []);
   const configControls = document.getElementById('config-controls');
   const altCheckbox = document.getElementById('alt-active-checkbox');
+  const altLabelInput = document.getElementById('input-alt-label');
   
   if (altCheckbox) {
     altCheckbox.addEventListener('change', async () => {
+      if (currentConfig !== 'general') {
+        if (currentLandingContentState && currentLandingContentState.alternatives && currentLandingContentState.alternatives[currentConfig]) {
+          currentLandingContentState.alternatives[currentConfig] = {
+            ...currentLandingContentState.alternatives[currentConfig],
+            active: Boolean(altCheckbox.checked)
+          };
+        }
+      }
+      refreshConfigButtonStates(currentConfig, currentLandingContentState);
       if (currentConfig !== 'general') {
         await saveCurrentConfig(currentConfig);
       }
     });
   }
   
-  const applyActiveConfigTab = (configName) => {
-    if (configSelector) {
-      configSelector.value = configName;
+  const refreshConfigButtonStates = (configName, landingContentState = currentLandingContentState) => {
+    const labels = {
+      general: 'General',
+      alt1: 'A1',
+      alt2: 'A2',
+      alt3: 'A3',
+      alt4: 'A4',
+      alt5: 'A5'
+    };
+
+    const altStateByName = {};
+    if (landingContentState && landingContentState.alternatives && typeof landingContentState.alternatives === 'object') {
+      Object.entries(landingContentState.alternatives).forEach(([altName, altConfig]) => {
+        if (altName && altConfig && typeof altConfig === 'object') {
+          altStateByName[altName] = Boolean(altConfig.active);
+        }
+      });
     }
+
+    configButtons.forEach((button) => {
+      const isSelected = button.dataset.config === configName;
+      const isAlternative = button.dataset.config && button.dataset.config !== 'general';
+      const altName = button.dataset.config;
+      const altLabelFromState = isAlternative && landingContentState && landingContentState.alternatives && landingContentState.alternatives[altName]
+        ? String(landingContentState.alternatives[altName].label || '').trim()
+        : '';
+      // Always use the persisted label from state for button text to avoid
+      // temporary input values overwriting buttons when switching tabs.
+      const label = isAlternative ? altLabelFromState : '';
+      const buttonText = button.dataset.config === 'general' ? 'General' : `${labels[altName] || altName}${label ? ` - ${label}` : ''}`;
+      const isAltActive = isAlternative ? Boolean(altStateByName[altName]) : false;
+      button.textContent = buttonText;
+      button.classList.toggle('is-selected', isSelected);
+      button.classList.toggle('is-active-alt', isAlternative && isAltActive);
+      button.classList.toggle('is-inactive', isAlternative && !isAltActive);
+      button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    });
 
     if (configControls) {
       configControls.style.display = configName === 'general' ? 'none' : 'block';
     }
   };
 
-  if (configSelector) {
-    configSelector.addEventListener('change', (event) => {
-      const configName = event.target.value;
+  configButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const configName = button.dataset.config;
       if (!configName) return;
-
       switchConfigTab(configName);
     });
-  }
+  });
 
   window.selectLandingConfig = (configName) => {
-    if (configSelector) {
-      configSelector.value = configName;
-      configSelector.dispatchEvent(new Event('change'));
+    if (configButtons.some((button) => button.dataset.config === configName)) {
+      switchConfigTab(configName);
     }
   };
   
-  // Update label input and save when changed
-  document.querySelectorAll('.config-tab__label').forEach((input) => {
-    input.addEventListener('click', (e) => e.stopPropagation());
-    input.addEventListener('change', async (e) => {
-      const altName = e.target.dataset.alt;
-      const label = e.target.value;
-      await saveLabelForAlt(altName, label);
+  if (altLabelInput) {
+    altLabelInput.addEventListener('click', (e) => e.stopPropagation());
+    altLabelInput.addEventListener('input', () => {
+      refreshConfigButtonStates(currentConfig, currentLandingContentState);
     });
-  });
+  }
   
   function switchConfigTab(configName) {
     const previousConfig = currentConfig;
@@ -645,15 +686,18 @@ function setupSettingsPage() {
     }
 
     currentConfig = configName;
-    applyActiveConfigTab(configName);
+    configLoadRequestId += 1;
+    const requestId = configLoadRequestId;
+    refreshConfigButtonStates(configName);
 
     // Load config values in the background so the UI changes immediately.
-    void loadConfigValues(configName).catch((error) => {
+    void loadConfigValues(configName, requestId).catch((error) => {
       console.warn(`[settings] Error loading config ${configName}`, error);
     });
   }
   
-  async function loadConfigValues(configName) {
+  async function loadConfigValues(configName, requestId = null) {
+    const activeRequestId = requestId ?? ++configLoadRequestId;
     try {
       const firebaseModule = await import('./firebase.js');
       const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
@@ -664,9 +708,17 @@ function setupSettingsPage() {
       const landingContent = cfg.landingContent || {};
       const configData = getConfigDataForSelection(landingContent, configName);
       
+      if (activeRequestId !== configLoadRequestId) {
+        return;
+      }
+
       populateForm(configData, configName);
       
       // Update alt checkbox state
+      if (activeRequestId !== configLoadRequestId) {
+        return;
+      }
+
       if (configName !== 'general' && altCheckbox) {
         const nextCheckedState = Boolean(configData.active);
         altCheckbox.checked = nextCheckedState;
@@ -676,12 +728,21 @@ function setupSettingsPage() {
         altCheckbox.setAttribute('aria-checked', 'false');
       }
       
+      if (activeRequestId !== configLoadRequestId) {
+        return;
+      }
+
+      currentLandingContentState = landingContent;
+      refreshConfigButtonStates(configName, currentLandingContentState);
+
       // Update tab label from DB
-      const labelInput = document.querySelector(`input.config-tab__label[data-alt="${configName}"]`);
-      if (configName !== 'general' && labelInput) {
-        labelInput.value = configData.label || '';
+      if (configName !== 'general' && altLabelInput) {
+        altLabelInput.value = configData.label || '';
       }
     } catch (error) {
+      if (activeRequestId !== configLoadRequestId) {
+        return;
+      }
       console.warn(`[settings] Error loading config ${configName}`, error);
       populateForm(getDefaultConfig(), configName);
     }
@@ -706,8 +767,7 @@ function setupSettingsPage() {
     let nextLabel = undefined;
     if (configName !== 'general') {
       nextActiveState = altCheckbox && altCheckbox.checked ? true : false;
-      const labelInput = document.querySelector(`input.config-tab__label[data-alt="${configName}"]`);
-      nextLabel = (labelInput && labelInput.value) || '';
+      nextLabel = (altLabelInput && altLabelInput.value) || '';
       if (altCheckbox) {
         altCheckbox.checked = nextActiveState;
         altCheckbox.setAttribute('aria-checked', String(nextActiveState));
@@ -734,33 +794,16 @@ function setupSettingsPage() {
       });
 
       await setDoc(docRef, state, { merge: true });
+      currentLandingContentState = state.landingContent;
+      if (configName === currentConfig) {
+        refreshConfigButtonStates(configName, currentLandingContentState);
+      }
     } catch (error) {
       console.error(`[settings] Error saving config ${configName}`, error);
       throw error;
     }
   }
   
-  async function saveLabelForAlt(altName, label) {
-    try {
-      const firebaseModule = await import('./firebase.js');
-      const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
-      const { doc, getDoc, setDoc } = firestoreModule;
-      const docRef = doc(firebaseModule.db, 'config', 'landing');
-
-      const snapshot = await getDoc(docRef);
-      const cfg = snapshot.exists() ? snapshot.data() : {};
-      const previousLandingContent = cfg.landingContent && typeof cfg.landingContent === 'object' ? cfg.landingContent : {};
-      const state = buildLandingContentState(previousLandingContent, {
-        configName: altName,
-        formValues: {},
-        label
-      });
-
-      await setDoc(docRef, state, { merge: true });
-    } catch (error) {
-      console.warn(`[settings] Error saving label for ${altName}`, error);
-    }
-  }
   
   function getDefaultConfig() {
     return {
@@ -810,7 +853,7 @@ function setupSettingsPage() {
   if (saveLandingButton) {
     console.log('[settings] saveLandingButton found and handler attached');
     saveLandingButton.addEventListener('click', async () => {
-      const selectedConfig = (configSelector && configSelector.value) || currentConfig;
+      const selectedConfig = currentConfig || 'general';
       console.log('[settings] saveLandingButton clicked for config:', selectedConfig);
       try {
         await saveCurrentConfig(selectedConfig);
@@ -825,17 +868,51 @@ function setupSettingsPage() {
   const resetLandingButton = document.getElementById('reset-landing-content');
   if (resetLandingButton) {
     resetLandingButton.addEventListener('click', async () => {
-      if (!confirm('¿Restablecer esta configuración a los valores por defecto?')) {
-        return;
-      }
+      const ok = confirm('¿Formatear Configuraciones Alternativas? Esto copiará la configuración "General" a cada alternativa, las desactivará y conservará solamente su etiqueta. ¿Continuar?');
+      if (!ok) return;
 
       try {
-        populateForm(getDefaultConfig());
-        await saveCurrentConfig();
-        alert(`✅ Configuración "${currentConfig}" restablecida correctamente.`);
+        const firebaseModule = await import('./firebase.js');
+        const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+        const { doc, getDoc, setDoc } = firestoreModule;
+        const docRef = doc(firebaseModule.db, 'config', 'landing');
+
+        const snapshot = await getDoc(docRef);
+        const cfg = snapshot && snapshot.exists() ? snapshot.data() : {};
+        const previousLandingContent = cfg.landingContent && typeof cfg.landingContent === 'object' ? cfg.landingContent : {};
+        const general = previousLandingContent.general && typeof previousLandingContent.general === 'object'
+          ? previousLandingContent.general
+          : getDefaultConfig();
+
+        const prevAlts = previousLandingContent.alternatives && typeof previousLandingContent.alternatives === 'object'
+          ? previousLandingContent.alternatives
+          : {};
+
+        const altNames = ['alt1','alt2','alt3','alt4','alt5'];
+        const newAlts = {};
+        altNames.forEach((alt) => {
+          const prevLabel = prevAlts[alt] && typeof prevAlts[alt] === 'object' && prevAlts[alt].label
+            ? prevAlts[alt].label
+            : '';
+          newAlts[alt] = {
+            ...general,
+            label: prevLabel,
+            active: false
+          };
+        });
+
+        const newState = { landingContent: { general: general, alternatives: newAlts } };
+        await setDoc(docRef, newState, { merge: true });
+        currentLandingContentState = newState.landingContent;
+
+        // Reload current selection values and refresh buttons
+        await loadConfigValues(currentConfig);
+        refreshConfigButtonStates(currentConfig, currentLandingContentState);
+
+        alert('✅ Configuraciones alternativas formateadas correctamente.');
       } catch (error) {
-        console.error('[settings] Error resetting:', error);
-        alert('❌ Error al restablecer: ' + error.message);
+        console.error('[settings] Error formatting alternatives:', error);
+        alert('❌ Error al formatear: ' + (error.message || error));
       }
     });
   }

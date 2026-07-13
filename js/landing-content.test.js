@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLandingContentState } from './landing-content.js';
+import { buildLandingContentState, buildLandingContentStateForLabels } from './landing-content.js';
 
 test('buildLandingContentState preserves alternative label and active state', () => {
   const previous = {
@@ -38,4 +38,23 @@ test('buildLandingContentState writes general content without losing alternate e
 
   assert.equal(result.landingContent.general.heroTitle, 'General updated');
   assert.equal(result.landingContent.alternatives.alt1.label, 'old');
+});
+
+test('buildLandingContentStateForLabels updates every alternative label in one pass', () => {
+  const previous = {
+    general: { heroTitle: 'General title' },
+    alternatives: {
+      alt1: { active: true, label: 'old alt1' },
+      alt2: { active: false, label: 'old alt2' }
+    }
+  };
+
+  const result = buildLandingContentStateForLabels(previous, {
+    alt1: 'new alt1',
+    alt2: 'new alt2'
+  });
+
+  assert.equal(result.landingContent.alternatives.alt1.label, 'new alt1');
+  assert.equal(result.landingContent.alternatives.alt2.label, 'new alt2');
+  assert.equal(result.landingContent.alternatives.alt1.active, true);
 });

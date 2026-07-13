@@ -37,4 +37,20 @@ function buildLandingContentState(previousLandingContent = {}, options = {}) {
   return { landingContent: nextState };
 }
 
-export { buildLandingContentState, cloneLandingContentState };
+function buildLandingContentStateForLabels(previousLandingContent = {}, labelsByAlt = {}) {
+  const nextState = cloneLandingContentState(previousLandingContent);
+  Object.entries(labelsByAlt || {}).forEach(([altName, label]) => {
+    if (!altName || !altName.startsWith('alt')) return;
+    const existingAlt = nextState.alternatives[altName] && typeof nextState.alternatives[altName] === 'object'
+      ? nextState.alternatives[altName]
+      : {};
+    nextState.alternatives[altName] = {
+      ...existingAlt,
+      label: String(label ?? '')
+    };
+  });
+
+  return { landingContent: nextState };
+}
+
+export { buildLandingContentState, buildLandingContentStateForLabels, cloneLandingContentState };

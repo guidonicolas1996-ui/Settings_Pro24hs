@@ -69,35 +69,34 @@
           </div>
         </div>
 
-        <!-- Selector de Configuraciones tipo Carpeta -->
-        <div class="config-selector" style="margin-bottom: 1rem;">
-          <label class="settings-label" for="config-selector">Seleccionar configuración</label>
-          <select id="config-selector">
-            <option value="general">General</option>
-            <option value="alt1">Alt 1</option>
-            <option value="alt2">Alt 2</option>
-            <option value="alt3">Alt 3</option>
-            <option value="alt4">Alt 4</option>
-            <option value="alt5">Alt 5</option>
-          </select>
+        <div class="config-selector" style="margin-bottom: 1rem; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.75rem;">
+          <div>
+            <label class="settings-label">Seleccionar configuración</label>
+            <div id="config-selector" class="config-toggle" role="tablist" aria-label="Seleccionar configuración">
+              <button type="button" class="config-toggle__button is-active" data-config="general">General</button>
+              <button type="button" class="config-toggle__button" data-config="alt1"></button>
+              <button type="button" class="config-toggle__button" data-config="alt2"></button>
+              <button type="button" class="config-toggle__button" data-config="alt3"></button>
+              <button type="button" class="config-toggle__button" data-config="alt4"></button>
+              <button type="button" class="config-toggle__button" data-config="alt5"></button>
+            </div>
+          </div>
         </div>
-
-        <div class="config-labels" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.5rem;">
-          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 1" data-alt="alt1" maxlength="30" />
-          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 2" data-alt="alt2" maxlength="30" />
-          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 3" data-alt="alt3" maxlength="30" />
-          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 4" data-alt="alt4" maxlength="30" />
-          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 5" data-alt="alt5" maxlength="30" />
-        </div>
-
+      <section>
         <!-- Controles de Alternativas (solo para alt1-alt5) -->
         <div class="config-controls" id="config-controls" style="display: none; margin-bottom: 1.5rem;">
-          <label class="settings-checkbox">
-            <input type="checkbox" id="alt-active-checkbox" />
-            <span>Activar esta configuración alternativa</span>
-          </label>
+          <label><span class="settings-label">Etiqueta y Activación</span></label>
+          <div class="config-controls__row">
+            <input type="text" id="input-alt-label" class="config-tab__label" placeholder="Ej: Promoción verano" maxlength="30" />
+            <label class="settings-switch" for="alt-active-checkbox" aria-label="Activar alternativa">
+              <input type="checkbox" id="alt-active-checkbox" />
+              <span class="settings-switch__track"><span class="settings-switch__thumb"></span></span>
+            </label>
+          </div>
         </div>
+      </section>
 
+        <div class="analytics-summary-divider" aria-hidden="true"></div>
         <form id="landing-content-form">
           <label>
             <span class="settings-label">Título</span>
@@ -137,7 +136,7 @@
           </label>
           <div class="settings-actions">
             <button type="button" id="save-landing-content" class="btn btn--primary">Guardar textos</button>
-            <button type="button" id="reset-landing-content" class="btn btn--secondary">Restablecer valores por defecto</button>
+            <button type="button" id="reset-landing-content" class="btn btn--secondary">Formatear Configuraciones Alternativas</button>
           </div>
         </form>
       </section>
