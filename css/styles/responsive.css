@@ -223,6 +223,14 @@ Responsive
         min-width: 0; /* CLAVE para evitar overflow raro */
       }
 
+      .settings-header__text h2 {
+        margin: 0 0 0.35rem 0;
+        font-size: 1.12rem;
+        color: var(--color-text);
+        font-weight: 700;
+        letter-spacing: 0.01em;
+      }
+
       .btn-new-casino {
         flex: 0 0 auto;
         white-space: nowrap;

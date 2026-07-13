@@ -4,11 +4,12 @@ Settings form styles
 
 .settings-card--texts {
   margin-top: 1rem;
-  padding: 1rem;
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.015));
   border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  box-shadow: 0 18px 40px rgba(2,6,23,0.55);
+  backdrop-filter: blur(6px);
 }
 
 .settings-card--texts h2 {
@@ -29,7 +30,7 @@ Settings form styles
 
 #landing-content-form label {
   display: block;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   color: var(--color-muted);
 }
 
@@ -37,14 +38,14 @@ Settings form styles
 #landing-content-form input[type="url"] {
   width: 100%;
   min-height: 3rem;
-  padding: 0.7rem 0.85rem;
+  padding: 0.85rem 1rem;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.06);
   background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.015));
   color: var(--color-text);
   resize: vertical;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-  transition: box-shadow var(--transition), transform var(--transition);
+  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
   font-family: "Syne", "Segoe UI", Roboto, Arial, sans-serif;
 }
 
@@ -56,8 +57,9 @@ Settings form styles
 #landing-content-form textarea:focus,
 #landing-content-form input[type="url"]:focus {
   outline: none;
-  box-shadow: 0 6px 22px rgba(0,0,0,0.6), 0 0 0 4px var(--theme-glow-1);
-  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(11,14,30,0.5), 0 0 0 4px var(--theme-glow-1);
+  transform: translateY(-3px);
+  border-color: var(--theme-primary-strong);
 }
 
 .settings-actions {
@@ -67,24 +69,27 @@ Settings form styles
 }
 
 .btn {
-  padding: 0.7rem 1rem;
-  border-radius: 10px;
+  padding: 0.72rem 1.05rem;
+  border-radius: 12px;
   border: 0;
   cursor: pointer;
   font-weight: 700;
   color: var(--color-text);
-  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition), filter var(--transition);
 }
 
 .btn--primary {
   background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-strong));
-  box-shadow: 0 12px 30px rgba(125,108,255,0.12);
+  box-shadow: 0 18px 40px rgba(125,108,255,0.14);
+  color: white;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.15);
 }
 
 .btn--secondary {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.06);
   color: var(--color-muted);
+  backdrop-filter: blur(4px);
 }
 
 .btn:hover {
