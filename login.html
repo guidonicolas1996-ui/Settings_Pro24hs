@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Login de administración" />
+    <meta name="theme-color" content="#060b1d" />
+    <title>Login - Casino Oficial</title>
+    <link rel="icon" type="image/png" href="./img/favicon.png" />
+    <meta http-equiv="cache-control" content="no-store" />
+    <link rel="stylesheet" href="./css/styles.css" />
+    <script type="module">
+      import { AUTH_STORAGE_KEY, clearSession } from './js/auth.js';
+
+      async function clearAuthCache() {
+        try {
+          await clearSession();
+        } catch (error) {
+          console.warn('Error limpiando sesión en login:', error);
+        }
+        try {
+          window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+          window.localStorage.removeItem(AUTH_STORAGE_KEY);
+        } catch (error) {
+          console.warn('Error limpiando storage en login:', error);
+        }
+      }
+
+      window.addEventListener('pageshow', async (event) => {
+        if (event.persisted) {
+          await clearAuthCache();
+          window.location.reload();
+        }
+      });
+
+      await clearAuthCache();
+    </script>
+  </head>
+  <body class="settings-page" data-theme="default">
+    <div class="top-actions">
+      <a href="index.html" class="analytics-button" aria-label="Index">🏠</a>
+    </div>
+    <main class="login-shell">
+      <section class="settings-card login-card" aria-labelledby="login-title">
+        <div>
+          <p class="settings-eyebrow">Administración</p>
+          <h1 id="login-title">Acceso administrativo</h1>
+        </div>
+        <p class="login-helper">Ingresá tus credenciales para ingresar.</p>
+        <form id="login-form" class="login-form">
+          <label class="login-field">
+            <span>Email</span>
+            <input id="login-user" name="user" type="email" autocomplete="username" required />
+          </label>
+          <label class="login-field">
+            <span>Contraseña</span>
+            <input id="login-pass" name="pass" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit" class="btn btn--primary">Entrar</button>
+        </form>
+        <div id="login-message" class="login-message"></div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { AUTH_STORAGE_KEY, setStoredSession } from './js/auth.js';
+
+      async function ensureFirebase() {
+        const [{ initializeApp }, { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence }] = await Promise.all([
+          import('https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js'),
+          import('https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js')
+        ]);
+
+        const firebaseConfig = {
+          apiKey: 'AIzaSyBxduoIjvtM7arjMzKfwqDl4Rt-3eVogf8',
+          authDomain: 'landing-pro24.firebaseapp.com',
+          projectId: 'landing-pro24',
+          messagingSenderId: '705239660423',
+          appId: '1:705239660423:web:f91ef0cc5e345791fb4522'
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        return { auth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence };
+      }
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        const form = document.getElementById('login-form');
+        const message = document.getElementById('login-message');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const { auth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence } = await ensureFirebase();
+
+        let failedAttempts = 0;
+        let lockedUntil = 0;
+
+        window.addEventListener('pageshow', (event) => {
+          if (event.persisted) {
+            window.location.reload();
+          }
+        });
+
+        try {
+          await auth.signOut();
+        } catch (logoutError) {
+          console.warn('No se pudo cerrar sesión previa de Firebase en login:', logoutError);
+        }
+
+        window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
+
+        await setPersistence(auth, browserSessionPersistence);
+
+        // No passive auth restore on login page. Login only proceeds after explicit form submit.
+
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const now = Date.now();
+          if (now < lockedUntil) {
+            const secondsLeft = Math.ceil((lockedUntil - now) / 1000);
+            message.textContent = `Demasiados intentos. Esperá ${secondsLeft}s.`;
+            return;
+          }
+
+          const email = document.getElementById('login-user').value.trim();
+          const pass = document.getElementById('login-pass').value;
+          if (!email || pass.length < 4) {
+            message.textContent = 'Ingresá email y contraseña válidos.';
+            return;
+          }
+
+          submitButton.disabled = true;
+          submitButton.textContent = 'Validando...';
+          message.textContent = 'Validando...';
+
+          try {
+            const credentials = await signInWithEmailAndPassword(auth, email, pass);
+            failedAttempts = 0;
+            lockedUntil = 0;
+            setStoredSession(credentials.user);
+            window.location.replace('./settings.html');
+          } catch (error) {
+            failedAttempts += 1;
+            const penaltySeconds = failedAttempts >= 5 ? 30 : 10;
+            lockedUntil = Date.now() + penaltySeconds * 1000;
+            console.error(error);
+            message.textContent = 'Usuario o contraseña incorrectos.';
+          } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Entrar';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

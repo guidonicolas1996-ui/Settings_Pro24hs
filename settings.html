@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Ajustes del casino activo y selección de branding." />
+    <meta name="theme-color" content="#060b1d" />
+    <title>Settings - Casino Oficial</title>
+    <link rel="icon" type="image/png" href="./img/favicon.png" />
+    <link rel="stylesheet" href="./css/styles.css" />
+    <style>body{visibility:hidden;}</style>
+    <script type="module">
+      console.log('[page] settings head script loaded');
+      import { ensureAuthGate } from './js/auth.js?v=1';
+      window.authOk = false;
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          window.location.reload();
+        }
+      });
+      const authOk = await ensureAuthGate();
+      window.authOk = authOk;
+      if (authOk) {
+        document.body.style.visibility = 'visible';
+      }
+      // Additional runtime guard: ensure stored session exists before loading modules
+      try {
+        if (!window.authGuard || !window.authGuard.isAuthenticated || !window.authGuard.isAuthenticated()) {
+          console.log('[auth] settings: no stored session, redirecting');
+          window.location.replace('./login.html');
+        }
+      } catch (e) {
+        console.warn('[auth] settings guard error', e);
+        window.location.replace('./login.html');
+      }
+    </script>
+  </head>
+  <body class="settings-page">
+    <div class="top-actions">
+      <button type="button" id="logout-button" class="analytics-button" aria-label="Cerrar sesión">🚪</button>
+      <a href="index.html" class="analytics-button" aria-label="Index">🏠</a>
+      <a href="analytics.html" class="analytics-button" aria-label="Analiticas">📊</a>
+    </div>
+    <main class="settings-shell">
+      <!-- Sección de Seleccionar Plataformas Activas -->
+      <section class="settings-card">
+        <div class="settings-header">
+          <div class="settings-header__text">
+            <p class="settings-eyebrow">Gestión de Plataformas</p>
+            <p class="settings-copy">
+              Los logos aparecerán todos juntos en la landing y la mascota cambiará
+              entre las plataformas activas.
+            </p>
+          </div>
+          <!-- <a href="analytics.html"><button type="button" class="btn btn-new-casino">📊</button></a> -->
+          <button type="button" id="open-new-casino" class="btn btn-new-casino">
+            Nueva Plataforma
+          </button>
+        </div>
+        <div class="settings-cards" id="casinos-container"></div>
+      </section>
+
+      <!-- Sección de Textos -->
+      <section class="settings-card settings-card--texts">
+        <p class="settings-eyebrow">Textos de la página</p>
+        <p class="settings-copy">Modificá los textos que se muestran en la landing.</p>
+        <form id="landing-content-form">
+          <label>
+            <span class="settings-label">Título</span>
+            <textarea id="input-heroTitle" name="heroTitle" rows="3"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Texto Aclarativo</span>
+            <textarea id="input-helperText" name="helperText" rows="2"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Texto de banner (etiqueta)</span>
+            <textarea id="input-promoLabel" name="promoLabel" rows="2"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Título de banner</span>
+            <textarea id="input-promoTitle" name="promoTitle" rows="3"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Texto de banner (nota)</span>
+            <textarea id="input-promoNote" name="promoNote" rows="2"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Texto Botón WhatsApp</span>
+            <textarea id="input-ctaLabel" name="ctaLabel" rows="2"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">URL WhatsApp</span>
+            <input type="url" id="input-whatsappUrl" name="whatsappUrl" placeholder="https://..." />
+          </label>
+          <label>
+            <span class="settings-label">Footer Informativo</span>
+            <textarea id="input-footerText1" name="footerText1" rows="2"></textarea>
+          </label>
+          <label>
+            <span class="settings-label">Footer Obligatorio</span>
+            <textarea id="input-footerText2" name="footerText2" rows="2"></textarea>
+          </label>
+          <div class="settings-actions">
+            <button type="button" id="save-landing-content" class="btn btn--primary">Guardar textos</button>
+            <button type="button" id="reset-landing-content" class="btn btn--secondary">Restablecer valores por defecto</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="new-casino-modal" aria-hidden="true">
+      <div class="modal-window" role="dialog" aria-modal="true" aria-labelledby="new-casino-title">
+        <div class="modal-header">
+          <div>
+            <p class="settings-eyebrow">Gestión de Casinos</p>
+            <h2 id="new-casino-title">Crear Nuevo Casino</h2>
+          </div>
+          <button type="button" class="modal-close" id="close-new-casino" aria-label="Cerrar modal">✕</button>
+        </div>
+        <p class="settings-copy">Agregá un nuevo casino con su logo, mascota y color personalizado.</p>
+        <div class="casino-form-section">
+          <form id="new-casino-form">
+            <input type="hidden" id="casino-id" value="" />
+            <div class="form-row">
+              <div class="form-group">
+                <label for="casino-name">Nombre del Casino</label>
+                <input type="text" id="casino-name" placeholder="ej: Mi Casino" required />
+              </div>
+              <div class="form-group">
+                <label for="casino-color">Color Principal</label>
+                <input type="color" id="casino-color" value="#FF1493" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="casino-logo">Logo del Casino</label>
+                <input type="file" id="casino-logo" accept="image/*" />
+                <div class="file-preview" id="logo-preview"></div>
+              </div>
+
+              <div class="form-group">
+                <label for="casino-mascot">Mascota del Casino</label>
+                <input type="file" id="casino-mascot" accept="image/*" />
+                <div class="file-preview" id="mascot-preview"></div>
+              </div>
+            </div>
+
+            <div class="settings-actions" style="justify-content: flex-end;">
+              <button type="submit" id="casino-submit-button" class="btn btn--primary">Crear Casino</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.casinosAPI = window.casinosAPI || {};
+      window.landingSettings = window.landingSettings || {};
+    </script>
+    <script type="module">
+      import { clearSession } from './js/auth.js';
+
+      console.log('[page] settings bottom script start', { authOk: window.authOk, storedSession: sessionStorage.getItem('adminSession') });
+
+      document.getElementById('logout-button')?.addEventListener('click', async () => {
+        await clearSession();
+        window.location.replace('./login.html');
+      });
+
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          window.location.reload();
+        }
+      });
+
+      // Ensure auth gate here too (avoid race between head and bottom modules)
+      try {
+        const { ensureAuthGate } = await import('./js/auth.js');
+        const ok = await ensureAuthGate();
+        console.log('[page] settings bottom ensureAuthGate result', ok);
+        if (ok) {
+          try {
+            console.log('[page] settings importing modules...');
+            await import('./js/main.js');
+            console.log('[page] settings imported main.js');
+            await import('./js/settings.js?v=9');
+            console.log('[page] settings imported settings.js');
+          } catch (e) {
+            console.error('[page] settings failed importing modules', e);
+          }
+        } else {
+          console.log('[page] settings bottom script: ensureAuthGate returned false');
+        }
+      } catch (e) {
+        console.error('[page] settings bottom script error while ensuring auth', e);
+      }
+    </script>
+  </body>
+</html>

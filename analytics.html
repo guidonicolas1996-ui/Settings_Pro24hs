@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Analytics de visitas y comportamiento de la landing." />
+    <meta name="theme-color" content="#060b1d" />
+    <title>Analytics - Casino Oficial</title>
+    <link rel="icon" type="image/png" href="./img/favicon.png" />
+    <meta http-equiv="cache-control" content="no-store" />
+    <link rel="stylesheet" href="./css/styles.css" />
+    <style>body{visibility:hidden;}</style>
+        <script type="module">
+            console.log('[page] analytics head script loaded');
+            import { ensureAuthGate } from './js/auth.js?v=1';
+      window.authOk = false;
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          window.location.reload();
+        }
+      });
+      const authOk = await ensureAuthGate();
+      window.authOk = authOk;
+                if (authOk) {
+                document.body.style.visibility = 'visible';
+            } else {
+                window.location.replace('./login.html');
+            }
+            // Additional guard: ensure stored session exists before loading analytics scripts
+            try {
+                if (!window.authGuard || !window.authGuard.isAuthenticated || !window.authGuard.isAuthenticated()) {
+                    console.log('[auth] analytics: no stored session, redirecting');
+                    window.location.replace('./login.html');
+                }
+            } catch (e) {
+                console.warn('[auth] analytics guard error', e);
+                window.location.replace('./login.html');
+            }
+    </script>
+  </head>
+  <body class="settings-page" data-theme="default">
+    <div class="top-actions">
+      <button type="button" id="logout-button" class="analytics-button" aria-label="Cerrar sesión">🚪</button>
+      <a href="index.html" class="analytics-button" aria-label="Index">🏠</a>
+      <a href="settings.html" class="analytics-button" aria-label="Configuración">⚙️</a>
+    </div>
+        <main class="settings-shell">
+            <section class="settings-card">
+                <div class="settings-header">
+                    <div class="settings-header__text">
+                        <p class="settings-eyebrow">Analytics de la landing</p>
+                        <p class="settings-copy">
+                        Tráfico, fuente y comportamiento de usuarios únicos.
+                        </p>
+                    </div>
+                </div>
+
+                <section>
+                <div class="analytics-breakdown-header">
+                    <div>
+                        <h3>Período</h3>
+                        <p class="settings-copy">
+                            Seleccioná el rango de fechas que querés consultar.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analytics-controls">
+                    <div class="analytics-filter-group">
+                    <label for="analytics-range-select">Periodo</label>
+                    <select id="analytics-range-select">
+                        <option value="custom">Personalizado</option>
+                        <option value="today">Hoy</option>
+                        <option value="week">Esta semana</option>
+                        <option value="month">Este mes</option>
+                        <option value="year">Este año</option>
+                        <option value="all">Todo el tiempo</option>
+                    </select>
+                    </div>
+
+                    <div class="analytics-filter-group">
+                    <label for="analytics-start">Desde</label>
+                    <input id="analytics-start" type="datetime-local" />
+                    </div>
+
+                    <div class="analytics-filter-group">
+                    <label for="analytics-end">Hasta</label>
+                    <input id="analytics-end" type="datetime-local" />
+                    </div>
+
+                </div>
+                                <div class="analytics-toolbar">
+                                    <div id="analytics-message" class="analytics-message">
+                Mostrando datos para hoy por defecto.
+                                    </div>
+                                    <div class="analytics-breakdown-actions">
+                                        <button id="analytics-generate-btn" class="btn analytics-clear-btn">GENERAR DATOS DE PRUEBA</button>
+                                        <button id="analytics-clear-btn" class="btn analytics-clear-btn">BORRAR DATOS</button>
+                                    </div>
+                                </div>
+                </section>
+
+                <section>
+                <div class="analytics-breakdown-header">
+                    <div>
+                    <h3>Resumen</h3>
+                    <p class="settings-copy">
+                        Totales registrados para el período seleccionado.
+                    </p>
+                    </div>
+                    <button id="summary-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                        <span class="analytics-toggle-icon">▶</span>
+                        <span class="sr-only">Minimizar resumen</span>
+                    </button>
+                </div>
+
+                <div id="summary-body" class="analytics-section__body">
+                <div id="analytics-content" class="analytics-panel">
+
+                    <div class="analytics-card">
+                    <h3>Visitas únicas</h3>
+                    <p id="analytics-unique">Cargando...</p>
+                    </div>
+
+                    <div class="analytics-card">
+                    <h3>Visitas totales</h3>
+                    <p id="analytics-total">Cargando...</p>
+                    </div>
+
+                    <div class="analytics-card">
+                    <h3>Clicks únicos WhatsApp</h3>
+                    <p id="analytics-whatsapp-unique">Cargando...</p>
+                    </div>
+
+                    <div class="analytics-card">
+                    <h3>Clicks totales WhatsApp</h3>
+                    <p id="analytics-whatsapp-total">Cargando...</p>
+                    </div>
+
+                </div>
+                <div class="analytics-summary-divider" aria-hidden="true"></div>
+                <div>
+                  <div class="analytics-breakdown-header analytics-subsection-header">
+                    <div>
+                      <h3>Links</h3>
+                      <p class="settings-copy">Resumen de visitas por link principal y links alternativos.</p>
+                    </div>
+                    <button id="links-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
+                      <span class="analytics-toggle-icon">▶</span>
+                      <span class="sr-only">Mostrar links</span>
+                    </button>
+                  </div>
+                  <div id="links-body" class="analytics-section__body collapsed">
+                    <div id="analytics-links-summary" class="analytics-links-summary"></div>
+                  </div>
+                </div>
+                </div>
+                </section>
+
+                <section>
+                <div class="analytics-breakdown-header">
+                    <div>
+                    <h3>Visualización</h3>
+                    <p class="settings-copy">
+                        Elegí cómo querés agrupar la información del gráfico.
+                    </p>
+                    </div>
+                    <button id="visualization-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                        <span class="analytics-toggle-icon">▶</span>
+                        <span class="sr-only">Minimizar visualización</span>
+                    </button>
+                </div>
+
+                <div id="visualization-body" class="analytics-section__body">
+                <div class="analytics-controls">
+
+                    <div class="analytics-filter-group">
+                    <label for="analytics-detail-select">Tipo de detalle</label>
+                    <select id="analytics-detail-select">
+                        <option value="hour">Por hora</option>
+                        <option value="shift">Por turno</option>
+                        <option value="day">Por día</option>
+                        <option value="week">Por semana</option>
+                        <option value="month">Por mes</option>
+                    </select>
+                    </div>
+
+                                        </div>
+
+                                </div>
+
+                                <div class="analytics-metrics-panel" style="margin-top:0.5rem;margin-bottom:0.75rem;">
+                                    <div class="analytics-metrics-toolbar">
+                                        <label style="display:block;margin-bottom:0;font-weight:600;color:var(--color-text);">Métricas</label>
+                                        <div class="analytics-metric-actions">
+                                            <button type="button" class="analytics-inline-toggle analytics-inline-toggle--subtle analytics-metric-preset-button" data-preset="summary">Resumen</button>
+                                            <button type="button" class="analytics-inline-toggle analytics-inline-toggle--subtle analytics-metric-preset-button" data-preset="visits">Visitas</button>
+                                            <button type="button" class="analytics-inline-toggle analytics-inline-toggle--subtle analytics-metric-preset-button" data-preset="whatsapp">WhatsApp</button>
+                                            <button type="button" class="analytics-inline-toggle analytics-inline-toggle--subtle analytics-metric-preset-button" data-preset="all">Todo</button>
+                                        </div>
+                                        <button id="analytics-alt-detail-toggle" type="button" class="analytics-inline-toggle" aria-expanded="false">
+                                            Detalle de links
+                                        </button>
+                                    </div>
+                                    <div id="analytics-metric-checkboxes" class="analytics-metric-checkboxes analytics-metric-inline">
+                                        <div class="analytics-metric-group">
+                                            <div class="analytics-metric-group__title">Generales</div>
+                                            <div class="analytics-metric-group__list">
+                                                <label><input type="checkbox" value="uniqueVisitors" checked><span>Visitas únicas</span></label>
+                                                <label><input type="checkbox" value="totalVisits"><span>Visitas totales</span></label>
+                                                <label><input type="checkbox" value="whatsappClicks" checked><span>Clicks únicos WhatsApp</span></label>
+                                                <label><input type="checkbox" value="whatsappClicksTotal"><span>Clicks totales WhatsApp</span></label>
+                                            </div>
+                                        </div>
+                                        <div class="analytics-metric-group">
+                                            <div class="analytics-metric-group__title">Links</div>
+                                            <div class="analytics-metric-group__list analytics-metric-group__list--stacked">
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Principal</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="primaryLinks"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="primaryVisits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="primaryWhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="primaryWhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 1</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt1Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt1Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt1WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt1WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 2</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt2Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt2Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt2WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt2WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 3</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt3Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt3Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt3WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt3WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 4</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt4Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt4Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt4WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt4WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="analytics-metric-subgroup" data-link-metric-detail hidden>
+                                                    <div class="analytics-metric-subgroup__title">Alternativo 5</div>
+                                                    <div class="analytics-metric-subgroup__list">
+                                                        <label><input type="checkbox" value="alt5Links"><span>Visitas únicas</span></label>
+                                                        <label><input type="checkbox" value="alt5Visits"><span>Visitas totales</span></label>
+                                                        <label><input type="checkbox" value="alt5WhatsappClicks"><span>Clicks únicos</span></label>
+                                                        <label><input type="checkbox" value="alt5WhatsappClicksTotal"><span>Clicks totales</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                <div id="chart-section" class="analytics-chart-section">
+                    <div class="analytics-breakdown-header analytics-subsection-header">
+                        <h3 id="analytics-breakdown-title">Gráfico</h3>
+                        <button id="chart-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                            <span class="analytics-toggle-icon">▶</span>
+                            <span class="sr-only">Minimizar gráfico</span>
+                        </button>
+                    </div>
+                    <div id="chart-body" class="analytics-section__body">
+                        <div class="analytics-chart-card">
+                            <canvas
+                                id="analytics-chart"
+                                class="analytics-chart"
+                                width="900"
+                                height="300">
+                            </canvas>
+                        </div>
+                        <div id="analytics-legend" class="analytics-chart-legend"></div>
+                    </div>
+                </div>
+
+                <div id="analytics-breakdown-section" class="analytics-breakdown-section">
+                    <div class="analytics-breakdown-header analytics-subsection-header">
+                        <h3>Tabla Comparativa (Únicas/Totales)</h3>
+                        <div class="analytics-breakdown-actions">
+                            <button id="table-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
+                                <span class="analytics-toggle-icon">▶</span>
+                                <span class="sr-only">Mostrar tabla</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="analytics-breakdown-body" class="analytics-section__body collapsed">
+                        <div id="analytics-breakdown" class="analytics-breakdown">
+                            Cargando...
+                        </div>
+                    </div>
+                </div>
+                </div>
+                </section>
+            </section>
+        </main>
+        <script type="module">
+            import { clearSession } from './js/auth.js';
+
+            console.log('[page] analytics bottom script start', { authOk: window.authOk, storedSession: sessionStorage.getItem('adminSession') });
+
+            document.getElementById('logout-button')?.addEventListener('click', async () => {
+                await clearSession();
+                window.location.replace('./login.html');
+            });
+
+            // Ensure auth gate here too (avoid race between head and bottom modules)
+            try {
+                const { ensureAuthGate } = await import('./js/auth.js');
+                const ok = await ensureAuthGate();
+                console.log('[page] analytics bottom ensureAuthGate result', ok);
+                if (ok) {
+                    try {
+                        console.log('[page] analytics importing module...');
+                        await import('./js/analytics.js?v=5');
+                        console.log('[page] analytics imported analytics.js');
+                    } catch (e) {
+                        console.error('[page] analytics failed to load analytics module', e);
+                        try { await import('./js/auth.js'); window.authGuard && await window.authGuard.clearSession(); } catch (_) {}
+                        window.location.replace('./login.html');
+                    }
+                } else {
+                    console.log('[page] analytics bottom script: ensureAuthGate returned false');
+                }
+            } catch (e) {
+                console.error('[page] analytics bottom script error while ensuring auth', e);
+            }
+        </script>
+  </body>
+</html>

@@ -116,7 +116,7 @@ function isAuthenticated() {
 
 function redirectToLogin() {
   if (window.location.pathname.includes('login.html')) return;
-  const loginUrl = new URL('/login.html', window.location.href).href;
+  const loginUrl = new URL('./login.html', window.location.href).href;
   window.location.replace(loginUrl);
 }
 

@@ -15,16 +15,16 @@ let landingContent = {
 
 const MAX_CASINOS = 5;
 const BACKGROUND_IMAGES = [
-  '../../img/background1.png',
-  '../../img/background2.png',
-  '../../img/background3.png',
-  '../../img/background4.png',
-  '../../img/background5.png',
-  '../../img/background6.png',
-  '../../img/background7.png',
-  '../../img/background8.png',
-  '../../img/background9.png',
-  '../../img/background10.png'
+  './img/background1.png',
+  './img/background2.png',
+  './img/background3.png',
+  './img/background4.png',
+  './img/background5.png',
+  './img/background6.png',
+  './img/background7.png',
+  './img/background8.png',
+  './img/background9.png',
+  './img/background10.png'
 ];
 const LOCAL_STORAGE_CASINOS_KEY = 'dynamicCasinos';
 const USE_REMOTE_STORAGE = typeof window !== 'undefined' && window.location.protocol !== 'file:';
