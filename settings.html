@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#060b1d" />
     <title>Settings - Casino Oficial</title>
     <link rel="icon" type="image/png" href="./img/favicon.png" />
-    <link rel="stylesheet" href="./css/styles.css" />
+    <link rel="stylesheet" href="./css/styles.css?v=20260713" />
     <style>body{visibility:hidden;}</style>
     <script type="module">
       console.log('[page] settings head script loaded');
@@ -62,8 +62,42 @@
 
       <!-- Sección de Textos -->
       <section class="settings-card settings-card--texts">
-        <p class="settings-eyebrow">Textos de la página</p>
-        <p class="settings-copy">Modificá los textos que se muestran en la landing.</p>
+        <div class="settings-header">
+          <div class="settings-header__text">
+            <p class="settings-eyebrow">Textos de la página</p>
+            <p class="settings-copy">Modificá los textos que se muestran en la landing. Tenés 1 configuración General y 5 Alternativas para diferentes campañas.</p>
+          </div>
+        </div>
+
+        <!-- Selector de Configuraciones tipo Carpeta -->
+        <div class="config-selector" style="margin-bottom: 1rem;">
+          <label class="settings-label" for="config-selector">Seleccionar configuración</label>
+          <select id="config-selector">
+            <option value="general">General</option>
+            <option value="alt1">Alt 1</option>
+            <option value="alt2">Alt 2</option>
+            <option value="alt3">Alt 3</option>
+            <option value="alt4">Alt 4</option>
+            <option value="alt5">Alt 5</option>
+          </select>
+        </div>
+
+        <div class="config-labels" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.5rem;">
+          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 1" data-alt="alt1" maxlength="30" />
+          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 2" data-alt="alt2" maxlength="30" />
+          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 3" data-alt="alt3" maxlength="30" />
+          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 4" data-alt="alt4" maxlength="30" />
+          <input type="text" class="config-tab__label" placeholder="Etiqueta Alt 5" data-alt="alt5" maxlength="30" />
+        </div>
+
+        <!-- Controles de Alternativas (solo para alt1-alt5) -->
+        <div class="config-controls" id="config-controls" style="display: none; margin-bottom: 1.5rem;">
+          <label class="settings-checkbox">
+            <input type="checkbox" id="alt-active-checkbox" />
+            <span>Activar esta configuración alternativa</span>
+          </label>
+        </div>
+
         <form id="landing-content-form">
           <label>
             <span class="settings-label">Título</span>
@@ -183,9 +217,9 @@
         if (ok) {
           try {
             console.log('[page] settings importing modules...');
-            await import('./js/main.js');
+            await import('./js/main.js?v=20260713');
             console.log('[page] settings imported main.js');
-            await import('./js/settings.js?v=9');
+            await import('./js/settings.js?v=20260713');
             console.log('[page] settings imported settings.js');
           } catch (e) {
             console.error('[page] settings failed importing modules', e);

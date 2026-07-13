@@ -1,6 +1,8 @@
 // M�dulo de scripts espec�ficos de settings.html
 console.log('[settings] settings.js loaded');
 
+import { buildLandingContentState } from './landing-content.js';
+
 function compressImage(base64String, maxWidth = 600, maxHeight = 600, quality = 0.8) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -582,6 +584,267 @@ function closeNewCasinoModal() {
 
 function setupSettingsPage() {
   console.log('[settings] setupSettingsPage called');
+  
+  // ===== NEW: Multi-config management =====
+  let currentConfig = 'general'; // Track active config tab
+  const configSelector = document.getElementById('config-selector');
+  const configControls = document.getElementById('config-controls');
+  const altCheckbox = document.getElementById('alt-active-checkbox');
+  
+  if (altCheckbox) {
+    altCheckbox.addEventListener('change', async () => {
+      if (currentConfig !== 'general') {
+        await saveCurrentConfig(currentConfig);
+      }
+    });
+  }
+  
+  const applyActiveConfigTab = (configName) => {
+    if (configSelector) {
+      configSelector.value = configName;
+    }
+
+    if (configControls) {
+      configControls.style.display = configName === 'general' ? 'none' : 'block';
+    }
+  };
+
+  if (configSelector) {
+    configSelector.addEventListener('change', (event) => {
+      const configName = event.target.value;
+      if (!configName) return;
+
+      switchConfigTab(configName);
+    });
+  }
+
+  window.selectLandingConfig = (configName) => {
+    if (configSelector) {
+      configSelector.value = configName;
+      configSelector.dispatchEvent(new Event('change'));
+    }
+  };
+  
+  // Update label input and save when changed
+  document.querySelectorAll('.config-tab__label').forEach((input) => {
+    input.addEventListener('click', (e) => e.stopPropagation());
+    input.addEventListener('change', async (e) => {
+      const altName = e.target.dataset.alt;
+      const label = e.target.value;
+      await saveLabelForAlt(altName, label);
+    });
+  });
+  
+  function switchConfigTab(configName) {
+    const previousConfig = currentConfig;
+
+    if (previousConfig !== configName) {
+      void saveCurrentConfig(previousConfig).catch((error) => {
+        console.warn('[settings] no se pudo guardar la configuración anterior antes de cambiar de pestaña', error);
+      });
+    }
+
+    currentConfig = configName;
+    applyActiveConfigTab(configName);
+
+    // Load config values in the background so the UI changes immediately.
+    void loadConfigValues(configName).catch((error) => {
+      console.warn(`[settings] Error loading config ${configName}`, error);
+    });
+  }
+  
+  async function loadConfigValues(configName) {
+    try {
+      const firebaseModule = await import('./firebase.js');
+      const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+      const { doc, getDoc } = firestoreModule;
+      
+      const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
+      const cfg = snapshot.exists() ? (snapshot.data() || {}) : {};
+      const landingContent = cfg.landingContent || {};
+      const configData = getConfigDataForSelection(landingContent, configName);
+      
+      populateForm(configData, configName);
+      
+      // Update alt checkbox state
+      if (configName !== 'general' && altCheckbox) {
+        const nextCheckedState = Boolean(configData.active);
+        altCheckbox.checked = nextCheckedState;
+        altCheckbox.setAttribute('aria-checked', String(nextCheckedState));
+      } else if (altCheckbox) {
+        altCheckbox.checked = false;
+        altCheckbox.setAttribute('aria-checked', 'false');
+      }
+      
+      // Update tab label from DB
+      const labelInput = document.querySelector(`input.config-tab__label[data-alt="${configName}"]`);
+      if (configName !== 'general' && labelInput) {
+        labelInput.value = configData.label || '';
+      }
+    } catch (error) {
+      console.warn(`[settings] Error loading config ${configName}`, error);
+      populateForm(getDefaultConfig(), configName);
+    }
+  }
+  
+  async function saveCurrentConfig(configName = (configSelector && configSelector.value) || currentConfig) {
+    if (!configName) return;
+
+    const payload = {
+      heroTitle: document.getElementById('input-heroTitle').value,
+      promoLabel: document.getElementById('input-promoLabel').value,
+      promoTitle: document.getElementById('input-promoTitle').value,
+      promoNote: document.getElementById('input-promoNote').value,
+      ctaLabel: document.getElementById('input-ctaLabel').value,
+      whatsappUrl: document.getElementById('input-whatsappUrl').value,
+      helperText: document.getElementById('input-helperText').value,
+      footerText1: document.getElementById('input-footerText1').value,
+      footerText2: document.getElementById('input-footerText2').value
+    };
+
+    let nextActiveState = undefined;
+    let nextLabel = undefined;
+    if (configName !== 'general') {
+      nextActiveState = altCheckbox && altCheckbox.checked ? true : false;
+      const labelInput = document.querySelector(`input.config-tab__label[data-alt="${configName}"]`);
+      nextLabel = (labelInput && labelInput.value) || '';
+      if (altCheckbox) {
+        altCheckbox.checked = nextActiveState;
+        altCheckbox.setAttribute('aria-checked', String(nextActiveState));
+      }
+    }
+
+    try {
+      const firebaseModule = await import('./firebase.js');
+      const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+      const { doc, getDoc, setDoc } = firestoreModule;
+      const docRef = doc(firebaseModule.db, 'config', 'landing');
+
+      const snapshot = await getDoc(docRef);
+      const currentConfig_data = snapshot.exists() ? snapshot.data() : {};
+      const previousLandingContent = currentConfig_data.landingContent && typeof currentConfig_data.landingContent === 'object'
+        ? currentConfig_data.landingContent
+        : {};
+
+      const state = buildLandingContentState(previousLandingContent, {
+        configName,
+        formValues: payload,
+        active: nextActiveState,
+        label: nextLabel
+      });
+
+      await setDoc(docRef, state, { merge: true });
+    } catch (error) {
+      console.error(`[settings] Error saving config ${configName}`, error);
+      throw error;
+    }
+  }
+  
+  async function saveLabelForAlt(altName, label) {
+    try {
+      const firebaseModule = await import('./firebase.js');
+      const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+      const { doc, getDoc, setDoc } = firestoreModule;
+      const docRef = doc(firebaseModule.db, 'config', 'landing');
+
+      const snapshot = await getDoc(docRef);
+      const cfg = snapshot.exists() ? snapshot.data() : {};
+      const previousLandingContent = cfg.landingContent && typeof cfg.landingContent === 'object' ? cfg.landingContent : {};
+      const state = buildLandingContentState(previousLandingContent, {
+        configName: altName,
+        formValues: {},
+        label
+      });
+
+      await setDoc(docRef, state, { merge: true });
+    } catch (error) {
+      console.warn(`[settings] Error saving label for ${altName}`, error);
+    }
+  }
+  
+  function getDefaultConfig() {
+    return {
+      heroTitle: 'BIENVENIDO A TU <span class="gradient-text">CASINO DE CONFIANZA</span>',
+      promoLabel: 'PARA USUARIOS NUEVOS',
+      promoTitle: '<span class="gradient-text">EXTRA</span> DE BONO EN TU <span class="gradient-text">PRIMERA CARGA</span>',
+      promoNote: 'CARGAS Y RETIROS AL INSTANTE',
+      ctaLabel: 'WHATSAPP OFICIAL',
+      whatsappUrl: '',
+      helperText: 'CARGAS Y RETIROS AL INSTANTE',
+      footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
+      footerText2: 'Advertencia de juego responsable (+18) - © 2026',
+      active: false,
+      label: ''
+    };
+  }
+
+  function getConfigDataForSelection(landingContent, configName) {
+    const baseConfig = getDefaultConfig();
+
+    if (!landingContent || typeof landingContent !== 'object') {
+      return { ...baseConfig };
+    }
+
+    if (configName === 'general') {
+      const generalConfig = landingContent.general && typeof landingContent.general === 'object'
+        ? landingContent.general
+        : {};
+      return { ...baseConfig, ...generalConfig };
+    }
+
+    const alternatives = landingContent.alternatives && typeof landingContent.alternatives === 'object'
+      ? landingContent.alternatives
+      : {};
+    const altConfig = alternatives[configName] && typeof alternatives[configName] === 'object'
+      ? alternatives[configName]
+      : {};
+
+    return { ...baseConfig, ...altConfig };
+  }
+  
+  // ===== Save button handler (updated) =====
+  
+  // ===== Save button handler (updated) =====
+  const saveLandingButton = document.getElementById('save-landing-content');
+  console.log('[settings] saveLandingButton lookup', { button: saveLandingButton });
+  if (saveLandingButton) {
+    console.log('[settings] saveLandingButton found and handler attached');
+    saveLandingButton.addEventListener('click', async () => {
+      const selectedConfig = (configSelector && configSelector.value) || currentConfig;
+      console.log('[settings] saveLandingButton clicked for config:', selectedConfig);
+      try {
+        await saveCurrentConfig(selectedConfig);
+        alert(`✅ Configuración "${selectedConfig}" guardada correctamente.`);
+      } catch (error) {
+        console.error('[settings] Error saving:', error);
+        alert('❌ Error guardando: ' + (error.message || 'ver consola'));
+      }
+    });
+  }
+
+  const resetLandingButton = document.getElementById('reset-landing-content');
+  if (resetLandingButton) {
+    resetLandingButton.addEventListener('click', async () => {
+      if (!confirm('¿Restablecer esta configuración a los valores por defecto?')) {
+        return;
+      }
+
+      try {
+        populateForm(getDefaultConfig());
+        await saveCurrentConfig();
+        alert(`✅ Configuración "${currentConfig}" restablecida correctamente.`);
+      } catch (error) {
+        console.error('[settings] Error resetting:', error);
+        alert('❌ Error al restablecer: ' + error.message);
+      }
+    });
+  }
+  
+  // Initialize: load general config by default
+  switchConfigTab('general');
+  
+  // ===== End of multi-config management =====
+  
   const openButton = document.getElementById('open-new-casino');
   const closeButton = document.getElementById('close-new-casino');
   const modal = document.getElementById('new-casino-modal');
@@ -625,53 +888,6 @@ function setupSettingsPage() {
     }
   });
 
-  const saveLandingButton = document.getElementById('save-landing-content');
-  console.log('[settings] saveLandingButton lookup', { button: saveLandingButton });
-  if (saveLandingButton) {
-    console.log('[settings] saveLandingButton found and handler attached');
-    saveLandingButton.addEventListener('click', async () => {
-      console.log('[settings] saveLandingButton clicked');
-      const api = await waitForCasinosApi();
-      console.log('[settings] waitForCasinosApi returned', api);
-      const payload = {
-        heroTitle: document.getElementById('input-heroTitle').value,
-        promoLabel: document.getElementById('input-promoLabel').value,
-        promoTitle: document.getElementById('input-promoTitle').value,
-        promoNote: document.getElementById('input-promoNote').value,
-        ctaLabel: document.getElementById('input-ctaLabel').value,
-        whatsappUrl: document.getElementById('input-whatsappUrl').value,
-        helperText: document.getElementById('input-helperText').value,
-        footerText1: document.getElementById('input-footerText1').value,
-        footerText2: document.getElementById('input-footerText2').value
-      };
-
-      if (api.setLandingContent) {
-        api.setLandingContent(payload, false);
-      }
-      try {
-        console.log('[settings] starting Firebase save');
-        const firebaseModule = await import('./firebase.js');
-        console.log('[settings] imported firebase module', firebaseModule);
-        const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
-        console.log('[settings] imported firestore module', firestoreModule);
-        const { doc, getDoc, setDoc } = firestoreModule;
-        const docRef = doc(firebaseModule.db, 'config', 'landing');
-        console.log('[settings] docRef created', docRef);
-        console.log('[settings] saving landingContent payload', payload);
-        const snapshot = await getDoc(docRef);
-        const currentConfig = snapshot.exists() ? snapshot.data() : {};
-        console.log('[settings] currentConfig before save', currentConfig);
-        await setDoc(docRef, { landingContent: payload }, { merge: true });
-        const savedSnapshot = await getDoc(docRef);
-        console.log('[settings] saved landingContent to Firebase', savedSnapshot.exists() ? savedSnapshot.data() : null);
-        alert('Textos guardados correctamente.');
-      } catch (error) {
-        console.error('[settings] No se pudo guardar de forma remota', error);
-        alert('Error guardando en remoto: ' + (error.message || 'ver consola'));
-      }
-    });
-  }
-
   // When the user begins editing the CTA label, if the field value matches the
   // originally loaded value (likely the constant), replace it with the literal
   // 'WHATSAPP OFICIAL' as requested.
@@ -689,81 +905,49 @@ function setupSettingsPage() {
     });
   }
 
-  const resetLandingButton = document.getElementById('reset-landing-content');
-  if (resetLandingButton) {
-    resetLandingButton.addEventListener('click', async () => {
-      if (!confirm('Restablecer los textos a los valores por defecto?')) {
-        return;
-      }
-
-      const defaults = {
-        heroTitle: 'OBTENÉ UN <span class="gradient-text">EXTRA</span> EN TU <span class="gradient-text">PRIMER DEPÓSITO</span>',
-        promoLabel: 'PARA USUARIOS NUEVOS',
-        promoTitle: '<span class="gradient-text">100%</span> DE BONO EN TU <span class="gradient-text">PRIMERA CARGA</span>',
-        promoNote: 'CARGAS Y RETIROS AL INSTANTE',
-        ctaLabel: 'WHATSAPP OFICIAL',
-        // whatsappUrl intentionally omitted here; we'll preserve existing DB value when saving
-        helperText: 'ATENCIÓN Y RETIROS LAS 24 HS',
-        footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
-        footerText2: '© 2026 el juego es solo +18. Operá con responsabilidad.'
-      };
-
-      try {
-        const api = await waitForCasinosApi();
-
-        const firebaseModule = await import('./firebase.js');
-        const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
-
-        const { doc, getDoc, setDoc } = firestoreModule;
-
-        const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
-        const currentConfig = snapshot.exists() ? snapshot.data() : {};
-        const preservedWhatsapp = currentConfig?.landingContent?.whatsappUrl || '';
-
-        const toSave = {
-          ...defaults,
-          whatsappUrl: preservedWhatsapp
-        };
-
-        // Populate form with the final values (preserving whatsapp URL)
-        populateForm(toSave);
-
-        await setDoc(doc(firebaseModule.db, 'config', 'landing'), {
-          ...currentConfig,
-          landingContent: toSave
-        });
-
-
-        if (api.setLandingContent) {
-          api.setLandingContent(toSave, false);
-        }
-
-        window.dispatchEvent(new CustomEvent('landingContent:ready', { detail: toSave }));
-        alert('Textos restablecidos correctamente y guardados en la base de datos. (WhatsApp URL preservada)');
-      } catch (error) {
-        console.error('Error reseteando textos:', error);
-        alert('Error al restablecer: ' + error.message);
-      }
-    });
-  }
 }
 
-function populateForm(content) {
-  if (!content) return;
-  document.getElementById('input-heroTitle').value = content.heroTitle || '';
-  document.getElementById('input-promoLabel').value = content.promoLabel || '';
-  document.getElementById('input-promoTitle').value = content.promoTitle || '';
-  document.getElementById('input-promoNote').value = content.promoNote || '';
-  const ctaEl = document.getElementById('input-ctaLabel');
-  ctaEl.value = content.ctaLabel || '';
-  // store original loaded value so we can detect edits and replace const-based defaults
-  ctaEl.dataset.original = content.ctaLabel || '';
-  if (Object.prototype.hasOwnProperty.call(content, 'whatsappUrl')) {
-    document.getElementById('input-whatsappUrl').value = content.whatsappUrl || '';
+function populateForm(content, configName = 'general') {
+  const fallbackContent = {
+    heroTitle: 'BIENVENIDO A TU <span class="gradient-text">CASINO DE CONFIANZA</span>',
+    promoLabel: 'PARA USUARIOS NUEVOS',
+    promoTitle: '<span class="gradient-text">EXTRA</span> DE BONO EN TU <span class="gradient-text">PRIMERA CARGA</span>',
+    promoNote: 'CARGAS Y RETIROS AL INSTANTE',
+    ctaLabel: 'WHATSAPP OFICIAL',
+    whatsappUrl: '',
+    helperText: 'CARGAS Y RETIROS AL INSTANTE',
+    footerText1: 'Bono no extraíble, válido solo para slots. Mínimo de carga: $2.000.',
+    footerText2: 'Advertencia de juego responsable (+18) - © 2026'
+  };
+
+  let normalizedContent = content;
+  if (content && typeof content === 'object' && (Object.prototype.hasOwnProperty.call(content, 'general') || Object.prototype.hasOwnProperty.call(content, 'alternatives'))) {
+    if (configName === 'general') {
+      normalizedContent = { ...fallbackContent, ...(content.general && typeof content.general === 'object' ? content.general : {}) };
+    } else {
+      const altConfig = (content.alternatives && typeof content.alternatives === 'object' ? content.alternatives[configName] : null) || {};
+      normalizedContent = { ...fallbackContent, ...altConfig };
+    }
+  } else if (!content || typeof content !== 'object') {
+    normalizedContent = fallbackContent;
+  } else {
+    normalizedContent = { ...fallbackContent, ...content };
   }
-  document.getElementById('input-helperText').value = content.helperText || '';
-  document.getElementById('input-footerText1').value = content.footerText1 || '';
-  document.getElementById('input-footerText2').value = content.footerText2 || '';
+
+  document.getElementById('input-heroTitle').value = normalizedContent.heroTitle || '';
+  document.getElementById('input-promoLabel').value = normalizedContent.promoLabel || '';
+  document.getElementById('input-promoTitle').value = normalizedContent.promoTitle || '';
+  document.getElementById('input-promoNote').value = normalizedContent.promoNote || '';
+  const ctaEl = document.getElementById('input-ctaLabel');
+  ctaEl.value = normalizedContent.ctaLabel || '';
+  // store original loaded value so we can detect edits and replace const-based defaults
+  ctaEl.dataset.original = normalizedContent.ctaLabel || '';
+  if (Object.prototype.hasOwnProperty.call(normalizedContent, 'whatsappUrl')) {
+    document.getElementById('input-whatsappUrl').value = normalizedContent.whatsappUrl || '';
+  }
+  document.getElementById('input-helperText').value = normalizedContent.helperText || '';
+  document.getElementById('input-footerText1').value = normalizedContent.footerText1 || '';
+  document.getElementById('input-footerText2').value = normalizedContent.footerText2 || '';
 }
 
 function initSettings() {
@@ -812,7 +996,7 @@ async function runOnReady() {
     }
 
     const remoteOrStored = landingFromDb || (api.getLandingContent && api.getLandingContent()) || (api.getStoredLandingContent && api.getStoredLandingContent());
-    populateForm(remoteOrStored);
+    populateForm(remoteOrStored, 'general');
 
     initSettings();
     await renderCasinos();

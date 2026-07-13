@@ -6,23 +6,17 @@
   Sections:
   - Variables & Theme
   - Base styles
-  - Animated background / ambient blobs
-  - Hero / Header / Mascot Carousel
-  - Promo Banner
-  - Logo Carousel
-  - Animations (keyframes for mascots and logos)
-  - Responsive rules (media queries)
+  - Forms & UI components
+  - Footer styles
+  - Auth / settings / analytics
+  - Responsive rules
 
   Each major block is separated with a large comment for easier navigation.
   ========================================================================== */
 
 @import url('./styles/variables.css');
 @import url('./styles/base.css');
-@import url('./styles/layout.css');
-@import url('./styles/components/carousel.css');
-@import url('./styles/components/cta.css');
 @import url('./styles/components/forms.css');
 @import url('./styles/components/footer.css');
 @import url('./styles/components/auth.css');
-@import url('./styles/animations.css');
 @import url('./styles/responsive.css');
