@@ -119,6 +119,26 @@ function getCasinoApi() {
   return window.landingSettings || window.casinosAPI || null;
 }
 
+function getStoredLandingContent() {
+  try {
+    const stored = localStorage.getItem('landingContentSettings');
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (error) {
+    console.warn('[settings] No se pudo leer landingContent desde localStorage', error);
+    return null;
+  }
+}
+
+function setStoredLandingContent(landingContent) {
+  try {
+    localStorage.setItem('landingContentSettings', JSON.stringify(landingContent || {}));
+  } catch (error) {
+    console.warn('[settings] No se pudo guardar landingContent en localStorage', error);
+  }
+}
+
 async function setupCasinoForm() {
   const form = document.getElementById('new-casino-form');
   if (!form) return;
@@ -135,19 +155,37 @@ async function setupCasinoForm() {
 
     const { casinoId, name, logoFile, mascotFile, color } = getFormValues();
     const api = await waitForCasinosApi();
-    const saveCasino = api.addCasino || (window.landingSettings && window.landingSettings.addCasino) || (window.casinosAPI && window.casinosAPI.addCasino);
+    const saveCasino = api?.addCasino || (window.landingSettings && window.landingSettings.addCasino) || (window.casinosAPI && window.casinosAPI.addCasino);
 
     if (!saveCasino) {
       if (submitButton) {
         submitButton.disabled = false;
         submitButton.innerText = originalButtonText;
       }
-      console.error('API de casinos no disponible', { api, windowLandingSettings: window.landingSettings, windowCasinosAPI: window.casinosAPI });
-      alert('API de casinos no disponible. Recarg� la p�gina e intent� de nuevo.');
+      console.error('API de casinos no disponible', { api, windowLandingSettings: !!window.landingSettings, windowCasinosAPI: !!window.casinosAPI });
+      alert('API de casinos no disponible. Se guardará localmente en esta sesión.');
+      try {
+        const fallbackId = casinoId || `casino_${Date.now()}`;
+        const stored = JSON.parse(localStorage.getItem('dynamicCasinos') || '{}');
+        stored[fallbackId] = {
+          label: name,
+          logo: '',
+          mascot: '',
+          color: color || '#FF1493',
+          active: false
+        };
+        localStorage.setItem('dynamicCasinos', JSON.stringify(stored));
+        localStorage.setItem('dynamicCasinos:order', JSON.stringify(Object.keys(stored)));
+        closeNewCasinoModal();
+        resetCasinoForm();
+        await renderCasinos();
+      } catch (fallbackError) {
+        console.error('Error guardando casino en fallback local:', fallbackError);
+      }
       return;
     }
 
-    const existingCasino = casinoId && api.getCasinos ? api.getCasinos()[casinoId] : null;
+    const existingCasino = casinoId && api?.getCasinos ? api.getCasinos()[casinoId] : null;
     if (casinoId && !existingCasino) {
       if (submitButton) {
         submitButton.disabled = false;
@@ -196,12 +234,19 @@ async function setupCasinoForm() {
         }
 
         const newCasinoId = await saveCasino(casinoId || null, name, finalLogo, finalMascot, color);
-        alert(casinoId ? '✅ Casino actualizado exitosamente' : '✅ Casino creado exitosamente');
+        if (newCasinoId || casinoId) {
+          alert(casinoId ? '✅ Casino actualizado exitosamente' : '✅ Casino creado exitosamente');
+          closeNewCasinoModal();
+          resetCasinoForm();
+          await renderCasinos();
+        } else {
+          throw new Error('No se recibió un identificador de casino válido');
+        }
+      } catch (saveError) {
+        console.error('Error guardando casino:', saveError);
         closeNewCasinoModal();
         resetCasinoForm();
         await renderCasinos();
-      } catch (saveError) {
-        console.error('Error guardando casino:', saveError);
         alert('❌ Error guardando casino: ' + (saveError?.message || saveError));
       }
     };
@@ -698,53 +743,54 @@ function setupSettingsPage() {
   
   async function loadConfigValues(configName, requestId = null) {
     const activeRequestId = requestId ?? ++configLoadRequestId;
+    let landingContent = getStoredLandingContent();
+
     try {
       const firebaseModule = await import('./firebase.js');
       const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
       const { doc, getDoc } = firestoreModule;
-      
+
       const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
       const cfg = snapshot.exists() ? (snapshot.data() || {}) : {};
-      const landingContent = cfg.landingContent || {};
-      const configData = getConfigDataForSelection(landingContent, configName);
-      
-      if (activeRequestId !== configLoadRequestId) {
-        return;
-      }
-
-      populateForm(configData, configName);
-      
-      // Update alt checkbox state
-      if (activeRequestId !== configLoadRequestId) {
-        return;
-      }
-
-      if (configName !== 'general' && altCheckbox) {
-        const nextCheckedState = Boolean(configData.active);
-        altCheckbox.checked = nextCheckedState;
-        altCheckbox.setAttribute('aria-checked', String(nextCheckedState));
-      } else if (altCheckbox) {
-        altCheckbox.checked = false;
-        altCheckbox.setAttribute('aria-checked', 'false');
-      }
-      
-      if (activeRequestId !== configLoadRequestId) {
-        return;
-      }
-
-      currentLandingContentState = landingContent;
-      refreshConfigButtonStates(configName, currentLandingContentState);
-
-      // Update tab label from DB
-      if (configName !== 'general' && altLabelInput) {
-        altLabelInput.value = configData.label || '';
+      if (cfg.landingContent && typeof cfg.landingContent === 'object') {
+        landingContent = cfg.landingContent;
       }
     } catch (error) {
-      if (activeRequestId !== configLoadRequestId) {
-        return;
-      }
-      console.warn(`[settings] Error loading config ${configName}`, error);
-      populateForm(getDefaultConfig(), configName);
+      console.warn(`[settings] Error loading config ${configName} from Firestore, using local fallback`, error);
+    }
+
+    if (activeRequestId !== configLoadRequestId) {
+      return;
+    }
+
+    const configData = getConfigDataForSelection(landingContent || {}, configName);
+    populateForm(configData, configName);
+
+    if (activeRequestId !== configLoadRequestId) {
+      return;
+    }
+
+    if (configName !== 'general' && altCheckbox) {
+      const nextCheckedState = Boolean(configData.active);
+      altCheckbox.checked = nextCheckedState;
+      altCheckbox.setAttribute('aria-checked', String(nextCheckedState));
+    } else if (altCheckbox) {
+      altCheckbox.checked = false;
+      altCheckbox.setAttribute('aria-checked', 'false');
+    }
+
+    if (activeRequestId !== configLoadRequestId) {
+      return;
+    }
+
+    currentLandingContentState = landingContent || {};
+    if (currentLandingContentState && typeof currentLandingContentState === 'object') {
+      setStoredLandingContent(currentLandingContentState);
+    }
+    refreshConfigButtonStates(configName, currentLandingContentState);
+
+    if (configName !== 'general' && altLabelInput) {
+      altLabelInput.value = configData.label || '';
     }
   }
   
@@ -752,15 +798,16 @@ function setupSettingsPage() {
     if (!configName) return;
 
     const payload = {
-      heroTitle: document.getElementById('input-heroTitle').value,
-      promoLabel: document.getElementById('input-promoLabel').value,
-      promoTitle: document.getElementById('input-promoTitle').value,
-      promoNote: document.getElementById('input-promoNote').value,
-      ctaLabel: document.getElementById('input-ctaLabel').value,
-      whatsappUrl: document.getElementById('input-whatsappUrl').value,
-      helperText: document.getElementById('input-helperText').value,
-      footerText1: document.getElementById('input-footerText1').value,
-      footerText2: document.getElementById('input-footerText2').value
+      heroBonusLine: document.getElementById('input-heroBonusLine')?.value || '',
+      heroTitle: document.getElementById('input-heroTitle')?.value || '',
+      promoLabel: document.getElementById('input-promoLabel')?.value || '',
+      promoTitle: document.getElementById('input-promoTitle')?.value || '',
+      promoNote: document.getElementById('input-promoNote')?.value || '',
+      ctaLabel: document.getElementById('input-ctaLabel')?.value || '',
+      whatsappUrl: document.getElementById('input-whatsappUrl')?.value || '',
+      helperText: document.getElementById('input-helperText')?.value || '',
+      footerText1: document.getElementById('input-footerText1')?.value || '',
+      footerText2: document.getElementById('input-footerText2')?.value || ''
     };
 
     let nextActiveState = undefined;
@@ -793,8 +840,14 @@ function setupSettingsPage() {
         label: nextLabel
       });
 
-      await setDoc(docRef, state, { merge: true });
+      try {
+        await setDoc(docRef, state, { merge: true });
+      } catch (firestoreError) {
+        console.warn(`[settings] No se pudo guardar en Firestore, usando localStorage`, firestoreError);
+      }
+
       currentLandingContentState = state.landingContent;
+      setStoredLandingContent(currentLandingContentState);
       if (configName === currentConfig) {
         refreshConfigButtonStates(configName, currentLandingContentState);
       }
@@ -807,6 +860,7 @@ function setupSettingsPage() {
   
   function getDefaultConfig() {
     return {
+      heroBonusLine: '100% DE BONO',
       heroTitle: 'BIENVENIDO A TU <span class="gradient-text">CASINO DE CONFIANZA</span>',
       promoLabel: 'PARA USUARIOS NUEVOS',
       promoTitle: '<span class="gradient-text">EXTRA</span> DE BONO EN TU <span class="gradient-text">PRIMERA CARGA</span>',
@@ -986,6 +1040,7 @@ function setupSettingsPage() {
 
 function populateForm(content, configName = 'general') {
   const fallbackContent = {
+    heroBonusLine: '100% DE BONO',
     heroTitle: 'BIENVENIDO A TU <span class="gradient-text">CASINO DE CONFIANZA</span>',
     promoLabel: 'PARA USUARIOS NUEVOS',
     promoTitle: '<span class="gradient-text">EXTRA</span> DE BONO EN TU <span class="gradient-text">PRIMERA CARGA</span>',
@@ -1011,20 +1066,40 @@ function populateForm(content, configName = 'general') {
     normalizedContent = { ...fallbackContent, ...content };
   }
 
-  document.getElementById('input-heroTitle').value = normalizedContent.heroTitle || '';
-  document.getElementById('input-promoLabel').value = normalizedContent.promoLabel || '';
-  document.getElementById('input-promoTitle').value = normalizedContent.promoTitle || '';
-  document.getElementById('input-promoNote').value = normalizedContent.promoNote || '';
+  const heroBonusLineEl = document.getElementById('input-heroBonusLine');
+  if (heroBonusLineEl) heroBonusLineEl.value = normalizedContent.heroBonusLine || '';
+
+  const heroTitleEl = document.getElementById('input-heroTitle');
+  if (heroTitleEl) heroTitleEl.value = normalizedContent.heroTitle || '';
+
+  const promoLabelEl = document.getElementById('input-promoLabel');
+  if (promoLabelEl) promoLabelEl.value = normalizedContent.promoLabel || '';
+
+  const promoTitleEl = document.getElementById('input-promoTitle');
+  if (promoTitleEl) promoTitleEl.value = normalizedContent.promoTitle || '';
+
+  const promoNoteEl = document.getElementById('input-promoNote');
+  if (promoNoteEl) promoNoteEl.value = normalizedContent.promoNote || '';
+
   const ctaEl = document.getElementById('input-ctaLabel');
-  ctaEl.value = normalizedContent.ctaLabel || '';
-  // store original loaded value so we can detect edits and replace const-based defaults
-  ctaEl.dataset.original = normalizedContent.ctaLabel || '';
-  if (Object.prototype.hasOwnProperty.call(normalizedContent, 'whatsappUrl')) {
-    document.getElementById('input-whatsappUrl').value = normalizedContent.whatsappUrl || '';
+  if (ctaEl) {
+    ctaEl.value = normalizedContent.ctaLabel || '';
+    ctaEl.dataset.original = normalizedContent.ctaLabel || '';
   }
-  document.getElementById('input-helperText').value = normalizedContent.helperText || '';
-  document.getElementById('input-footerText1').value = normalizedContent.footerText1 || '';
-  document.getElementById('input-footerText2').value = normalizedContent.footerText2 || '';
+
+  const whatsappEl = document.getElementById('input-whatsappUrl');
+  if (whatsappEl && Object.prototype.hasOwnProperty.call(normalizedContent, 'whatsappUrl')) {
+    whatsappEl.value = normalizedContent.whatsappUrl || '';
+  }
+
+  const helperTextEl = document.getElementById('input-helperText');
+  if (helperTextEl) helperTextEl.value = normalizedContent.helperText || '';
+
+  const footerText1El = document.getElementById('input-footerText1');
+  if (footerText1El) footerText1El.value = normalizedContent.footerText1 || '';
+
+  const footerText2El = document.getElementById('input-footerText2');
+  if (footerText2El) footerText2El.value = normalizedContent.footerText2 || '';
 }
 
 function initSettings() {

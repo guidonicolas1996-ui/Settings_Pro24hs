@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLandingContentState, buildLandingContentStateForLabels } from './landing-content.js';
+import { buildLandingContentState, buildLandingContentStateForLabels, getLandingContentFieldKeys } from './landing-content.js';
 
 test('buildLandingContentState preserves alternative label and active state', () => {
   const previous = {
@@ -57,4 +57,10 @@ test('buildLandingContentStateForLabels updates every alternative label in one p
   assert.equal(result.landingContent.alternatives.alt1.label, 'new alt1');
   assert.equal(result.landingContent.alternatives.alt2.label, 'new alt2');
   assert.equal(result.landingContent.alternatives.alt1.active, true);
+});
+
+test('getLandingContentFieldKeys includes the bonus line field', () => {
+  const fieldKeys = getLandingContentFieldKeys();
+
+  assert.ok(fieldKeys.includes('heroBonusLine'));
 });

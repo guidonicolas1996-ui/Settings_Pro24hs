@@ -1,3 +1,20 @@
+function getLandingContentFieldKeys() {
+  return [
+    'heroBonusLine',
+    'accessBadge',
+    'heroTitle',
+    'heroCopy',
+    'promoLabel',
+    'promoTitle',
+    'promoNote',
+    'ctaLabel',
+    'helperText',
+    'footerText1',
+    'footerText2',
+    'whatsappUrl'
+  ];
+}
+
 function cloneLandingContentState(landingContent = {}) {
   const source = landingContent && typeof landingContent === 'object' ? landingContent : {};
   const general = source.general && typeof source.general === 'object' ? { ...source.general } : {};
@@ -53,4 +70,4 @@ function buildLandingContentStateForLabels(previousLandingContent = {}, labelsBy
   return { landingContent: nextState };
 }
 
-export { buildLandingContentState, buildLandingContentStateForLabels, cloneLandingContentState };
+export { buildLandingContentState, buildLandingContentStateForLabels, cloneLandingContentState, getLandingContentFieldKeys };
