@@ -385,6 +385,12 @@ async function removeCasino(casinoId) {
 
 async function updateCasinoActive(casinoId, active) {
   if (dynamicCasinos[casinoId]) {
+    if (active && !dynamicCasinos[casinoId].active) {
+      const activeCount = getActiveCasinos().length;
+      if (activeCount >= 5) {
+        throw new Error('Solo se pueden activar hasta 5 plataformas a la vez.');
+      }
+    }
     dynamicCasinos[casinoId].active = active;
     await saveDynamicCasinos();
   }
@@ -440,6 +446,9 @@ function getDefaultCasino() {
 
 async function setActiveCasinos(casinoIds) {
   const normalized = casinoIds.filter(id => dynamicCasinos[id]);
+  if (normalized.length > 5) {
+    throw new Error('Solo se pueden activar hasta 5 plataformas a la vez.');
+  }
   const finalCasinos = normalized.length ? normalized : [getDefaultCasino()];
 
   // Actualizar estado en dynamicCasinos

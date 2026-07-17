@@ -322,14 +322,25 @@ async function renderCasinos() {
           const selected = Array.from(checkboxes)
             .filter((cb) => cb.checked)
             .map((cb) => cb.value);
-          
+
           if (!selected.length) {
             checkbox.checked = true;
             return;
           }
-          
+
+          if (selected.length > 5) {
+            checkbox.checked = false;
+            alert('Solo se pueden activar hasta 5 plataformas a la vez.');
+            return;
+          }
+
           if (api.setActiveCasinos) {
-            await api.setActiveCasinos(selected);
+            try {
+              await api.setActiveCasinos(selected);
+            } catch (error) {
+              checkbox.checked = false;
+              alert('No se puede activar más de 5 plataformas a la vez.');
+            }
           }
           await renderCasinos();
         });
@@ -398,8 +409,19 @@ async function renderCasinos() {
             return;
           }
 
+          if (selected.length > 5) {
+            checkbox.checked = false;
+            alert('Solo se pueden activar hasta 5 plataformas a la vez.');
+            return;
+          }
+
           if (api.setActiveCasinos) {
-            await api.setActiveCasinos(selected);
+            try {
+              await api.setActiveCasinos(selected);
+            } catch (error) {
+              checkbox.checked = false;
+              alert('No se puede activar más de 5 plataformas a la vez.');
+            }
           }
           await renderCasinos();
         });
@@ -982,23 +1004,6 @@ function setupSettingsPage() {
 
   if (openButton) {
     openButton.addEventListener('click', async () => {
-      try {
-        const api = await waitForCasinosApi();
-        const casinos = (api.getCasinos && api.getCasinos()) || {};
-        let count = 0;
-        if (Array.isArray(casinos)) {
-          count = casinos.length;
-        } else if (casinos && typeof casinos === 'object') {
-          count = Object.keys(casinos).length;
-        }
-        if (count >= 5) {
-          alert('No se puede crear más plataformas. Ya hay 5 plataformas (máximo 5).');
-          return;
-        }
-      } catch (e) {
-        console.warn('[settings] no fue posible verificar el número de plataformas', e);
-        // Si falla la verificación, permitimos abrir el modal para no bloquear al usuario
-      }
       openNewCasinoModal();
     });
   }
