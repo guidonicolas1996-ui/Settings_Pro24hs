@@ -116,7 +116,8 @@ function createEmptyAnalyticsDocument() {
   return {
     totals: { ...ANALYTICS_TOTALS_TEMPLATE },
     visitors: {},
-    buckets: {}
+    buckets: {},
+    legacyPayload: {}
   };
 }
 
@@ -126,7 +127,8 @@ function normalizeAnalyticsDocument(data) {
     ...source,
     totals: { ...ANALYTICS_TOTALS_TEMPLATE },
     visitors: source.visitors && typeof source.visitors === 'object' ? source.visitors : {},
-    buckets: source.buckets && typeof source.buckets === 'object' ? source.buckets : {}
+    buckets: source.buckets && typeof source.buckets === 'object' ? source.buckets : {},
+    legacyPayload: source.legacyPayload && typeof source.legacyPayload === 'object' ? source.legacyPayload : {}
   };
 
   if (source.totals && typeof source.totals === 'object') {
@@ -1334,6 +1336,21 @@ function buildTestAnalyticsDocument() {
   return { totals, visitors, buckets };
 }
 
+function buildAnalyticsDocumentPayload(payload = {}) {
+  const base = createEmptyAnalyticsDocument();
+  const normalized = payload && typeof payload === 'object' ? payload : {};
+  return {
+    ...base,
+    ...normalized,
+    totals: normalized.totals && typeof normalized.totals === 'object'
+      ? { ...ANALYTICS_TOTALS_TEMPLATE, ...normalized.totals }
+      : { ...ANALYTICS_TOTALS_TEMPLATE },
+    visitors: normalized.visitors && typeof normalized.visitors === 'object' ? normalized.visitors : {},
+    buckets: normalized.buckets && typeof normalized.buckets === 'object' ? normalized.buckets : {},
+    legacyPayload: normalized.legacyPayload && typeof normalized.legacyPayload === 'object' ? normalized.legacyPayload : {}
+  };
+}
+
 function initializeEventListeners() {
   initializeElements();
   summaryToggle = document.getElementById('summary-toggle');
@@ -1473,7 +1490,10 @@ async function runOnLoad() {
         if (!confirm('¿Generar datos de prueba para hoy y ayer? Se reemplazarán los datos actuales.')) return;
         messageElement.textContent = 'Generando datos de prueba...';
         const testData = buildTestAnalyticsDocument();
-        await setDoc(doc(db, 'analytics', 'landing'), testData);
+        const payload = buildAnalyticsDocumentPayload(testData);
+        const analyticsRef = doc(db, 'analytics', 'landing');
+        console.log('[analytics] generate button writing payload', { ref: analyticsRef.path, totals: payload.totals, visitorCount: Object.keys(payload.visitors || {}).length });
+        await setDoc(analyticsRef, payload, { merge: true });
         messageElement.textContent = 'Datos de prueba generados correctamente.';
         await loadAnalytics();
       } catch (error) {
@@ -1482,14 +1502,15 @@ async function runOnLoad() {
       }
     });
 
-    // Temporary: clear analytics data for testing
     const clearButton = document.getElementById('analytics-clear-btn');
     clearButton?.addEventListener('click', async () => {
       try {
         if (!confirm('¿Confirmás que querés borrar TODOS los datos de analytics? Esto es irreversible.')) return;
         messageElement.textContent = 'Borrando datos...';
-        const empty = createEmptyAnalyticsDocument();
-        await setDoc(doc(db, 'analytics', 'landing'), empty);
+        const empty = buildAnalyticsDocumentPayload(createEmptyAnalyticsDocument());
+        const analyticsRef = doc(db, 'analytics', 'landing');
+        console.log('[analytics] clear button writing empty payload', { ref: analyticsRef.path, totals: empty.totals });
+        await setDoc(analyticsRef, empty, { merge: true });
         messageElement.textContent = 'Datos borrados correctamente.';
         await loadAnalytics();
       } catch (error) {
