@@ -64,6 +64,7 @@
 
     <script type="module">
       import { AUTH_STORAGE_KEY, setStoredSession } from './js/auth.js';
+      import { resolvePostLoginRedirectTarget } from './js/auth-redirect.mjs';
 
       async function ensureFirebase() {
         const [{ initializeApp }, { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence }] = await Promise.all([
@@ -139,7 +140,10 @@
             failedAttempts = 0;
             lockedUntil = 0;
             setStoredSession(credentials.user);
-            window.location.replace('./settings.html');
+            const redirectParam = new URLSearchParams(window.location.search).get('redirect') || '';
+            const postLoginTarget = resolvePostLoginRedirectTarget(redirectParam, window.location.href);
+            const targetUrl = postLoginTarget.startsWith('/') ? postLoginTarget : `./${postLoginTarget.replace(/^\.\//, '')}`;
+            window.location.replace(targetUrl);
           } catch (error) {
             failedAttempts += 1;
             const penaltySeconds = failedAttempts >= 5 ? 30 : 10;

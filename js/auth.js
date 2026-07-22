@@ -1,3 +1,5 @@
+import { resolveLoginRedirectTarget } from './auth-redirect.mjs';
+
 const AUTH_STORAGE_KEY = 'adminSession';
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCSaDOHnY6J7ZHZrME_Byt0_Xiqq6DvejA",
@@ -118,7 +120,8 @@ function isAuthenticated() {
 
 function redirectToLogin() {
   if (window.location.pathname.includes('login.html')) return;
-  const loginUrl = new URL('./login.html', window.location.href).href;
+  const target = resolveLoginRedirectTarget(window.location.href);
+  const loginUrl = new URL(`./login.html?redirect=${encodeURIComponent(target)}`, window.location.href).href;
   window.location.replace(loginUrl);
 }
 
