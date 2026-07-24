@@ -2,6 +2,8 @@
 Animations
 =========================== */
 
+/* ======================================================================== */
+/* Keyframes */
 @keyframes scaleIn {
   0% {
     opacity: 0;
@@ -12,7 +14,6 @@ Animations
     transform: scale(1);
   }
 }
-
 @keyframes whatsappScaleIn {
   0% {
     opacity: 0;
@@ -23,7 +24,6 @@ Animations
     transform: scale(1);
   }
 }
-
 @keyframes whatsapp-glow {
   0%,
   100% {
@@ -36,7 +36,6 @@ Animations
     
   }
 }
-
 @keyframes whatsapp-halo {
   0%,
   100% {
@@ -48,7 +47,6 @@ Animations
     transform: scale(1);
   }
 }
-
 @keyframes dropIn {
   0% {
     opacity: 0;
@@ -59,7 +57,6 @@ Animations
     transform: translateY(0);
   }
 }
-
 @keyframes whatsapp-ring {
   0% {
     opacity: 0;
@@ -77,5 +74,3 @@ Animations
     transform: scale(1.12);
   }
 }
-
-
