@@ -146,7 +146,9 @@
             setStoredSession(credentials.user);
             const redirectParam = new URLSearchParams(window.location.search).get('redirect') || '';
             const postLoginTarget = resolvePostLoginRedirectTarget(redirectParam, window.location.href);
-            const targetUrl = postLoginTarget.startsWith('/') ? postLoginTarget : `./${postLoginTarget.replace(/^\.\//, '')}`;
+            const targetUrl = /^https?:\/\//i.test(postLoginTarget)
+              ? postLoginTarget
+              : new URL(postLoginTarget, window.location.href).href;
             window.location.replace(targetUrl);
           } catch (error) {
             failedAttempts += 1;

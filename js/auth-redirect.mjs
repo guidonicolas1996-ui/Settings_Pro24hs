@@ -22,7 +22,7 @@ export function resolveLoginRedirectTarget(currentUrl = '') {
       return './settings.html';
     }
 
-    return pathname.endsWith('/analytics.html') ? './analytics.html' : './settings.html';
+    return url.href;
   } catch (error) {
     return './settings.html';
   }
@@ -38,7 +38,7 @@ export function resolvePostLoginRedirectTarget(redirectParam = '', currentUrl = 
 
   try {
     const resolvedUrl = new URL(normalizedValue, currentUrl || 'https://example.com');
-    return resolvedUrl.pathname.replace(/\\/g, '/');
+    return resolvedUrl.href;
   } catch (error) {
     return normalizedValue.startsWith('/') ? normalizedValue : './settings.html';
   }
