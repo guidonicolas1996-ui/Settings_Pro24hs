@@ -151,6 +151,34 @@
           </div>
         </form>
       </section>
+
+      <section class="settings-card settings-card--analytics-targets">
+        <div class="settings-header">
+          <div class="settings-header__text">
+            <p class="settings-eyebrow">Analíticas</p>
+            <p class="settings-copy">Definí los porcentajes ideales de conversión para que la calculadora te ayude a identificar si una campaña está por encima o por debajo de lo esperado.</p>
+          </div>
+        </div>
+
+        <div class="analytics-targets-grid">
+          <label class="analytics-target-field">
+            <span>Conversión visitas → clicks únicos (%)</span>
+            <input id="analytics-target-visits-to-whatsapp" type="text" inputmode="decimal" value="0" />
+          </label>
+          <label class="analytics-target-field">
+            <span>Conversión a llegadas (%)</span>
+            <input id="analytics-target-arrived" type="text" inputmode="decimal" value="0" />
+          </label>
+          <label class="analytics-target-field">
+            <span>Conversión a derivados (%)</span>
+            <input id="analytics-target-derived" type="text" inputmode="decimal" value="0" />
+          </label>
+        </div>
+
+        <div class="settings-actions">
+          <button type="button" id="save-analytics-targets" class="btn btn--primary">Guardar porcentajes</button>
+        </div>
+      </section>
     </main>
 
     <div class="modal-backdrop" id="new-casino-modal" aria-hidden="true">

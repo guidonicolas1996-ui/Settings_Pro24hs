@@ -139,6 +139,97 @@ function setStoredLandingContent(landingContent) {
   }
 }
 
+function getDefaultAnalyticsTargets() {
+  return {
+    visitsToWhatsapp: 50,
+    arrived: 50,
+    derived: 50
+  };
+}
+
+function getStoredAnalyticsTargets() {
+  try {
+    const stored = localStorage.getItem('analyticsTargetsSettings');
+    if (!stored) return getDefaultAnalyticsTargets();
+    const parsed = JSON.parse(stored);
+    return parsed && typeof parsed === 'object' ? { ...getDefaultAnalyticsTargets(), ...parsed } : getDefaultAnalyticsTargets();
+  } catch (error) {
+    console.warn('[settings] No se pudo leer analyticsTargets desde localStorage', error);
+    return getDefaultAnalyticsTargets();
+  }
+}
+
+function setStoredAnalyticsTargets(targets) {
+  try {
+    localStorage.setItem('analyticsTargetsSettings', JSON.stringify(targets || getDefaultAnalyticsTargets()));
+  } catch (error) {
+    console.warn('[settings] No se pudo guardar analyticsTargets en localStorage', error);
+  }
+}
+
+function sanitizeAnalyticsInputValue(value) {
+  const raw = String(value ?? '').replace(/,/g, '.').trim();
+  if (!raw) return '';
+  const normalized = raw.replace(/^0+(?=\d)/, '');
+  if (!normalized || normalized === '.') return '';
+  return normalized;
+}
+
+function populateAnalyticsTargetsForm(targets = {}) {
+  const normalizedTargets = { ...getDefaultAnalyticsTargets(), ...targets };
+  const fields = [
+    ['analytics-target-visits-to-whatsapp', normalizedTargets.visitsToWhatsapp],
+    ['analytics-target-arrived', normalizedTargets.arrived],
+    ['analytics-target-derived', normalizedTargets.derived]
+  ];
+
+  fields.forEach(([id, value]) => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.value = Number.isFinite(Number(value)) ? String(value) : '0';
+    }
+  });
+}
+
+async function loadAnalyticsTargetsFromDb() {
+  try {
+    const firebaseModule = await import('./firebase.js');
+    const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+    const { doc, getDoc } = firestoreModule;
+    const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
+    const cfg = snapshot.exists() ? (snapshot.data() || {}) : {};
+    const targets = cfg.analyticsTargets && typeof cfg.analyticsTargets === 'object' ? cfg.analyticsTargets : {};
+    const normalizedTargets = { ...getDefaultAnalyticsTargets(), ...targets };
+    setStoredAnalyticsTargets(normalizedTargets);
+    return normalizedTargets;
+  } catch (error) {
+    console.warn('[settings] Error cargando analyticsTargets desde Firestore, usando fallback local', error);
+    return getStoredAnalyticsTargets();
+  }
+}
+
+async function saveAnalyticsTargetsToDb(targets = {}) {
+  const normalizedTargets = {
+    ...getDefaultAnalyticsTargets(),
+    ...targets,
+    visitsToWhatsapp: Number.parseFloat(String(targets.visitsToWhatsapp ?? '0')) || 0,
+    arrived: Number.parseFloat(String(targets.arrived ?? '0')) || 0,
+    derived: Number.parseFloat(String(targets.derived ?? '0')) || 0
+  };
+
+  try {
+    const firebaseModule = await import('./firebase.js');
+    const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+    const { doc, setDoc } = firestoreModule;
+    await setDoc(doc(firebaseModule.db, 'config', 'landing'), { analyticsTargets: normalizedTargets }, { merge: true });
+  } catch (error) {
+    console.warn('[settings] No se pudo guardar analyticsTargets en Firestore, usando localStorage', error);
+  }
+
+  setStoredAnalyticsTargets(normalizedTargets);
+  return normalizedTargets;
+}
+
 async function setupCasinoForm() {
   const form = document.getElementById('new-casino-form');
   if (!form) return;
@@ -661,6 +752,54 @@ function setupSettingsPage() {
   const configControls = document.getElementById('config-controls');
   const altCheckbox = document.getElementById('alt-active-checkbox');
   const altLabelInput = document.getElementById('input-alt-label');
+  const analyticsSaveButton = document.getElementById('save-analytics-targets');
+  const analyticsTargetInputs = [
+    document.getElementById('analytics-target-visits-to-whatsapp'),
+    document.getElementById('analytics-target-arrived'),
+    document.getElementById('analytics-target-derived')
+  ].filter(Boolean);
+
+  analyticsTargetInputs.forEach((input) => {
+    input.addEventListener('focus', () => {
+      if ((input.value || '').trim() === '0') {
+        input.value = '';
+      }
+    });
+    input.addEventListener('blur', () => {
+      if (!input.value || input.value === '.') {
+        input.value = '0';
+      } else {
+        input.value = sanitizeAnalyticsInputValue(input.value);
+      }
+    });
+    input.addEventListener('input', () => {
+      input.value = sanitizeAnalyticsInputValue(input.value);
+    });
+  });
+
+  if (analyticsSaveButton) {
+    analyticsSaveButton.addEventListener('click', async () => {
+      const values = {
+        visitsToWhatsapp: Number.parseFloat(analyticsTargetInputs[0]?.value || '0') || 0,
+        arrived: Number.parseFloat(analyticsTargetInputs[1]?.value || '0') || 0,
+        derived: Number.parseFloat(analyticsTargetInputs[2]?.value || '0') || 0
+      };
+
+      try {
+        await saveAnalyticsTargetsToDb(values);
+        alert('✅ Porcentajes ideales guardados correctamente.');
+      } catch (error) {
+        console.error('[settings] Error guardando analíticas', error);
+        alert('❌ Error guardando los porcentajes ideales.');
+      }
+    });
+  }
+
+  void loadAnalyticsTargetsFromDb().then((targets) => {
+    populateAnalyticsTargetsForm(targets);
+  }).catch((error) => {
+    console.warn('[settings] Error inicializando analíticas', error);
+  });
   
   if (altCheckbox) {
     altCheckbox.addEventListener('change', async () => {

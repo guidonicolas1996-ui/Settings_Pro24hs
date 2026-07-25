@@ -151,6 +151,75 @@
 
                 </div>
                 <div class="analytics-summary-divider" aria-hidden="true"></div>
+                <div class="analytics-calculator">
+                    <div class="analytics-calculator__header">
+                        <h3>Calculadora</h3>
+                        <p class="settings-copy">Estimación de conversión y costo por campaña según el rango activo.</p>
+                    </div>
+                    <div class="analytics-calculator__grid">
+                        <label class="analytics-calculator__field analytics-calculator__field--full">
+                            <span>Costo en dólares de campaña diaria</span>
+                            <input id="analytics-calculator-cost" type="text" inputmode="decimal" value="0" />
+                        </label>
+                        <label class="analytics-calculator__field analytics-calculator__field--readonly">
+                            <span>Visitas únicas</span>
+                            <input id="analytics-calculator-visits" type="text" value="0" readonly />
+                        </label>
+                        <label class="analytics-calculator__field analytics-calculator__field--readonly">
+                            <span>Clicks únicos WhatsApp</span>
+                            <input id="analytics-calculator-whatsapp" type="text" value="0" readonly />
+                        </label>
+                        <label class="analytics-calculator__field">
+                            <span>Llegados</span>
+                            <input id="analytics-calculator-arrived" type="text" inputmode="decimal" value="0" />
+                        </label>
+                        <label class="analytics-calculator__field">
+                            <span>Derivados</span>
+                            <input id="analytics-calculator-derived" type="text" inputmode="decimal" value="0" />
+                        </label>
+                    </div>
+                    <div class="analytics-calculator__results-section">
+                        <div class="analytics-calculator__results-group">
+                            <h4>Analíticas monetarias</h4>
+                            <div class="analytics-calculator__results">
+                                <div class="analytics-calculator__result">
+                                    <span class="analytics-calculator__result-label">Costo estimado del período</span>
+                                    <strong id="analytics-calculator-period-cost">$0.00</strong>
+                                </div>
+                                <div class="analytics-calculator__result">
+                                    <span class="analytics-calculator__result-label">Costo aprox. por clicks únicos WhatsApp</span>
+                                    <strong id="analytics-calculator-cost-whatsapp">$0.00</strong>
+                                </div>
+                                <div class="analytics-calculator__result">
+                                    <span class="analytics-calculator__result-label">Costo aprox. por llegado</span>
+                                    <strong id="analytics-calculator-cost-arrived">$0.00</strong>
+                                </div>
+                                <div class="analytics-calculator__result">
+                                    <span class="analytics-calculator__result-label">Costo aprox. por derivado</span>
+                                    <strong id="analytics-calculator-cost-derived">$0.00</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analytics-calculator__results-group">
+                            <h4>Analíticas porcentuales</h4>
+                            <div class="analytics-calculator__results">
+                                <div class="analytics-calculator__result">
+                                    <span class="analytics-calculator__result-label">Conversión visitas → clicks únicos</span>
+                                    <strong id="analytics-calculator-visits-rate">↓ 0.00%</strong>
+                                </div>
+                                <div class="analytics-calculator__result">
+                                    <span class="analytics-calculator__result-label">Conversión a llegadas</span>
+                                    <strong id="analytics-calculator-arrived-rate">↓ 0.00%</strong>
+                                </div>
+                                <div class="analytics-calculator__result">
+                                    <span class="analytics-calculator__result-label">Conversión a derivados</span>
+                                    <strong id="analytics-calculator-derived-rate">↓ 0.00%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="analytics-summary-divider" aria-hidden="true"></div>
                     <div>
                         <div class="analytics-breakdown-header analytics-subsection-header">
                             <div>
@@ -344,7 +413,7 @@
                 if (ok) {
                     try {
                         console.log('[page] analytics importing module...');
-                        await import('./js/analytics.js?v=5');
+                        await import('./js/analytics.js?v=6');
                         console.log('[page] analytics imported analytics.js');
                     } catch (e) {
                         console.error('[page] analytics failed to load analytics module', e);

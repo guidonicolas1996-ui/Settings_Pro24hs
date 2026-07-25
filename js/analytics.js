@@ -1,6 +1,7 @@
 import { db } from './firebase.js';
 import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
 import { createAnalyticsRange } from './analytics-range.mjs';
+import { calculateCampaignCalculatorMetrics } from './analytics-calculator.mjs';
 
 let rangeSelect = null;
 let detailSelect = null;
@@ -26,6 +27,65 @@ let tableSection;
 let altDetailToggle = null;
 let altDetailExpanded = false;
 let selectedLinkDetailMetrics = [];
+let calculatorCostInput = null;
+let calculatorVisitsInput = null;
+let calculatorWhatsappInput = null;
+let calculatorArrivedInput = null;
+let calculatorDerivedInput = null;
+let calculatorPeriodCostValue = null;
+let calculatorArrivedRateValue = null;
+let calculatorDerivedRateValue = null;
+let calculatorCostArrivedValue = null;
+let calculatorCostDerivedValue = null;
+let calculatorCostWhatsappValue = null;
+let calculatorVisitsRateValue = null;
+let calculatorContext = { uniqueVisits: 0, uniqueWhatsapp: 0, rangeStart: new Date(), rangeEnd: new Date() };
+let analyticsTargets = { visitsToWhatsapp: 50, arrived: 50, derived: 50 };
+
+function getDefaultAnalyticsTargets() {
+  return { visitsToWhatsapp: 50, arrived: 50, derived: 50 };
+}
+
+function getAnalyticsTargetValue(key) {
+  const fallback = getDefaultAnalyticsTargets()[key];
+  const value = Number(analyticsTargets?.[key]);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function sanitizeCalculatorInputValue(value) {
+  const raw = String(value ?? '').replace(/,/g, '.').trim();
+  if (!raw) return '';
+  const normalized = raw.replace(/^0+(?=\d)/, '');
+  if (!normalized || normalized === '.') return '';
+  return normalized;
+}
+
+function getPerformanceColor(percentValue, idealValue) {
+  const ideal = Number(idealValue);
+  const percent = Number(percentValue);
+  if (!Number.isFinite(ideal) || ideal <= 0) {
+    return '#ffffff';
+  }
+  if (!Number.isFinite(percent) || percent <= 0) {
+    return '#f87171';
+  }
+  const ratio = Math.max(0, Math.min(1, percent / ideal));
+  const hue = Math.round(120 * ratio);
+  return `hsl(${hue}, 78%, 50%)`;
+}
+
+async function loadAnalyticsTargets() {
+  try {
+    const snapshot = await getDoc(doc(db, 'config', 'landing'));
+    const cfg = snapshot.exists() ? (snapshot.data() || {}) : {};
+    const targets = cfg.analyticsTargets && typeof cfg.analyticsTargets === 'object' ? cfg.analyticsTargets : {};
+    analyticsTargets = { ...getDefaultAnalyticsTargets(), ...targets };
+  } catch (error) {
+    console.warn('[analytics] No se pudieron cargar los objetivos de analíticas', error);
+    analyticsTargets = { ...getDefaultAnalyticsTargets() };
+  }
+  return analyticsTargets;
+}
 
 function initializeElements() {
   rangeSelect = document.getElementById('analytics-range-select');
@@ -41,6 +101,18 @@ function initializeElements() {
   chartCanvas = document.getElementById('analytics-chart');
   chartContext = chartCanvas ? chartCanvas.getContext('2d') : null;
   altDetailToggle = document.getElementById('analytics-alt-detail-toggle');
+  calculatorCostInput = document.getElementById('analytics-calculator-cost');
+  calculatorVisitsInput = document.getElementById('analytics-calculator-visits');
+  calculatorWhatsappInput = document.getElementById('analytics-calculator-whatsapp');
+  calculatorArrivedInput = document.getElementById('analytics-calculator-arrived');
+  calculatorDerivedInput = document.getElementById('analytics-calculator-derived');
+  calculatorPeriodCostValue = document.getElementById('analytics-calculator-period-cost');
+  calculatorArrivedRateValue = document.getElementById('analytics-calculator-arrived-rate');
+  calculatorDerivedRateValue = document.getElementById('analytics-calculator-derived-rate');
+  calculatorCostArrivedValue = document.getElementById('analytics-calculator-cost-arrived');
+  calculatorCostDerivedValue = document.getElementById('analytics-calculator-cost-derived');
+  calculatorCostWhatsappValue = document.getElementById('analytics-calculator-cost-whatsapp');
+  calculatorVisitsRateValue = document.getElementById('analytics-calculator-visits-rate');
 }
 
 const DETAIL_LABELS = {
@@ -349,6 +421,117 @@ function formatDateTime(value) {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${day}/${month}/${year} (${hours}:${minutes}hs)`;
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2
+  }).format(value || 0);
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat('es-AR', {
+    maximumFractionDigits: 0
+  }).format(Math.round(value || 0));
+}
+
+function getCalculatorValues() {
+  const dailyCost = Number.parseFloat(calculatorCostInput?.value || '0') || 0;
+  const arrived = Number.parseFloat(calculatorArrivedInput?.value || '0') || 0;
+  const derived = Number.parseFloat(calculatorDerivedInput?.value || '0') || 0;
+  return { dailyCost, arrived, derived };
+}
+
+function applyCalculatorRateColor(element, percentValue, targetKey) {
+  if (!element) return;
+  const targetValue = getAnalyticsTargetValue(targetKey);
+  element.style.color = getPerformanceColor(percentValue, targetValue);
+}
+
+function parseSummaryNumber(element) {
+  if (!element) {
+    return 0;
+  }
+
+  const rawText = `${element.textContent || ''} ${element.innerText || ''}`;
+  const match = rawText.match(/-?\d+(?:[.,]\d+)?/);
+  if (!match) {
+    return 0;
+  }
+
+  const normalized = match[0].replace('.', '').replace(',', '.');
+  return Number.parseFloat(normalized) || 0;
+}
+
+function syncCalculatorContext(nextValues = {}) {
+  calculatorContext = {
+    uniqueVisits: nextValues.uniqueVisits ?? calculatorContext.uniqueVisits ?? 0,
+    uniqueWhatsapp: nextValues.uniqueWhatsapp ?? calculatorContext.uniqueWhatsapp ?? 0,
+    rangeStart: nextValues.rangeStart ?? calculatorContext.rangeStart ?? new Date(),
+    rangeEnd: nextValues.rangeEnd ?? calculatorContext.rangeEnd ?? new Date()
+  };
+  renderCalculatorMetrics();
+}
+
+function getActiveRange() {
+  if (rangeSelect && rangeSelect.value !== 'custom') {
+    return createRange(rangeSelect.value);
+  }
+
+  if (startInput && endInput) {
+    return parseRangeInputs();
+  }
+
+  return createRange('today');
+}
+
+function renderCalculatorMetrics() {
+  const { uniqueVisits, uniqueWhatsapp, rangeStart, rangeEnd } = calculatorContext;
+  const { dailyCost, arrived, derived } = getCalculatorValues();
+  const metrics = calculateCampaignCalculatorMetrics({
+    dailyCost,
+    uniqueVisits,
+    uniqueWhatsapp,
+    arrived,
+    derived,
+    rangeStart,
+    rangeEnd
+  });
+
+  if (calculatorVisitsInput) {
+    calculatorVisitsInput.value = formatNumber(metrics.visits);
+  }
+  if (calculatorWhatsappInput) {
+    calculatorWhatsappInput.value = formatNumber(metrics.whatsapp);
+  }
+  if (calculatorPeriodCostValue) {
+    calculatorPeriodCostValue.textContent = formatCurrency(metrics.periodCost);
+  }
+  if (calculatorVisitsRateValue) {
+    const visitsToWhatsappRate = metrics.visits > 0 ? (metrics.whatsapp / metrics.visits) * 100 : 0;
+    calculatorVisitsRateValue.textContent = `↓ ${visitsToWhatsappRate.toFixed(2)}%`;
+    applyCalculatorRateColor(calculatorVisitsRateValue, visitsToWhatsappRate, 'visitsToWhatsapp');
+  }
+  if (calculatorArrivedRateValue) {
+    calculatorArrivedRateValue.textContent = `↓ ${metrics.arrivedRatePercent.toFixed(2)}%`;
+    applyCalculatorRateColor(calculatorArrivedRateValue, metrics.arrivedRatePercent, 'arrived');
+  }
+  if (calculatorDerivedRateValue) {
+    calculatorDerivedRateValue.textContent = `↓ ${metrics.derivedRatePercent.toFixed(2)}%`;
+    applyCalculatorRateColor(calculatorDerivedRateValue, metrics.derivedRatePercent, 'derived');
+  }
+  if (calculatorCostArrivedValue) {
+    calculatorCostArrivedValue.textContent = formatCurrency(metrics.costPerArrived);
+  }
+  if (calculatorCostDerivedValue) {
+    calculatorCostDerivedValue.textContent = formatCurrency(metrics.costPerDerived);
+  }
+  if (calculatorCostWhatsappValue) {
+    const costPerWhatsapp = metrics.whatsapp > 0 ? metrics.periodCost / metrics.whatsapp : 0;
+    calculatorCostWhatsappValue.textContent = formatCurrency(costPerWhatsapp);
+  }
 }
 
 function createRange(preset) {
@@ -1073,6 +1256,7 @@ const METRIC_COLOR_MAP = {
 
 async function loadAnalytics() {
   try {
+    await loadAnalyticsTargets();
     const ref = doc(db, 'analytics', 'landing');
     const snapshot = await getDoc(ref);
     const range = parseRangeInputs();
@@ -1097,6 +1281,12 @@ async function loadAnalytics() {
       renderBreakdown([]);
       renderChart([], []);
       renderLegend([]);
+      syncCalculatorContext({
+        uniqueVisits: 0,
+        uniqueWhatsapp: 0,
+        rangeStart: range.start,
+        rangeEnd: range.end
+      });
       if (messageElement) {
         messageElement.textContent = 'No se encontraron datos de analytics aún.';
       }
@@ -1118,14 +1308,26 @@ async function loadAnalytics() {
 
     renderLinksSummary(totalsToDisplay, prevBucketData.totals);
 
-    const displayedUniqueVisitors = (totalsToDisplay.uniqueVisitors || 0) > 0
-      ? totalsToDisplay.uniqueVisitors
-      : visitorCount;
     const displayedPrevUniqueVisitors = (prevBucketData.totals?.uniqueVisitors || 0) > 0
       ? prevBucketData.totals.uniqueVisitors
       : prevVisitorCount;
+    const displayedUniqueVisitors = (visitorCount || 0) > 0
+      ? visitorCount
+      : (totalsToDisplay.uniqueVisitors || 0);
+    const nextUniqueWhatsapp = Number.isFinite(totalsToDisplay.whatsappClicks)
+      ? totalsToDisplay.whatsappClicks
+      : (totalsToDisplay.whatsappClicksTotal || 0);
 
     displayTotals(totalsToDisplay, displayedUniqueVisitors, prevBucketData.totals, displayedPrevUniqueVisitors);
+
+    const resolvedUniqueVisits = parseSummaryNumber(document.getElementById('analytics-unique')) || displayedUniqueVisitors || visitorCount;
+    const resolvedUniqueWhatsapp = parseSummaryNumber(document.getElementById('analytics-whatsapp-unique')) || nextUniqueWhatsapp;
+    syncCalculatorContext({
+      uniqueVisits: resolvedUniqueVisits,
+      uniqueWhatsapp: resolvedUniqueWhatsapp,
+      rangeStart: range.start,
+      rangeEnd: range.end
+    });
 
     renderBreakdown(detailItems);
 
@@ -1334,10 +1536,22 @@ function initializeEventListeners() {
       updateDateInputsState();
       if (rangeSelect.value !== 'custom') {
         setInputsForRange(rangeSelect.value);
+        try {
+          const nextRange = getActiveRange();
+          syncCalculatorContext({ rangeStart: nextRange.start, rangeEnd: nextRange.end });
+        } catch (error) {
+          console.warn('No se pudo actualizar el rango de la calculadora:', error);
+        }
         await loadAnalytics();
         return;
       }
       if (messageElement) messageElement.textContent = 'Rango personalizado activo. Ajustá las fechas para filtrar.';
+      try {
+        const nextRange = getActiveRange();
+        syncCalculatorContext({ rangeStart: nextRange.start, rangeEnd: nextRange.end });
+      } catch (error) {
+        console.warn('No se pudo actualizar el rango personalizado de la calculadora:', error);
+      }
     });
   }
 
@@ -1358,7 +1572,23 @@ function initializeEventListeners() {
   [startInput, endInput].forEach((input) => {
     input?.addEventListener('change', () => {
       if (rangeSelect && rangeSelect.value === 'custom') {
+        try {
+          const nextRange = getActiveRange();
+          syncCalculatorContext({ rangeStart: nextRange.start, rangeEnd: nextRange.end });
+        } catch (error) {
+          console.warn('No se pudo actualizar el rango al cambiar las fechas:', error);
+        }
         void refreshRange();
+      }
+    });
+    input?.addEventListener('input', () => {
+      if (rangeSelect && rangeSelect.value === 'custom') {
+        try {
+          const nextRange = getActiveRange();
+          syncCalculatorContext({ rangeStart: nextRange.start, rangeEnd: nextRange.end });
+        } catch (error) {
+          console.warn('No se pudo actualizar el rango al escribir las fechas:', error);
+        }
       }
     });
   });
@@ -1375,6 +1605,29 @@ function initializeEventListeners() {
     syncMetricCheckboxStyles();
     updateSelectedLinkDetailMetrics();
     await loadAnalytics();
+  });
+
+  [calculatorCostInput, calculatorArrivedInput, calculatorDerivedInput].forEach((input) => {
+    input?.addEventListener('focus', () => {
+      if ((input.value || '').trim() === '0') {
+        input.value = '';
+      }
+    });
+    input?.addEventListener('blur', () => {
+      if (!input.value || input.value === '.') {
+        input.value = '0';
+      } else {
+        input.value = sanitizeCalculatorInputValue(input.value);
+      }
+    });
+    input?.addEventListener('input', () => {
+      input.value = sanitizeCalculatorInputValue(input.value);
+      renderCalculatorMetrics();
+    });
+    input?.addEventListener('change', () => {
+      input.value = sanitizeCalculatorInputValue(input.value);
+      renderCalculatorMetrics();
+    });
   });
 
   document.querySelectorAll('.analytics-metric-preset-button').forEach((button) => {
