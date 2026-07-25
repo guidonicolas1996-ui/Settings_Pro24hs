@@ -31,11 +31,13 @@
       try {
         if (!window.authGuard || !window.authGuard.isAuthenticated || !window.authGuard.isAuthenticated()) {
           console.log('[auth] settings: no stored session, redirecting');
-          window.location.replace('./login.html');
+          const returnTarget = new URL('./settings.html', window.location.href).href;
+          window.location.replace(`./login.html?redirect=${encodeURIComponent(returnTarget)}`);
         }
       } catch (e) {
         console.warn('[auth] settings guard error', e);
-        window.location.replace('./login.html');
+        const returnTarget = new URL('./settings.html', window.location.href).href;
+        window.location.replace(`./login.html?redirect=${encodeURIComponent(returnTarget)}`);
       }
     </script>
   </head>
