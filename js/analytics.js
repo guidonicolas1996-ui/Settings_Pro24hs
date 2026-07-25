@@ -1,5 +1,6 @@
 import { db } from './firebase.js';
 import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
+import { createAnalyticsRange } from './analytics-range.mjs';
 
 let rangeSelect = null;
 let detailSelect = null;
@@ -351,44 +352,7 @@ function formatDateTime(value) {
 }
 
 function createRange(preset) {
-  const now = new Date();
-  const start = new Date(now);
-  const end = new Date(now);
-
-  switch (preset) {
-    case 'week': {
-      const day = now.getDay();
-      const diff = day === 0 ? 6 : day - 1;
-      start.setDate(now.getDate() - diff);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      return { start, end, label: 'Esta semana' };
-    }
-    case 'month': {
-      start.setDate(1);
-      start.setHours(0, 0, 0, 0);
-      end.setMonth(now.getMonth() + 1, 0);
-      end.setHours(23, 59, 59, 999);
-      return { start, end, label: 'Este mes' };
-    }
-    case 'year': {
-      start.setMonth(0, 1);
-      start.setHours(0, 0, 0, 0);
-      end.setMonth(11, 31);
-      end.setHours(23, 59, 59, 999);
-      return { start, end, label: 'Este año' };
-    }
-    case 'all': {
-      start.setTime(0);
-      end.setHours(23, 59, 59, 999);
-      return { start, end, label: 'Todo el tiempo' };
-    }
-    default: {
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      return { start, end, label: 'Hoy' };
-    }
-  }
+  return createAnalyticsRange(preset, new Date());
 }
 
 function setInputsForRange(preset) {
