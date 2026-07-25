@@ -28,18 +28,21 @@ export function resolveLoginRedirectTarget(currentUrl = '') {
   }
 }
 
-export function resolvePostLoginRedirectTarget(redirectParam = '', currentUrl = '') {
+export function resolvePostLoginRedirectTarget(redirectParam = '', currentUrl = '', fallbackUrl = '') {
   const rawValue = typeof redirectParam === 'string' ? redirectParam.trim() : '';
   const normalizedValue = rawValue.startsWith('redirect=') ? rawValue.slice('redirect='.length) : rawValue;
 
-  if (!normalizedValue) {
+  const candidateValue = normalizedValue || fallbackUrl || '';
+  if (!candidateValue) {
     return './settings.html';
   }
 
   try {
-    const resolvedUrl = new URL(normalizedValue, currentUrl || 'https://example.com');
+    const decodedValue = decodeURIComponent(candidateValue);
+    const resolvedUrl = new URL(decodedValue, currentUrl || 'https://example.com');
     return resolvedUrl.href;
   } catch (error) {
-    return normalizedValue.startsWith('/') ? normalizedValue : './settings.html';
+    const normalizedFallback = candidateValue.startsWith('/') ? candidateValue : './settings.html';
+    return normalizedFallback;
   }
 }

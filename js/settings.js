@@ -143,7 +143,13 @@ function getDefaultAnalyticsTargets() {
   return {
     visitsToWhatsapp: 50,
     arrived: 50,
-    derived: 50
+    derived: 50,
+    arrivedNewPercent: 33,
+    arrivedRepeatPercent: 33,
+    arrivedNoresponsePercent: 34,
+    costPerWhatsapp: 0.5,
+    costPerArrived: 2,
+    costPerDerived: 5
   };
 }
 
@@ -180,7 +186,13 @@ function populateAnalyticsTargetsForm(targets = {}) {
   const fields = [
     ['analytics-target-visits-to-whatsapp', normalizedTargets.visitsToWhatsapp],
     ['analytics-target-arrived', normalizedTargets.arrived],
-    ['analytics-target-derived', normalizedTargets.derived]
+    ['analytics-target-derived', normalizedTargets.derived],
+    ['analytics-target-arrived-new-percent', normalizedTargets.arrivedNewPercent],
+    ['analytics-target-arrived-repeat-percent', normalizedTargets.arrivedRepeatPercent],
+    ['analytics-target-arrived-noresponse-percent', normalizedTargets.arrivedNoresponsePercent],
+    ['analytics-target-cost-per-whatsapp', normalizedTargets.costPerWhatsapp],
+    ['analytics-target-cost-per-arrived', normalizedTargets.costPerArrived],
+    ['analytics-target-cost-per-derived', normalizedTargets.costPerDerived]
   ];
 
   fields.forEach(([id, value]) => {
@@ -214,7 +226,13 @@ async function saveAnalyticsTargetsToDb(targets = {}) {
     ...targets,
     visitsToWhatsapp: Number.parseFloat(String(targets.visitsToWhatsapp ?? '0')) || 0,
     arrived: Number.parseFloat(String(targets.arrived ?? '0')) || 0,
-    derived: Number.parseFloat(String(targets.derived ?? '0')) || 0
+    derived: Number.parseFloat(String(targets.derived ?? '0')) || 0,
+    arrivedNewPercent: Number.parseFloat(String(targets.arrivedNewPercent ?? '0')) || 0,
+    arrivedRepeatPercent: Number.parseFloat(String(targets.arrivedRepeatPercent ?? '0')) || 0,
+    arrivedNoresponsePercent: Number.parseFloat(String(targets.arrivedNoresponsePercent ?? '0')) || 0,
+    costPerWhatsapp: Number.parseFloat(String(targets.costPerWhatsapp ?? '0')) || 0,
+    costPerArrived: Number.parseFloat(String(targets.costPerArrived ?? '0')) || 0,
+    costPerDerived: Number.parseFloat(String(targets.costPerDerived ?? '0')) || 0
   };
 
   try {
@@ -756,7 +774,13 @@ function setupSettingsPage() {
   const analyticsTargetInputs = [
     document.getElementById('analytics-target-visits-to-whatsapp'),
     document.getElementById('analytics-target-arrived'),
-    document.getElementById('analytics-target-derived')
+    document.getElementById('analytics-target-derived'),
+    document.getElementById('analytics-target-arrived-new-percent'),
+    document.getElementById('analytics-target-arrived-repeat-percent'),
+    document.getElementById('analytics-target-arrived-noresponse-percent'),
+    document.getElementById('analytics-target-cost-per-whatsapp'),
+    document.getElementById('analytics-target-cost-per-arrived'),
+    document.getElementById('analytics-target-cost-per-derived')
   ].filter(Boolean);
 
   analyticsTargetInputs.forEach((input) => {
@@ -782,7 +806,13 @@ function setupSettingsPage() {
       const values = {
         visitsToWhatsapp: Number.parseFloat(analyticsTargetInputs[0]?.value || '0') || 0,
         arrived: Number.parseFloat(analyticsTargetInputs[1]?.value || '0') || 0,
-        derived: Number.parseFloat(analyticsTargetInputs[2]?.value || '0') || 0
+        derived: Number.parseFloat(analyticsTargetInputs[2]?.value || '0') || 0,
+        arrivedNewPercent: Number.parseFloat(analyticsTargetInputs[3]?.value || '0') || 0,
+        arrivedRepeatPercent: Number.parseFloat(analyticsTargetInputs[4]?.value || '0') || 0,
+        arrivedNoresponsePercent: Number.parseFloat(analyticsTargetInputs[5]?.value || '0') || 0,
+        costPerWhatsapp: Number.parseFloat(analyticsTargetInputs[6]?.value || '0') || 0,
+        costPerArrived: Number.parseFloat(analyticsTargetInputs[7]?.value || '0') || 0,
+        costPerDerived: Number.parseFloat(analyticsTargetInputs[8]?.value || '0') || 0
       };
 
       try {

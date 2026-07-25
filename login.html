@@ -145,7 +145,8 @@
             lockedUntil = 0;
             setStoredSession(credentials.user);
             const redirectParam = new URLSearchParams(window.location.search).get('redirect') || '';
-            const postLoginTarget = resolvePostLoginRedirectTarget(redirectParam, window.location.href);
+            const fallbackRedirect = document.referrer ? new URL(document.referrer, window.location.href).href : '';
+            const postLoginTarget = resolvePostLoginRedirectTarget(redirectParam, window.location.href, fallbackRedirect);
             const targetUrl = /^https?:\/\//i.test(postLoginTarget)
               ? postLoginTarget
               : new URL(postLoginTarget, window.location.href).href;
@@ -154,8 +155,18 @@
             failedAttempts += 1;
             const penaltySeconds = failedAttempts >= 5 ? 30 : 10;
             lockedUntil = Date.now() + penaltySeconds * 1000;
-            console.error(error);
-            message.textContent = 'Usuario o contraseña incorrectos.';
+            console.error('Firebase login error', error);
+
+            const errorMessageByCode = {
+              'auth/invalid-email': 'El correo ingresado no tiene un formato válido.',
+              'auth/user-disabled': 'Ese usuario está deshabilitado en Firebase.',
+              'auth/user-not-found': 'No existe un usuario con ese correo en este proyecto de Firebase.',
+              'auth/wrong-password': 'La contraseña es incorrecta.',
+              'auth/invalid-login-credentials': 'El correo o la contraseña no coinciden con un usuario activo en este proyecto.',
+              'auth/too-many-requests': 'Hay demasiados intentos. Esperá unos segundos y volvé a intentar.'
+            };
+
+            message.textContent = errorMessageByCode[error?.code] || 'No se pudo iniciar sesión. Verificá que el usuario exista en el proyecto de Firebase actual y que la contraseña sea correcta.';
           } finally {
             submitButton.disabled = false;
             submitButton.textContent = 'Entrar';

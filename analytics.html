@@ -150,17 +150,51 @@
                     </div>
 
                 </div>
-                <div class="analytics-summary-divider" aria-hidden="true"></div>
-                <div class="analytics-calculator">
-                    <div class="analytics-calculator__header">
+            </section>
+            <section>
+                <div class="analytics-breakdown-header analytics-subsection-header">
+                    <div>
                         <h3>Calculadora</h3>
                         <p class="settings-copy">Estimación de conversión y costo por campaña según el rango activo.</p>
                     </div>
+                    <button id="calculator-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                        <span class="analytics-toggle-icon">▶</span>
+                        <span class="sr-only">Minimizar calculadora</span>
+                    </button>
+                </div>
+                <div id="calculator-body" class="analytics-section__body">
+                <div class="analytics-calculator">
                     <div class="analytics-calculator__grid">
-                        <label class="analytics-calculator__field analytics-calculator__field--full">
-                            <span>Costo en dólares de campaña diaria</span>
-                            <input id="analytics-calculator-cost" type="text" inputmode="decimal" value="0" />
-                        </label>
+                        <div class="analytics-calculator__field analytics-calculator__field--full analytics-calculator__field--cost">
+                            <div class="analytics-calculator__cost-input-row">
+                                <!-- Grupo 1: Costo en dólares -->
+                                <div class="analytics-calculator__cost-group">
+                                    <label for="analytics-calculator-cost" class="analytics-calculator__label">
+                                        Costo en dólares de campaña diaria
+                                    </label>
+                                    <input id="analytics-calculator-cost" type="text" inputmode="decimal" value="0" />
+                                </div>
+
+                                <!-- Grupo 2: Cant. Campañas -->
+                                <div class="analytics-calculator__campaign-count">
+                                    <label for="analytics-calculator-campaigns" class="analytics-calculator__campaign-count-label">
+                                        Cant. Campañas
+                                    </label>
+                                    <select id="analytics-calculator-campaigns" name="analytics-calculator-campaigns">
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                         <label class="analytics-calculator__field analytics-calculator__field--readonly">
                             <span>Visitas únicas</span>
                             <input id="analytics-calculator-visits" type="text" value="0" readonly />
@@ -170,7 +204,19 @@
                             <input id="analytics-calculator-whatsapp" type="text" value="0" readonly />
                         </label>
                         <label class="analytics-calculator__field">
-                            <span>Llegados</span>
+                            <span>Llegados (Nuevos)</span>
+                            <input id="analytics-calculator-arrived-new" type="text" inputmode="decimal" value="0" />
+                        </label>
+                        <label class="analytics-calculator__field">
+                            <span>Llegados (Repetidos)</span>
+                            <input id="analytics-calculator-arrived-repeat" type="text" inputmode="decimal" value="0" />
+                        </label>
+                        <label class="analytics-calculator__field">
+                            <span>Llegados (S/Respuesta)</span>
+                            <input id="analytics-calculator-arrived-noresponse" type="text" inputmode="decimal" value="0" />
+                        </label>
+                        <label class="analytics-calculator__field analytics-calculator__field--inherited">
+                            <span>Llegados (Total)</span>
                             <input id="analytics-calculator-arrived" type="text" inputmode="decimal" value="0" />
                         </label>
                         <label class="analytics-calculator__field">
@@ -180,46 +226,63 @@
                     </div>
                     <div class="analytics-calculator__results-section">
                         <div class="analytics-calculator__results-group">
-                            <h4>Analíticas monetarias</h4>
-                            <div class="analytics-calculator__results">
-                                <div class="analytics-calculator__result">
-                                    <span class="analytics-calculator__result-label">Costo estimado del período</span>
-                                    <strong id="analytics-calculator-period-cost">$0.00</strong>
-                                </div>
-                                <div class="analytics-calculator__result">
-                                    <span class="analytics-calculator__result-label">Costo aprox. por clicks únicos WhatsApp</span>
-                                    <strong id="analytics-calculator-cost-whatsapp">$0.00</strong>
-                                </div>
-                                <div class="analytics-calculator__result">
-                                    <span class="analytics-calculator__result-label">Costo aprox. por llegado</span>
-                                    <strong id="analytics-calculator-cost-arrived">$0.00</strong>
-                                </div>
-                                <div class="analytics-calculator__result">
-                                    <span class="analytics-calculator__result-label">Costo aprox. por derivado</span>
-                                    <strong id="analytics-calculator-cost-derived">$0.00</strong>
+                            <h4>Analíticas monetarias <button id="calculator-monetary-toggle" type="button" class="analytics-section-toggle analytics-section-toggle--small" aria-expanded="true"><span class="analytics-toggle-icon">▶</span><span class="sr-only">Minimizar monetarias</span></button></h4>
+                            <div id="calculator-monetary-body" class="analytics-section__body">
+                                <div class="analytics-calculator__results">
+                                    <div class="analytics-calculator__result">
+                                        <span class="analytics-calculator__result-label">Costo estimado del período</span>
+                                        <strong id="analytics-calculator-period-cost">$0.00</strong>
+                                    </div>
+                                    <div class="analytics-calculator__result">
+                                        <span class="analytics-calculator__result-label">Costo aprox. p/clicks Wpp</span>
+                                        <strong id="analytics-calculator-cost-whatsapp">$0.00</strong>
+                                    </div>
+                                    <div class="analytics-calculator__result">
+                                        <span class="analytics-calculator__result-label">Costo aprox. por llegado</span>
+                                        <strong id="analytics-calculator-cost-arrived">$0.00</strong>
+                                    </div>
+                                    <div class="analytics-calculator__result">
+                                        <span class="analytics-calculator__result-label">Costo aprox. por derivado</span>
+                                        <strong id="analytics-calculator-cost-derived">$0.00</strong>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="analytics-calculator__results-group">
-                            <h4>Analíticas porcentuales</h4>
-                            <div class="analytics-calculator__results">
-                                <div class="analytics-calculator__result">
+                            <h4>Analíticas porcentuales <button id="calculator-percent-toggle" type="button" class="analytics-section-toggle analytics-section-toggle--small" aria-expanded="true"><span class="analytics-toggle-icon">▶</span><span class="sr-only">Minimizar porcentuales</span></button></h4>
+                            <div id="calculator-percent-body" class="analytics-section__body">
+                            <div class="analytics-calculator__results analytics-calculator__results--percent-grid">
+                                <div class="analytics-calculator__result analytics-calculator__result--full-width">
                                     <span class="analytics-calculator__result-label">Conversión visitas → clicks únicos</span>
                                     <strong id="analytics-calculator-visits-rate">↓ 0.00%</strong>
                                 </div>
-                                <div class="analytics-calculator__result">
-                                    <span class="analytics-calculator__result-label">Conversión a llegadas</span>
-                                    <strong id="analytics-calculator-arrived-rate">↓ 0.00%</strong>
-                                </div>
-                                <div class="analytics-calculator__result">
-                                    <span class="analytics-calculator__result-label">Conversión a derivados</span>
+                                <div class="analytics-calculator__result analytics-calculator__result--half-width">
+                                    <span class="analytics-calculator__result-label">Conversión llegados → derivados</span>
                                     <strong id="analytics-calculator-derived-rate">↓ 0.00%</strong>
                                 </div>
+                                <div class="analytics-calculator__result analytics-calculator__result--half-width">
+                                    <span class="analytics-calculator__result-label">Conversión clicks → llegados</span>
+                                    <strong id="analytics-calculator-arrived-rate">↓ 0.00%</strong>
+                                </div>
+                                <div class="analytics-calculator__result analytics-calculator__result--third-width">
+                                    <span class="analytics-calculator__result-label">% Llegados nuevos</span>
+                                    <strong id="analytics-calculator-arrived-new-rate">↓ 0.00%</strong>
+                                </div>
+                                <div class="analytics-calculator__result analytics-calculator__result--third-width">
+                                    <span class="analytics-calculator__result-label">% Llegados repetidos</span>
+                                    <strong id="analytics-calculator-arrived-repeat-rate">↓ 0.00%</strong>
+                                </div>
+                                <div class="analytics-calculator__result analytics-calculator__result--third-width">
+                                    <span class="analytics-calculator__result-label">% Llegados s/respuesta</span>
+                                    <strong id="analytics-calculator-arrived-noresponse-rate">↓ 0.00%</strong>
+                                </div>
+                            </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="analytics-summary-divider" aria-hidden="true"></div>
+                </div>
+            </section><section>
                     <div>
                         <div class="analytics-breakdown-header analytics-subsection-header">
                             <div>
@@ -265,11 +328,7 @@
                         <option value="month">Por mes</option>
                     </select>
                     </div>
-
-                                        </div>
-
-                                </div>
-
+                        </div>
                                 <div class="analytics-metrics-panel" style="margin-top:0.5rem;margin-bottom:0.75rem;">
                                     <div class="analytics-metrics-toolbar">
                                         <label style="display:block;margin-bottom:0;font-weight:600;color:var(--color-text);">Métricas</label>
@@ -354,6 +413,7 @@
                                         </div>
                                     </div>
                                 </div>
+                <div id="visualization-children">
                 <div id="chart-section" class="analytics-chart-section">
                     <div class="analytics-breakdown-header analytics-subsection-header">
                         <h3 id="analytics-breakdown-title">Gráfico</h3>

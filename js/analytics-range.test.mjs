@@ -24,3 +24,24 @@ test('creates a range for yesterday', () => {
   assert.equal(range.start.getDate(), 24);
   assert.equal(range.end.getDate(), 24);
 });
+
+test('truncates today range to the current time', () => {
+  const range = createAnalyticsRange('today', new Date('2026-07-25T10:00:00'));
+  assert.equal(range.start.getHours(), 0);
+  assert.equal(range.end.getHours(), 10);
+  assert.equal(range.end.getMinutes(), 0);
+});
+
+test('truncates week range to the current time on today', () => {
+  const range = createAnalyticsRange('week', new Date('2026-07-25T10:00:00'));
+  assert.equal(range.end.getHours(), 10);
+  assert.equal(range.end.getMinutes(), 0);
+  assert.equal(range.end.getDate(), 25);
+});
+
+test('truncates month range to the current time on today', () => {
+  const range = createAnalyticsRange('month', new Date('2026-07-25T14:35:00'));
+  assert.equal(range.end.getHours(), 14);
+  assert.equal(range.end.getMinutes(), 35);
+  assert.equal(range.end.getDate(), 25);
+});

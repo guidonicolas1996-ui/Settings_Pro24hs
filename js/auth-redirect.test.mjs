@@ -17,3 +17,11 @@ test('uses the requested analytics target after successful login', () => {
 test('preserves a full protected URL when it is passed as the redirect target', () => {
   assert.equal(resolvePostLoginRedirectTarget('https://example.com/Settings/analytics.html', 'https://example.com/Settings/login.html'), 'https://example.com/Settings/analytics.html');
 });
+
+test('uses the referrer as a fallback redirect target', () => {
+  assert.equal(resolvePostLoginRedirectTarget('', 'https://example.com/Settings/login.html', 'https://example.com/Settings/analytics.html'), 'https://example.com/Settings/analytics.html');
+});
+
+test('decodes an encoded redirect target before navigating', () => {
+  assert.equal(resolvePostLoginRedirectTarget('https%3A%2F%2Fexample.com%2FSettings%2Fanalytics.html', 'https://example.com/Settings/login.html'), 'https://example.com/Settings/analytics.html');
+});

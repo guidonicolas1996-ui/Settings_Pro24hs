@@ -161,18 +161,80 @@
         </div>
 
         <div class="analytics-targets-grid">
-          <label class="analytics-target-field">
-            <span>Conversión visitas → clicks únicos (%)</span>
-            <input id="analytics-target-visits-to-whatsapp" type="text" inputmode="decimal" value="0" />
-          </label>
-          <label class="analytics-target-field">
-            <span>Conversión a llegadas (%)</span>
-            <input id="analytics-target-arrived" type="text" inputmode="decimal" value="0" />
-          </label>
-          <label class="analytics-target-field">
-            <span>Conversión a derivados (%)</span>
-            <input id="analytics-target-derived" type="text" inputmode="decimal" value="0" />
-          </label>
+          <div class="analytics-targets-grid__section">
+            <h4>Analíticas porcentuales</h4>
+            <div class="analytics-targets-grid__items">
+              <label class="analytics-target-field">
+                <span>Conversión visitas → clicks únicos</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">%</span>
+                  <input id="analytics-target-visits-to-whatsapp" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+              <label class="analytics-target-field">
+                <span>Conversión clicks → llegados</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">%</span>
+                  <input id="analytics-target-arrived" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+              <label class="analytics-target-field">
+                <span>Conversión llegados → derivados</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">%</span>
+                  <input id="analytics-target-derived" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+              <label class="analytics-target-field">
+                <span>% Llegados nuevos</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">%</span>
+                  <input id="analytics-target-arrived-new-percent" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+              <label class="analytics-target-field">
+                <span>% Llegados repetidos</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">%</span>
+                  <input id="analytics-target-arrived-repeat-percent" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+              <label class="analytics-target-field">
+                <span>% Llegados s/respuesta</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">%</span>
+                  <input id="analytics-target-arrived-noresponse-percent" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="analytics-targets-grid__section">
+            <h4>Analíticas monetarias</h4>
+            <div class="analytics-targets-grid__items">
+              <label class="analytics-target-field">
+                <span>Costo aprox. p/clicks Wpp</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">$</span>
+                  <input id="analytics-target-cost-per-whatsapp" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+              <label class="analytics-target-field">
+                <span>Costo aprox. por llegado</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">$</span>
+                  <input id="analytics-target-cost-per-arrived" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+              <label class="analytics-target-field">
+                <span>Costo aprox. por derivado</span>
+                <div class="analytics-target-field__input-wrap">
+                  <span class="analytics-target-field__symbol">$</span>
+                  <input id="analytics-target-cost-per-derived" type="text" inputmode="decimal" value="0" />
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="settings-actions">

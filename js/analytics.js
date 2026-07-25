@@ -19,6 +19,7 @@ let summaryToggle;
 let summaryBody;
 let visualizationToggle;
 let visualizationBody;
+let visualizationChildren = null;
 let linksToggle;
 let chartToggle;
 let chartSection;
@@ -28,22 +29,56 @@ let altDetailToggle = null;
 let altDetailExpanded = false;
 let selectedLinkDetailMetrics = [];
 let calculatorCostInput = null;
+let calculatorCampaignsSelect = null;
 let calculatorVisitsInput = null;
 let calculatorWhatsappInput = null;
 let calculatorArrivedInput = null;
+let calculatorArrivedNewInput = null;
+let calculatorArrivedRepeatInput = null;
+let calculatorArrivedNoresponseInput = null;
 let calculatorDerivedInput = null;
 let calculatorPeriodCostValue = null;
 let calculatorArrivedRateValue = null;
+let calculatorArrivedNewRateValue = null;
+let calculatorArrivedRepeatRateValue = null;
+let calculatorArrivedNoresponseRateValue = null;
 let calculatorDerivedRateValue = null;
 let calculatorCostArrivedValue = null;
 let calculatorCostDerivedValue = null;
 let calculatorCostWhatsappValue = null;
 let calculatorVisitsRateValue = null;
 let calculatorContext = { uniqueVisits: 0, uniqueWhatsapp: 0, rangeStart: new Date(), rangeEnd: new Date() };
-let analyticsTargets = { visitsToWhatsapp: 50, arrived: 50, derived: 50 };
+let calculatorToggle = null;
+let calculatorBody = null;
+let calculatorMonetaryToggle = null;
+let calculatorMonetaryBody = null;
+let calculatorPercentToggle = null;
+let calculatorPercentBody = null;
+let analyticsTargets = { 
+  visitsToWhatsapp: 50,
+  arrived: 50,
+  derived: 50,
+  arrivedNewPercent: 33,
+  arrivedRepeatPercent: 33,
+  arrivedNoresponsePercent: 34,
+  costPerWhatsapp: 0.5,
+  costPerArrived: 2,
+  costPerDerived: 5
+};
+let arrivedManualMode = null; // 'total', 'components', or null
 
 function getDefaultAnalyticsTargets() {
-  return { visitsToWhatsapp: 50, arrived: 50, derived: 50 };
+  return { 
+    visitsToWhatsapp: 50,
+    arrived: 50,
+    derived: 50,
+    arrivedNewPercent: 33,
+    arrivedRepeatPercent: 33,
+    arrivedNoresponsePercent: 34,
+    costPerWhatsapp: 0.5,
+    costPerArrived: 2,
+    costPerDerived: 5
+  };
 }
 
 function getAnalyticsTargetValue(key) {
@@ -60,17 +95,27 @@ function sanitizeCalculatorInputValue(value) {
   return normalized;
 }
 
-function getPerformanceColor(percentValue, idealValue) {
+function getPerformanceColor(value, idealValue, mode = 'higher') {
   const ideal = Number(idealValue);
-  const percent = Number(percentValue);
+  const actual = Number(value);
   if (!Number.isFinite(ideal) || ideal <= 0) {
     return '#ffffff';
   }
-  if (!Number.isFinite(percent) || percent <= 0) {
+  if (!Number.isFinite(actual)) {
     return '#f87171';
   }
-  const ratio = Math.max(0, Math.min(1, percent / ideal));
-  const hue = Math.round(120 * ratio);
+
+  const isGoodDirection = mode === 'lower'
+    ? actual <= ideal
+    : actual >= ideal;
+
+  if (isGoodDirection) {
+    return 'hsl(120, 78%, 50%)';
+  }
+
+  const deviation = Math.abs(actual - ideal) / Math.max(Math.abs(ideal), 1);
+  const normalizedDeviation = Math.max(0, Math.min(1, deviation / 0.5));
+  const hue = Math.round(120 * (1 - normalizedDeviation));
   return `hsl(${hue}, 78%, 50%)`;
 }
 
@@ -102,17 +147,33 @@ function initializeElements() {
   chartContext = chartCanvas ? chartCanvas.getContext('2d') : null;
   altDetailToggle = document.getElementById('analytics-alt-detail-toggle');
   calculatorCostInput = document.getElementById('analytics-calculator-cost');
+  calculatorCampaignsSelect = document.getElementById('analytics-calculator-campaigns');
   calculatorVisitsInput = document.getElementById('analytics-calculator-visits');
   calculatorWhatsappInput = document.getElementById('analytics-calculator-whatsapp');
   calculatorArrivedInput = document.getElementById('analytics-calculator-arrived');
+  calculatorArrivedNewInput = document.getElementById('analytics-calculator-arrived-new');
+  calculatorArrivedRepeatInput = document.getElementById('analytics-calculator-arrived-repeat');
+  calculatorArrivedNoresponseInput = document.getElementById('analytics-calculator-arrived-noresponse');
   calculatorDerivedInput = document.getElementById('analytics-calculator-derived');
+  calculatorToggle = document.getElementById('calculator-toggle');
+  calculatorBody = document.getElementById('calculator-body');
+  calculatorMonetaryToggle = document.getElementById('calculator-monetary-toggle');
+  calculatorMonetaryBody = document.getElementById('calculator-monetary-body');
+  calculatorPercentToggle = document.getElementById('calculator-percent-toggle');
+  calculatorPercentBody = document.getElementById('calculator-percent-body');
   calculatorPeriodCostValue = document.getElementById('analytics-calculator-period-cost');
   calculatorArrivedRateValue = document.getElementById('analytics-calculator-arrived-rate');
+  calculatorArrivedNewRateValue = document.getElementById('analytics-calculator-arrived-new-rate');
+  calculatorArrivedRepeatRateValue = document.getElementById('analytics-calculator-arrived-repeat-rate');
+  calculatorArrivedNoresponseRateValue = document.getElementById('analytics-calculator-arrived-noresponse-rate');
   calculatorDerivedRateValue = document.getElementById('analytics-calculator-derived-rate');
   calculatorCostArrivedValue = document.getElementById('analytics-calculator-cost-arrived');
   calculatorCostDerivedValue = document.getElementById('analytics-calculator-cost-derived');
   calculatorCostWhatsappValue = document.getElementById('analytics-calculator-cost-whatsapp');
   calculatorVisitsRateValue = document.getElementById('analytics-calculator-visits-rate');
+  
+  // Inicializar estado de campos de llegados
+  updateArrivedFieldsState();
 }
 
 const DETAIL_LABELS = {
@@ -437,17 +498,69 @@ function formatNumber(value) {
   }).format(Math.round(value || 0));
 }
 
-function getCalculatorValues() {
-  const dailyCost = Number.parseFloat(calculatorCostInput?.value || '0') || 0;
-  const arrived = Number.parseFloat(calculatorArrivedInput?.value || '0') || 0;
-  const derived = Number.parseFloat(calculatorDerivedInput?.value || '0') || 0;
-  return { dailyCost, arrived, derived };
+function setArrivedManualMode(mode) {
+  arrivedManualMode = mode;
+  updateArrivedFieldsState();
 }
 
-function applyCalculatorRateColor(element, percentValue, targetKey) {
+function updateArrivedFieldsState() {
+  const componentsLocked = arrivedManualMode === 'total';
+  const totalLocked = arrivedManualMode === 'components';
+
+  [calculatorArrivedNewInput, calculatorArrivedRepeatInput, calculatorArrivedNoresponseInput].forEach((input) => {
+    if (input) {
+      if (componentsLocked) {
+        input.disabled = true;
+        input.classList.add('analytics-calculator__field-disabled');
+        input.parentElement?.classList.add('analytics-calculator__field--disabled');
+      } else {
+        input.disabled = false;
+        input.classList.remove('analytics-calculator__field-disabled');
+        input.parentElement?.classList.remove('analytics-calculator__field--disabled');
+      }
+    }
+  });
+
+  if (calculatorArrivedInput) {
+    if (totalLocked) {
+      calculatorArrivedInput.disabled = true;
+      calculatorArrivedInput.classList.add('analytics-calculator__field-disabled');
+      calculatorArrivedInput.parentElement?.classList.add('analytics-calculator__field--disabled');
+    } else {
+      calculatorArrivedInput.disabled = false;
+      calculatorArrivedInput.classList.remove('analytics-calculator__field-disabled');
+      calculatorArrivedInput.parentElement?.classList.remove('analytics-calculator__field--disabled');
+    }
+  }
+}
+
+function getCalculatorValues() {
+  const dailyCost = Number.parseFloat(calculatorCostInput?.value || '0') || 0;
+  const campaignCount = Number.parseInt(calculatorCampaignsSelect?.value || '1', 10) || 1;
+  
+  let arrivedNew = Number.parseFloat(calculatorArrivedNewInput?.value || '0') || 0;
+  let arrivedRepeat = Number.parseFloat(calculatorArrivedRepeatInput?.value || '0') || 0;
+  let arrivedNoresponse = Number.parseFloat(calculatorArrivedNoresponseInput?.value || '0') || 0;
+  let arrived = arrivedNew + arrivedRepeat + arrivedNoresponse;
+  
+  const derived = Number.parseFloat(calculatorDerivedInput?.value || '0') || 0;
+  
+  // Si está en modo manual de total, usar el valor del total directamente
+  if (arrivedManualMode === 'total' && calculatorArrivedInput) {
+    const manualTotal = Number.parseFloat(calculatorArrivedInput.value || '0') || 0;
+    arrived = manualTotal;
+  } else if (calculatorArrivedInput) {
+    // Si está en modo componentes (o null), actualizar el total automáticamente
+    calculatorArrivedInput.value = formatNumber(arrived);
+  }
+  
+  return { dailyCost, campaignCount, arrivedNew, arrivedRepeat, arrivedNoresponse, arrived, derived };
+}
+
+function applyCalculatorRateColor(element, value, targetKey, mode = 'higher') {
   if (!element) return;
   const targetValue = getAnalyticsTargetValue(targetKey);
-  element.style.color = getPerformanceColor(percentValue, targetValue);
+  element.style.color = getPerformanceColor(value, targetValue, mode);
 }
 
 function parseSummaryNumber(element) {
@@ -472,6 +585,8 @@ function syncCalculatorContext(nextValues = {}) {
     rangeStart: nextValues.rangeStart ?? calculatorContext.rangeStart ?? new Date(),
     rangeEnd: nextValues.rangeEnd ?? calculatorContext.rangeEnd ?? new Date()
   };
+  // Reset modo manual cuando cambia el rango o datos
+  setArrivedManualMode(null);
   renderCalculatorMetrics();
 }
 
@@ -489,9 +604,9 @@ function getActiveRange() {
 
 function renderCalculatorMetrics() {
   const { uniqueVisits, uniqueWhatsapp, rangeStart, rangeEnd } = calculatorContext;
-  const { dailyCost, arrived, derived } = getCalculatorValues();
+  const { dailyCost, campaignCount, arrivedNew, arrivedRepeat, arrivedNoresponse, arrived, derived } = getCalculatorValues();
   const metrics = calculateCampaignCalculatorMetrics({
-    dailyCost,
+    dailyCost: dailyCost * campaignCount,
     uniqueVisits,
     uniqueWhatsapp,
     arrived,
@@ -512,25 +627,43 @@ function renderCalculatorMetrics() {
   if (calculatorVisitsRateValue) {
     const visitsToWhatsappRate = metrics.visits > 0 ? (metrics.whatsapp / metrics.visits) * 100 : 0;
     calculatorVisitsRateValue.textContent = `↓ ${visitsToWhatsappRate.toFixed(2)}%`;
-    applyCalculatorRateColor(calculatorVisitsRateValue, visitsToWhatsappRate, 'visitsToWhatsapp');
+    applyCalculatorRateColor(calculatorVisitsRateValue, visitsToWhatsappRate, 'visitsToWhatsapp', 'higher');
   }
   if (calculatorArrivedRateValue) {
     calculatorArrivedRateValue.textContent = `↓ ${metrics.arrivedRatePercent.toFixed(2)}%`;
-    applyCalculatorRateColor(calculatorArrivedRateValue, metrics.arrivedRatePercent, 'arrived');
+    applyCalculatorRateColor(calculatorArrivedRateValue, metrics.arrivedRatePercent, 'arrived', 'higher');
+  }
+  if (calculatorArrivedNewRateValue) {
+    const arrivedNewRate = arrived > 0 ? (arrivedNew / arrived) * 100 : 0;
+    calculatorArrivedNewRateValue.textContent = `↓ ${arrivedNewRate.toFixed(2)}%`;
+    applyCalculatorRateColor(calculatorArrivedNewRateValue, arrivedNewRate, 'arrivedNewPercent', 'higher');
+  }
+  if (calculatorArrivedRepeatRateValue) {
+    const arrivedRepeatRate = arrived > 0 ? (arrivedRepeat / arrived) * 100 : 0;
+    calculatorArrivedRepeatRateValue.textContent = `↓ ${arrivedRepeatRate.toFixed(2)}%`;
+    applyCalculatorRateColor(calculatorArrivedRepeatRateValue, arrivedRepeatRate, 'arrivedRepeatPercent', 'lower');
+  }
+  if (calculatorArrivedNoresponseRateValue) {
+    const arrivedNoresponseRate = arrived > 0 ? (arrivedNoresponse / arrived) * 100 : 0;
+    calculatorArrivedNoresponseRateValue.textContent = `↓ ${arrivedNoresponseRate.toFixed(2)}%`;
+    applyCalculatorRateColor(calculatorArrivedNoresponseRateValue, arrivedNoresponseRate, 'arrivedNoresponsePercent', 'lower');
   }
   if (calculatorDerivedRateValue) {
     calculatorDerivedRateValue.textContent = `↓ ${metrics.derivedRatePercent.toFixed(2)}%`;
-    applyCalculatorRateColor(calculatorDerivedRateValue, metrics.derivedRatePercent, 'derived');
+    applyCalculatorRateColor(calculatorDerivedRateValue, metrics.derivedRatePercent, 'derived', 'higher');
   }
   if (calculatorCostArrivedValue) {
     calculatorCostArrivedValue.textContent = formatCurrency(metrics.costPerArrived);
+    applyCalculatorRateColor(calculatorCostArrivedValue, metrics.costPerArrived, 'costPerArrived', 'lower');
   }
   if (calculatorCostDerivedValue) {
     calculatorCostDerivedValue.textContent = formatCurrency(metrics.costPerDerived);
+    applyCalculatorRateColor(calculatorCostDerivedValue, metrics.costPerDerived, 'costPerDerived', 'lower');
   }
   if (calculatorCostWhatsappValue) {
     const costPerWhatsapp = metrics.whatsapp > 0 ? metrics.periodCost / metrics.whatsapp : 0;
     calculatorCostWhatsappValue.textContent = formatCurrency(costPerWhatsapp);
+    applyCalculatorRateColor(calculatorCostWhatsappValue, costPerWhatsapp, 'costPerWhatsapp', 'lower');
   }
 }
 
@@ -1528,6 +1661,7 @@ function initializeEventListeners() {
   chartSection = document.getElementById('chart-section');
   tableToggle = document.getElementById('table-toggle');
   tableSection = document.getElementById('analytics-breakdown-section');
+  visualizationChildren = document.getElementById('visualization-children');
 
   updateDateInputsState();
 
@@ -1607,7 +1741,7 @@ function initializeEventListeners() {
     await loadAnalytics();
   });
 
-  [calculatorCostInput, calculatorArrivedInput, calculatorDerivedInput].forEach((input) => {
+  [calculatorCostInput, calculatorArrivedNewInput, calculatorArrivedRepeatInput, calculatorArrivedNoresponseInput, calculatorArrivedInput, calculatorDerivedInput].forEach((input) => {
     input?.addEventListener('focus', () => {
       if ((input.value || '').trim() === '0') {
         input.value = '';
@@ -1619,15 +1753,50 @@ function initializeEventListeners() {
       } else {
         input.value = sanitizeCalculatorInputValue(input.value);
       }
+      renderCalculatorMetrics();
     });
     input?.addEventListener('input', () => {
       input.value = sanitizeCalculatorInputValue(input.value);
+      
+      // Detectar edición manual de campos de llegados
+      const sanitizedValue = input.value;
+      const isZero = !sanitizedValue || sanitizedValue === '0' || sanitizedValue === '';
+      
+      if (input === calculatorArrivedInput) {
+        // El usuario está editando el total
+        if (!isZero) {
+          setArrivedManualMode('total');
+        } else if (arrivedManualMode === 'total') {
+          // Volvió a 0, reactivar componentes
+          setArrivedManualMode(null);
+        }
+      } else if ([calculatorArrivedNewInput, calculatorArrivedRepeatInput, calculatorArrivedNoresponseInput].includes(input)) {
+        // El usuario está editando uno de los componentes
+        const anyComponentNonZero = [calculatorArrivedNewInput, calculatorArrivedRepeatInput, calculatorArrivedNoresponseInput].some(
+          (field) => {
+            const val = (field?.value || '0').trim();
+            return val !== '0' && val !== '';
+          }
+        );
+        
+        if (anyComponentNonZero) {
+          setArrivedManualMode('components');
+        } else if (arrivedManualMode === 'components') {
+          // Todos los componentes volvieron a 0, reactivar total
+          setArrivedManualMode(null);
+        }
+      }
+      
       renderCalculatorMetrics();
     });
     input?.addEventListener('change', () => {
       input.value = sanitizeCalculatorInputValue(input.value);
       renderCalculatorMetrics();
     });
+  });
+
+  calculatorCampaignsSelect?.addEventListener('change', () => {
+    renderCalculatorMetrics();
   });
 
   document.querySelectorAll('.analytics-metric-preset-button').forEach((button) => {
@@ -1653,8 +1822,37 @@ function initializeEventListeners() {
   visualizationToggle?.addEventListener('click', () => {
     if (!visualizationBody) return;
     const isCollapsed = visualizationBody.classList.toggle('collapsed');
+    // Also collapse/expand the visualization children container so chart and table hide together,
+    // but do not mutate their internal collapsed states (they remain preserved).
+    if (visualizationChildren) visualizationChildren.style.display = isCollapsed ? 'none' : '';
     visualizationToggle.setAttribute('aria-expanded', String(!isCollapsed));
     visualizationToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar visualización' : 'Minimizar visualización';
+  });
+
+  // Calculator parent toggle: collapse/expand whole calculator body but preserve sub-section states
+  calculatorToggle?.addEventListener('click', () => {
+    if (!calculatorBody) return;
+    const isCollapsed = calculatorBody.classList.toggle('collapsed');
+    calculatorToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    calculatorToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar calculadora' : 'Minimizar calculadora';
+    // When collapsed hide the whole body via display to ensure visual collapse while keeping inner states
+    calculatorBody.style.display = isCollapsed ? 'none' : '';
+  });
+
+  calculatorMonetaryToggle?.addEventListener('click', () => {
+    if (!calculatorMonetaryBody) return;
+    const isCollapsed = calculatorMonetaryBody.classList.toggle('collapsed');
+    calculatorMonetaryToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    calculatorMonetaryToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar monetarias' : 'Minimizar monetarias';
+    calculatorMonetaryBody.style.display = isCollapsed ? 'none' : '';
+  });
+
+  calculatorPercentToggle?.addEventListener('click', () => {
+    if (!calculatorPercentBody) return;
+    const isCollapsed = calculatorPercentBody.classList.toggle('collapsed');
+    calculatorPercentToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    calculatorPercentToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar porcentuales' : 'Minimizar porcentuales';
+    calculatorPercentBody.style.display = isCollapsed ? 'none' : '';
   });
 
   linksToggle?.addEventListener('click', () => {
