@@ -165,7 +165,7 @@ Settings / auth / analytics page
 .settings-shell {
   position: relative;
   z-index: 1;
-  width: min(100%, 48rem);
+  width: min(100%, 64rem);
   margin: 0 auto;
   display: grid;
   gap: 1rem;

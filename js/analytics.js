@@ -1,8 +1,8 @@
 import { db } from './firebase.js';
-import { collection, doc, getDoc, getDocs, setDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
 import { createAnalyticsRange } from './analytics-range.mjs';
 import { calculateCampaignCalculatorMetrics } from './analytics-calculator.mjs';
-import { buildAdvancedSummaryCards } from './analytics-advanced-summary.mjs';
+import { buildAdvancedSummaryCards, buildAdvancedSummaryReport } from './analytics-advanced-summary.mjs';
 
 let rangeSelect = null;
 let detailSelect = null;
@@ -1281,6 +1281,20 @@ function renderAdvancedSummary(payload = {}) {
     return;
   }
 
+  console.log('[AdvancedSummary DEBUG] renderAdvancedSummary called');
+  console.log('[AdvancedSummary DEBUG] payload type:', Object.prototype.toString.call(payload));
+  console.log('[AdvancedSummary DEBUG] isArray:', Array.isArray(payload));
+  console.log('[AdvancedSummary DEBUG] length:', Array.isArray(payload) ? payload.length : null);
+
+  if (Array.isArray(payload)) {
+    console.log('[AdvancedSummary DEBUG] renderer: buildAdvancedSummaryReport');
+    console.log('[AdvancedSummary DEBUG] version: analytics.js renderAdvancedSummary branch check');
+    container.innerHTML = buildAdvancedSummaryReport(payload);
+    return;
+  }
+
+  console.log('[AdvancedSummary DEBUG] renderer: buildAdvancedSummaryCards');
+  console.log('[AdvancedSummary DEBUG] version: analytics.js renderAdvancedSummary branch check');
   const cardsHtml = buildAdvancedSummaryCards(payload).map(({ title, value }) => `
     <div class="analytics-card">
       <h3>${title}</h3>
@@ -1427,9 +1441,14 @@ function getAdvancedSummarySortValue(payload = {}) {
   return 0;
 }
 
-async function loadAdvancedSummaryPayload() {
+async function loadAdvancedSummaryPayload(range) {
   try {
-    const snapshot = await getDocs(collection(db, 'analytics'));
+    const sessionQuery = query(
+      collection(db, 'analytics'),
+      where('visitStartMs', '>=', range.start.getTime()),
+      where('visitStartMs', '<=', range.end.getTime())
+    );
+    const snapshot = await getDocs(sessionQuery);
     const sessionPayloads = snapshot.docs
       .filter((docSnapshot) => docSnapshot.id.startsWith('landing_session_'))
       .map((docSnapshot) => docSnapshot.data() || {})
@@ -1499,8 +1518,8 @@ async function loadAnalytics() {
 
     const totalsToDisplay = { ...bucketData.totals };
 
-    renderLinksSummary(totalsToDisplay, prevBucketData.totals);
-    const advancedSummaryPayload = await loadAdvancedSummaryPayload();
+      renderLinksSummary(totalsToDisplay, prevBucketData.totals);
+    const advancedSummaryPayload = await loadAdvancedSummaryPayload(range);
     renderAdvancedSummary(advancedSummaryPayload);
 
     const displayedPrevUniqueVisitors = (prevBucketData.totals?.uniqueVisitors || 0) > 0
