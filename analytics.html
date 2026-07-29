@@ -150,6 +150,20 @@
                     </div>
 
                 </div>
+                <div class="analytics-breakdown-header analytics-subsection-header">
+                    <div>
+                        <h3>Resumen Avanzado</h3>
+                        <p class="settings-copy">Métricas de comportamiento, performance y estado del botón de la landing.</p>
+                    </div>
+                    <button id="advanced-summary-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
+                        <span class="analytics-toggle-icon">▶</span>
+                        <span class="sr-only">Mostrar resumen avanzado</span>
+                    </button>
+                </div>
+                <div id="advanced-summary-body" class="analytics-section__body collapsed">
+                    <div id="advanced-summary-content" class="analytics-panel"></div>
+                </div>
+                </div>
             </section>
             <section>
                 <div class="analytics-breakdown-header analytics-subsection-header">
@@ -473,7 +487,7 @@
                 if (ok) {
                     try {
                         console.log('[page] analytics importing module...');
-                        await import('./js/analytics.js?v=6');
+                        await import('./js/analytics.js?v=7');
                         console.log('[page] analytics imported analytics.js');
                     } catch (e) {
                         console.error('[page] analytics failed to load analytics module', e);

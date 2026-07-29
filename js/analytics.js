@@ -1,7 +1,8 @@
 import { db } from './firebase.js';
-import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
+import { collection, doc, getDoc, getDocs, setDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
 import { createAnalyticsRange } from './analytics-range.mjs';
 import { calculateCampaignCalculatorMetrics } from './analytics-calculator.mjs';
+import { buildAdvancedSummaryCards } from './analytics-advanced-summary.mjs';
 
 let rangeSelect = null;
 let detailSelect = null;
@@ -17,6 +18,8 @@ let chartCanvas = null;
 let chartContext = null;
 let summaryToggle;
 let summaryBody;
+let advancedSummaryToggle;
+let advancedSummaryBody;
 let visualizationToggle;
 let visualizationBody;
 let visualizationChildren = null;
@@ -1272,6 +1275,22 @@ function renderLinksSummary(totals, prevTotals) {
   container.innerHTML = cardsHtml;
 }
 
+function renderAdvancedSummary(payload = {}) {
+  const container = document.getElementById('advanced-summary-content');
+  if (!container) {
+    return;
+  }
+
+  const cardsHtml = buildAdvancedSummaryCards(payload).map(({ title, value }) => `
+    <div class="analytics-card">
+      <h3>${title}</h3>
+      <p>${value}</p>
+    </div>
+  `).join('');
+
+  container.innerHTML = cardsHtml;
+}
+
 function displayTotals(totals, visitorCount, prevTotals, prevVisitorCount) {
   const uniqueEl = document.getElementById('analytics-unique');
   const totalEl = document.getElementById('analytics-total');
@@ -1387,6 +1406,47 @@ const METRIC_COLOR_MAP = {
   whatsappClicksTotal: 'rgba(45, 212, 191, 0.95)'
 };
 
+function getAdvancedSummarySortValue(payload = {}) {
+  const candidates = [
+    payload?.landingReady?.timestamp,
+    payload?.buttonReady?.timestamp,
+    payload?.exit?.timestamp,
+    payload?.behavior?.whatsappClick?.timestamp,
+    payload?.behavior?.hero?.timestamp,
+    payload?.visitStart,
+    payload?.visitStartMs
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = candidate != null ? new Date(candidate) : null;
+    if (parsed && !Number.isNaN(parsed.getTime())) {
+      return parsed.getTime();
+    }
+  }
+
+  return 0;
+}
+
+async function loadAdvancedSummaryPayload() {
+  try {
+    const snapshot = await getDocs(collection(db, 'analytics'));
+    const sessionPayloads = snapshot.docs
+      .filter((docSnapshot) => docSnapshot.id.startsWith('landing_session_'))
+      .map((docSnapshot) => docSnapshot.data() || {})
+      .filter((payload) => payload && typeof payload === 'object');
+
+    if (!sessionPayloads.length) {
+      return [];
+    }
+
+    sessionPayloads.sort((left, right) => getAdvancedSummarySortValue(right) - getAdvancedSummarySortValue(left));
+    return sessionPayloads;
+  } catch (error) {
+    console.warn('[analytics] No se pudieron cargar los documentos de sesión para el resumen avanzado', error);
+    return [];
+  }
+}
+
 async function loadAnalytics() {
   try {
     await loadAnalyticsTargets();
@@ -1440,6 +1500,8 @@ async function loadAnalytics() {
     const totalsToDisplay = { ...bucketData.totals };
 
     renderLinksSummary(totalsToDisplay, prevBucketData.totals);
+    const advancedSummaryPayload = await loadAdvancedSummaryPayload();
+    renderAdvancedSummary(advancedSummaryPayload);
 
     const displayedPrevUniqueVisitors = (prevBucketData.totals?.uniqueVisitors || 0) > 0
       ? prevBucketData.totals.uniqueVisitors
@@ -1654,6 +1716,8 @@ function initializeEventListeners() {
   initializeElements();
   summaryToggle = document.getElementById('summary-toggle');
   summaryBody = document.getElementById('summary-body');
+  advancedSummaryToggle = document.getElementById('advanced-summary-toggle');
+  advancedSummaryBody = document.getElementById('advanced-summary-body');
   linksToggle = document.getElementById('links-toggle');
   visualizationToggle = document.getElementById('visualization-toggle');
   visualizationBody = document.getElementById('visualization-body');
@@ -1817,6 +1881,15 @@ function initializeEventListeners() {
     const isCollapsed = summaryBody.classList.toggle('collapsed');
     summaryToggle.setAttribute('aria-expanded', String(!isCollapsed));
     summaryToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar resumen' : 'Minimizar resumen';
+  });
+
+  advancedSummaryToggle?.addEventListener('click', () => {
+    if (!advancedSummaryBody) return;
+    const wasCollapsed = advancedSummaryBody.classList.contains('collapsed');
+    advancedSummaryBody.classList.toggle('collapsed', !wasCollapsed);
+    advancedSummaryBody.style.display = wasCollapsed ? '' : '';
+    advancedSummaryToggle.setAttribute('aria-expanded', String(wasCollapsed));
+    advancedSummaryToggle.querySelector('.sr-only').textContent = wasCollapsed ? 'Minimizar resumen avanzado' : 'Mostrar resumen avanzado';
   });
 
   visualizationToggle?.addEventListener('click', () => {
