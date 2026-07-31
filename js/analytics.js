@@ -819,8 +819,12 @@ function collectBuckets(buckets, rangeStart, rangeEnd) {
   return { totals, items };
 }
 
-function countUniqueVisitors(visitors, rangeStart, rangeEnd) {
-  return Object.values(visitors).filter((visitor) => {
+function countUniqueVisitors(visitors, rangeStart, rangeEnd, bucketTotals = null) {
+  if (bucketTotals && Number.isFinite(Number(bucketTotals.uniqueVisitors))) {
+    return Number(bucketTotals.uniqueVisitors || 0);
+  }
+
+  return Object.values(visitors || {}).filter((visitor) => {
     const firstSeen = visitor.firstSeen ? new Date(visitor.firstSeen) : null;
     const lastSeen = visitor.lastSeen ? new Date(visitor.lastSeen) : null;
     if (!firstSeen || !lastSeen) {
@@ -1485,7 +1489,7 @@ async function loadAnalytics() {
       .filter((metricKey) => Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricKey));
     const metrics = selectedMetrics.length ? selectedMetrics : ['totalVisits'];
     const bucketData = collectBuckets(buckets, range.start, range.end);
-    const visitorCount = countUniqueVisitors(visitors, range.start, range.end);
+    const visitorCount = countUniqueVisitors(visitors, range.start, range.end, bucketData.totals);
 
     if (!snapshot.exists()) {
       renderLinksSummary(data.totals || {}, null);
@@ -1513,7 +1517,7 @@ async function loadAnalytics() {
     const prevEnd = new Date(range.start.getTime() - 1);
     const prevStart = new Date(prevEnd.getTime() - duration);
     const prevBucketData = collectBuckets(buckets, prevStart, prevEnd);
-    const prevVisitorCount = countUniqueVisitors(visitors, prevStart, prevEnd);
+    const prevVisitorCount = countUniqueVisitors(visitors, prevStart, prevEnd, prevBucketData.totals);
     const detailItems = aggregateItems(bucketData.items, detailMode);
 
     const totalsToDisplay = { ...bucketData.totals };
