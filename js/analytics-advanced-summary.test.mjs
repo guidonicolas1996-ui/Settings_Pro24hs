@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildAdvancedSummaryCards } from './analytics-advanced-summary.mjs';
+import { buildAdvancedSummaryCards, buildAdvancedSummaryReport } from './analytics-advanced-summary.mjs';
 
 test('buildAdvancedSummaryCards extracts behavior metrics from landing payload', () => {
   const cards = buildAdvancedSummaryCards({
@@ -108,4 +108,21 @@ test('buildAdvancedSummaryCards falls back to empty values when data is missing'
 
   assert.equal(cards[0].value, 'Sin datos');
   assert.equal(cards[6].value, 'Sin datos');
+});
+
+test('buildAdvancedSummaryReport uses funnel stage values for top KPI metrics', () => {
+  const html = buildAdvancedSummaryReport([
+    {
+      landingReady: false,
+      behavior: {
+        buttonVisible: { visiblePercent: 100, scrollY: 420 },
+        buttonExposure: { totalVisibleDurationMs: 1200, visibleBeforeWhatsappMs: 1200 },
+        whatsappClick: { timeSinceLoadMs: 4300 }
+      }
+    }
+  ]);
+
+  assert.match(html, /Llegó al CTA[\s\S]*?0%/);
+  assert.match(html, /Vio el CTA[\s\S]*?0%/);
+  assert.match(html, /WhatsApp Click[\s\S]*?0%/);
 });

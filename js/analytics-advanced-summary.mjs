@@ -59,6 +59,31 @@ function formatMetricValue(value) {
   return String(value);
 }
 
+function formatMetricSummary(mean, median, unit = '') {
+  const meanText = mean != null ? `${Math.round(mean)}${unit}` : 'Sin datos';
+  const medianText = median != null ? `${Math.round(median)}${unit}` : 'Sin datos';
+  return `
+    <div class="metric-summary">
+      <span class="metric-summary__label">Media:</span> <span class="metric-summary__value">${meanText}</span>
+      <span class="metric-summary__label">Mediana:</span> <span class="metric-summary__value">${medianText}</span>
+    </div>
+  `;
+}
+
+function hasMetricData(mean, median) {
+  return mean != null || median != null;
+}
+
+function formatConfidenceLevel(totalSessions) {
+  if (totalSessions < 10) {
+    return 'Baja';
+  }
+  if (totalSessions < 30) {
+    return 'Media';
+  }
+  return 'Alta';
+}
+
 function normalizeBehaviorValue(value, fallbackValue = null) {
   if (value == null || value === '') {
     return fallbackValue;
@@ -239,8 +264,9 @@ function buildSessionSummary(session) {
   const device = String(session.landingReady?.device ?? 'unknown');
   const connection = String(session.landingReady?.connection?.effectiveType ?? session.landingReady?.connection?.type ?? 'unknown');
   const buttonExposureKnown = session.behavior?.buttonExposure != null;
-  const ctaExposed = buttonExposureKnown && buttonExposureDurationMs > 0;
-  const exposureBucket = getExposureBucketKey(buttonExposureDurationMs, buttonExposureKnown);
+  const exposureDurationMs = whatsappClick ? visibleBeforeWhatsappMs : buttonExposureDurationMs;
+  const ctaExposed = buttonExposureKnown && exposureDurationMs > 0;
+  const exposureBucket = getExposureBucketKey(exposureDurationMs, buttonExposureKnown);
 
   let stage;
   if (!landingReady) {
@@ -289,27 +315,51 @@ function buildFunnelSummary(sessions) {
   const ctaExposedCount = sessions.filter((item) => item.landingReady && item.ctaAvailable && item.ctaExposed).length;
   const whatsappCount = sessions.filter((item) => item.landingReady && item.ctaAvailable && item.ctaExposed && item.whatsappClick).length;
 
-  const stages = [
-    { label: 'Visitas', count: total },
-    { label: 'Landing Ready', count: landingReadyCount },
-    { label: 'CTA Reached', count: ctaAvailableCount },
-    { label: 'CTA Exposed', count: ctaExposedCount },
-    { label: 'WhatsApp', count: whatsappCount }
+  const stageDefinitions = [
+    { key: 'visits', label: 'Visitas' },
+    { key: 'landingReady', label: 'Landing registrada' },
+    { key: 'ctaAvailable', label: 'CTA visible' },
+    { key: 'ctaExposed', label: 'CTA Exposed' },
+    { key: 'whatsapp', label: 'WhatsApp Click' }
   ];
 
-  return stages.map((stage, index) => {
-    const previousCount = index > 0 ? stages[index - 1].count : null;
+  const stageValues = {
+    visits: { count: total },
+    landingReady: { count: landingReadyCount },
+    ctaAvailable: { count: ctaAvailableCount },
+    ctaExposed: { count: ctaExposedCount },
+    whatsapp: { count: whatsappCount }
+  };
+
+  const stages = stageDefinitions.map((definition, index) => {
+    const stage = stageValues[definition.key];
+    const previousCount = index > 0 ? stageValues[stageDefinitions[index - 1].key].count : null;
     const percentOfTotal = total > 0 ? (stage.count / total) * 100 : null;
     const percentOfPrevious = previousCount != null && previousCount > 0 ? (stage.count / previousCount) * 100 : null;
     const lossFromPrevious = index > 0 && previousCount != null ? stage.count - previousCount : null;
     return {
-      label: stage.label,
+      key: definition.key,
+      label: definition.label,
       count: stage.count,
       percentOfTotal,
       percentOfPrevious,
       lossFromPrevious
     };
   });
+
+  const funnelByKey = stages.reduce((accumulator, stage) => {
+    accumulator[stage.key] = stage;
+    return accumulator;
+  }, {});
+
+  return {
+    stages,
+    visits: funnelByKey.visits,
+    landingReady: funnelByKey.landingReady,
+    ctaAvailable: funnelByKey.ctaAvailable,
+    ctaExposed: funnelByKey.ctaExposed,
+    whatsapp: funnelByKey.whatsapp
+  };
 }
 
 function buildClickComparison(sessions) {
@@ -530,7 +580,8 @@ function buildAdvancedSummaryReport(payloads = []) {
   const categoricalStats = buildCategoricalStats(sessions);
   const bucketDistribution = buildBucketDistribution(sessions);
 
-  const mostSignificantLoss = funnel.slice(1).reduce((best, stage) => {
+  const funnelStages = funnel.stages;
+  const mostSignificantLoss = funnelStages.slice(1).reduce((best, stage) => {
     if (!best || (stage.lossFromPrevious != null && stage.lossFromPrevious < best.lossFromPrevious)) {
       return stage;
     }
@@ -539,7 +590,7 @@ function buildAdvancedSummaryReport(payloads = []) {
 
   const sampleWarning = getSampleWarning(totalSessions);
   const lossSummaryText = mostSignificantLoss
-    ? `Se observa mayor pérdida entre ${mostSignificantLoss.label === 'WhatsApp' ? 'CTA Exposed y WhatsApp' : `${funnel[funnel.findIndex((item) => item.label === mostSignificantLoss.label) - 1]?.label} y ${mostSignificantLoss.label}`}: ${Math.abs(mostSignificantLoss.lossFromPrevious)} sesiones (${formatPercentValue(100 - mostSignificantLoss.percentOfPrevious)}).`
+    ? `Se observa mayor pérdida entre ${mostSignificantLoss.label === 'WhatsApp Click' ? 'CTA Exposed y WhatsApp' : `${funnelStages[funnelStages.findIndex((item) => item.key === mostSignificantLoss.key) - 1]?.label} y ${mostSignificantLoss.label}`}: ${Math.abs(mostSignificantLoss.lossFromPrevious)} sesiones (${formatPercentValue(100 - mostSignificantLoss.percentOfPrevious)}).`
     : null;
   const deviceGroups = groupBy(sessions, (session) => session.device);
   const desktop = deviceGroups.desktop || [];
@@ -582,121 +633,6 @@ function buildAdvancedSummaryReport(payloads = []) {
   const whatsappWithoutReady = sessions.filter((item) => item.whatsappClick && !item.landingReady).length;
   const whatsappWithoutReached = sessions.filter((item) => item.whatsappClick && item.landingReady && !item.ctaAvailable).length;
 
-  const diagnosisLines = [
-    mostSignificantLoss ? `Mayor pérdida observable: ${mostSignificantLoss.label} → ${mostSignificantLoss.label === 'WhatsApp' ? 'final' : 'siguiente etapa'} (${Math.abs(mostSignificantLoss.lossFromPrevious)} sesiones, ${formatPercentValue(100 - mostSignificantLoss.percentOfPrevious)} de caída relativa).` : null,
-    totalButtonExposureUnknown > 0 ? `Hay ${totalButtonExposureUnknown} sesiones con CTA Reached pero sin datos de buttonExposure histórico.` : null,
-    whatsappWithoutReady > 0 ? `Hay ${whatsappWithoutReady} sesiones con WhatsApp Click pero sin Landing Ready.` : null,
-    whatsappWithoutReached > 0 ? `Hay ${whatsappWithoutReached} sesiones con WhatsApp Click pero sin CTA Reached.` : null,
-    ...deviceDiagnosis
-  ].filter(Boolean);
-
-  const metricRows = metricStats.map((metric) => {
-    const allStats = metric.values.all;
-    const clickedStats = metric.values.clicked;
-    const notClickedStats = metric.values.notClicked;
-    return `
-        <tr>
-          <td>${metric.label}</td>
-          <td>${formatMeanMedian(allStats.mean, allStats.median, metric.unit)}</td>
-          <td>${formatMeanMedian(clickedStats.mean, clickedStats.median, metric.unit)}</td>
-          <td>${formatMeanMedian(notClickedStats.mean, notClickedStats.median, metric.unit)}</td>
-        </tr>
-      `;
-  }).join('');
-
-  const categoricalRows = categoricalStats.map((category) => {
-    const allTop = category.distribution.all[0] || {key: 'Sin dato', percent: 0};
-    const clickedTop = category.distribution.clicked[0] || {key: 'Sin dato', percent: 0};
-    const notClickedTop = category.distribution.notClicked[0] || {key: 'Sin dato', percent: 0};
-    return `
-        <tr>
-          <td>${category.label}</td>
-          <td>${allTop.key} (${Math.round(allTop.percent)}%)</td>
-          <td>${clickedTop.key} (${Math.round(clickedTop.percent)}%)</td>
-          <td>${notClickedTop.key} (${Math.round(notClickedTop.percent)}%)</td>
-        </tr>
-      `;
-  }).join('');
-
-  const bucketSection = Object.entries(bucketDistribution).map(([key, bucketList]) => {
-    const label = buildBucketDefinitions()[key].label;
-    return `
-      <div class="analytics-card analytics-card--wide">
-        <h3>Distribución ${label}</h3>
-        <table class="analytics-breakdown-table">
-          <thead>
-            <tr>
-              <th>Bucket</th>
-              <th>Sesiones</th>
-              <th>WhatsApp</th>
-              <th>Conversión</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${bucketList.map((bucket) => `
-              <tr>
-                <td>${bucket.label}</td>
-                <td>${bucket.sessions}</td>
-                <td>${bucket.whatsapp}</td>
-                <td>${bucket.conversion != null ? `${Math.round(bucket.conversion)}%` : 'Sin datos'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }).join('');
-
-  const deviceRows = ['desktop', 'mobile', 'tablet'].map((deviceKey) => {
-    const items = deviceGroups[deviceKey] || [];
-    if (!items.length) return '';
-    const reachedCount = items.filter((item) => item.ctaAvailable).length;
-    const exposedCount = items.filter((item) => item.ctaExposed).length;
-    return `
-      <tr>
-        <td>${deviceKey}</td>
-        <td>${items.length}</td>
-        <td>${items.filter((item) => item.whatsappClick).length}</td>
-        <td>${formatPercentValue(convertRate(items))}</td>
-        <td>${reachedCount}</td>
-        <td>${exposedCount}</td>
-        <td>${items.length >= 5 ? formatMeanMedian(mean(items.map((item) => item.lcp)), median(items.map((item) => item.lcp)), ' ms') : 'Muestra pequeña'}</td>
-      </tr>
-    `;
-  }).join('');
-
-  const sourceGroups = groupBy(sessions, (item) => item.source);
-  const sourceRows = Object.entries(sourceGroups).slice(0, 6).map(([sourceKey, items]) => {
-    const reachedCount = items.filter((item) => item.ctaAvailable).length;
-    const exposedCount = items.filter((item) => item.ctaExposed).length;
-    return `
-      <tr>
-        <td>${sourceKey}</td>
-        <td>${items.length}</td>
-        <td>${items.filter((item) => item.whatsappClick).length}</td>
-        <td>${formatPercentValue(convertRate(items))}</td>
-        <td>${reachedCount}</td>
-        <td>${exposedCount}</td>
-      </tr>
-    `;
-  }).join('');
-
-  const connectionGroups = groupBy(sessions, (item) => item.connection);
-  const connectionRows = Object.entries(connectionGroups).slice(0, 6).map(([connectionKey, items]) => {
-    const reachedCount = items.filter((item) => item.ctaAvailable).length;
-    const exposedCount = items.filter((item) => item.ctaExposed).length;
-    return `
-      <tr>
-        <td>${connectionKey}</td>
-        <td>${items.length}</td>
-        <td>${items.filter((item) => item.whatsappClick).length}</td>
-        <td>${formatPercentValue(convertRate(items))}</td>
-        <td>${reachedCount}</td>
-        <td>${exposedCount}</td>
-      </tr>
-    `;
-  }).join('');
-
   const sessionCounts = {
     all: totalSessions,
     clicked: clickComparison.groups.find((group) => group.label === 'WhatsApp Click')?.count || 0,
@@ -724,33 +660,75 @@ function buildAdvancedSummaryReport(payloads = []) {
   const sourceSummary = getCategorySummary('source');
   const connectionSummary = getCategorySummary('connection');
 
-  const percentReached = formatPercentValue(sessions.filter((item) => item.ctaAvailable).length / totalSessions * 100);
-  const percentExposed = formatPercentValue(sessions.filter((item) => item.ctaExposed).length / totalSessions * 100);
+  const percentReached = formatPercentValue(funnel.ctaAvailable.percentOfTotal);
+  const percentExposed = formatPercentValue(funnel.ctaExposed.percentOfTotal);
+  const percentWhatsappClick = formatPercentValue(funnel.whatsapp.percentOfTotal);
+  const totalInstrumentedSessions = sessions.filter((item) => item.buttonExposureKnown).length;
+  const totalInstrumentedSessionsPercent = totalSessions > 0 ? formatPercentValue((totalInstrumentedSessions / totalSessions) * 100) : 'Sin datos';
+  const totalHistoricalSessions = sessions.filter((item) => !item.buttonExposureKnown).length;
+  const totalCtaReachedWithoutExposure = totalButtonExposureUnknown;
+  const totalAvailable = sessions.filter((item) => item.ctaAvailable).length;
+  const confidenceLevel = formatConfidenceLevel(totalSessions);
+  const performanceHasData = metricStats.some((metric) =>
+    hasMetricData(metric.values.all.mean, metric.values.all.median) ||
+    hasMetricData(metric.values.clicked.mean, metric.values.clicked.median) ||
+    hasMetricData(metric.values.notClicked.mean, metric.values.notClicked.median)
+  );
+  const behaviorHasData = sessions.some((item) =>
+    item.heroVisible || typeof item.ctaVisibleTimeMs === 'number' || typeof item.maxScrollPercent === 'number'
+  );
+  const exposureProblemBuckets = ['neverExposed', 'exposedLt0_5s'];
+  const exposureProblem = exposureSummary.filter((bucket) => exposureProblemBuckets.includes(bucket.key));
+  const exposureProblemPercent = exposureProblem.reduce((sum, bucket) => sum + (bucket.percentOfAvailable || 0), 0);
+  const exposureProblemSessions = exposureProblem.reduce((sum, bucket) => sum + bucket.sessions, 0);
+  const exposureTopBuckets = exposureSummary
+    .filter((bucket) => bucket.key !== 'unknownExposure')
+    .sort((a, b) => (b.percentOfAvailable || 0) - (a.percentOfAvailable || 0))
+    .slice(0, 2);
+  const exposureIssueText = totalAvailable > 0
+    ? `${formatPercentValue(exposureProblemPercent)} de quienes llegaron al CTA tuvieron exposición insuficiente (<0,5 s o ninguna).`
+    : 'No hay datos de exposición suficientes.';
+  const sampleQualityText = `${totalInstrumentedSessionsPercent} instrumentadas • ${confidenceLevel}`;
+  const performanceNote = performanceHasData ? 'Incluye métricas de performance que respaldan el análisis.' : null;
+  const behaviorNote = behaviorHasData ? 'Incluye métricas de comportamiento que respaldan el recorrido.' : null;
+  const dataSupportLines = [performanceNote, behaviorNote].filter(Boolean);
 
-  const clickComparisonRows = clickComparison.rows.map((group) => `
-    <tr>
-      <td>${group.label}</td>
-      <td>${group.count}</td>
-      <td>${group.noReady}</td>
-      <td>${group.readyNoCta}</td>
-      <td>${group.ctaReached}</td>
-      <td>${group.ctaExposed}</td>
-      <td>${group.whatsapp}</td>
-    </tr>
+  const stageCards = funnelStages.map((stage) => `
+    <article class="advanced-stage-card ${stage === mostSignificantLoss ? 'advanced-stage-card--highlight' : ''}">
+      <span class="advanced-stage-card__label">${stage.label}</span>
+      <span class="advanced-stage-card__value">${stage.count}</span>
+      <span class="advanced-stage-card__meta">${formatPercentValue(stage.percentOfTotal)} del total</span>
+      <span class="advanced-stage-card__meta">${stage.percentOfPrevious != null ? `${formatPercentValue(stage.percentOfPrevious)} previo` : '— previo'}</span>
+    </article>
   `).join('');
 
-  const exposureRows = exposureSummary.map((bucket) => {
-    const label = bucket.key === 'unknownExposure' ? 'Sin datos / histórico' : bucket.label;
-    return `
-      <tr>
-        <td>${label}</td>
-        <td>${bucket.sessions}</td>
-        <td>${bucket.percentOfAvailable != null ? formatPercentValue(bucket.percentOfAvailable) : 'N/D'}</td>
-        <td>${bucket.whatsapp}</td>
-        <td>${bucket.conversion != null ? `${Math.round(bucket.conversion)}%` : 'N/D'}</td>
-      </tr>
-    `;
-  }).join('');
+  const previousStageLabel = mostSignificantLoss ? funnelStages[funnelStages.findIndex((item) => item.key === mostSignificantLoss.key) - 1]?.label : null;
+  const mainInsight = mostSignificantLoss
+    ? `El mayor abandono ocurre entre ${previousStageLabel} y ${mostSignificantLoss.label}: ${Math.abs(mostSignificantLoss.lossFromPrevious)} sesiones perdidas.`
+    : 'No se detecta una pérdida dominante en el embudo.';
+  const mainInsightDetail = mostSignificantLoss
+    ? `Esto equivale a ${formatPercentValue(100 - mostSignificantLoss.percentOfPrevious)} de las sesiones previas.`
+    : '';
+
+  const reviewLines = [];
+  if (mostSignificantLoss) {
+    const previousLabel = mostSignificantLoss.label === 'WhatsApp Click'
+      ? funnelStages[funnelStages.findIndex((item) => item.key === mostSignificantLoss.key) - 1]?.label
+      : funnelStages[funnelStages.findIndex((item) => item.key === mostSignificantLoss.key) - 1]?.label;
+    reviewLines.push(`El mayor problema aparece entre ${previousLabel} y ${mostSignificantLoss.label}, con ${Math.abs(mostSignificantLoss.lossFromPrevious)} sesiones perdidas.`);
+  }
+  if (totalCtaReachedWithoutExposure > 0) {
+    reviewLines.push(`Hay ${totalCtaReachedWithoutExposure} sesiones con CTA visible pero sin datos de exposure, lo que reduce la certeza sobre el comportamiento del CTA.`);
+  }
+  reviewLines.push(`Confianza de la muestra: ${confidenceLevel}.`);
+
+  const diagnosisLines = [
+    mostSignificantLoss ? `El mayor descenso se observa entre ${mostSignificantLoss.label} y ${mostSignificantLoss.label === 'WhatsApp Click' ? 'WhatsApp Click' : 'la siguiente etapa'}, con ${Math.abs(mostSignificantLoss.lossFromPrevious)} sesiones perdidas y una caída relativa del ${formatPercentValue(100 - mostSignificantLoss.percentOfPrevious)}.` : null,
+    totalButtonExposureUnknown > 0 ? `Hay ${totalButtonExposureUnknown} sesiones con CTA visible pero sin datos de exposure histórico; esto reduce la precisión del análisis de la exposición.` : null,
+    whatsappWithoutReady > 0 ? `Hay ${whatsappWithoutReady} sesiones con WhatsApp Click sin Landing registrada, lo que sugiere que algunas conversiones ocurren fuera del flujo completo.` : null,
+    whatsappWithoutReached > 0 ? `Hay ${whatsappWithoutReached} sesiones con WhatsApp Click sin CTA visible registrada, lo que indica posibles desviaciones en el recorrido del usuario.` : null,
+    ...deviceDiagnosis
+  ].filter(Boolean);
 
   const performanceMetrics = ['fcp', 'lcp', 'cls', 'ttfb', 'buttonReadyMs'].map((key) => {
     const metric = metricByKey(key);
@@ -766,38 +744,54 @@ function buildAdvancedSummaryReport(payloads = []) {
 
   const behaviorHeroRate = formatPercentValue(sessions.filter((item) => item.heroVisible).length / totalSessions * 100);
   const behaviorMaxScroll = formatPercentValue(mean(sessions.map((item) => item.maxScrollPercent).filter((value) => typeof value === 'number')));
-  const behaviorCtaVisibleTime = formatMeanMedian(mean(sessions.map((item) => item.ctaVisibleTimeMs).filter((value) => typeof value === 'number')), median(sessions.map((item) => item.ctaVisibleTimeMs).filter((value) => typeof value === 'number')), ' ms');
 
   return `
     <section id="advanced-summary">
+      <section class="analytics-card analytics-card--wide advanced-summary-section advanced-summary-top">
+        <div class="advanced-summary-section__header">
+          <h3>Resumen Ejecutivo</h3>
+          <p class="advanced-summary-section__subtitle">Los principales hallazgos de la sesión para responder rápido dónde se pierde tráfico y qué investigar.</p>
+        </div>
+        <div class="advanced-summary-intro">
+          <div class="advanced-summary-insight">
+            <span class="advanced-summary-insight__label">Insight principal</span>
+            <p class="advanced-summary-insight__heading">${mainInsight}</p>
+            <p class="advanced-summary-insight__detail">${mainInsightDetail}</p>
+          </div>
+          <div class="advanced-summary-kpi-grid">
+            <div class="advanced-summary-kpi-card">
+              <span class="advanced-summary-kpi-card__label">Sesiones analizadas</span>
+              <span class="advanced-summary-kpi-card__value">${totalSessions}</span>
+            </div>
+            <div class="advanced-summary-kpi-card">
+              <span class="advanced-summary-kpi-card__label">Llegó al CTA</span>
+              <span class="advanced-summary-kpi-card__value">${percentReached}</span>
+            </div>
+            <div class="advanced-summary-kpi-card">
+              <span class="advanced-summary-kpi-card__label">Vio el CTA</span>
+              <span class="advanced-summary-kpi-card__value">${percentExposed}</span>
+            </div>
+            <div class="advanced-summary-kpi-card">
+              <span class="advanced-summary-kpi-card__label">WhatsApp Click</span>
+              <span class="advanced-summary-kpi-card__value">${percentWhatsappClick}</span>
+            </div>
+          </div>
+        </div>
+        <div class="advanced-summary-review">
+          <h4>Qué investigar primero</h4>
+          <ul>
+            ${reviewLines.map((line) => `<li>${line}</li>`).join('')}
+          </ul>
+        </div>
+      </section>
+
       <section id="advanced-funnel" class="analytics-card analytics-card--wide advanced-summary-section">
         <div class="advanced-summary-section__header">
           <h3>Embudo de conversión</h3>
-          <p class="advanced-summary-section__subtitle">Desde Visitas hasta WhatsApp Click.</p>
+          <p class="advanced-summary-section__subtitle">Las etapas clave y la pérdida relativa entre ellas.</p>
         </div>
-        <div class="analytics-breakdown analytics-breakdown-scroll">
-          <table class="analytics-breakdown-table">
-            <thead>
-              <tr>
-                <th>Etapa</th>
-                <th>Sesiones</th>
-                <th>% total</th>
-                <th>% previo</th>
-                <th>Pérdida</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${funnel.map((stage, index) => `
-                <tr class="${stage.lossFromPrevious != null && stage.lossFromPrevious < 0 ? 'analytics-funnel-loss' : ''}">
-                  <td>${stage.label}</td>
-                  <td>${stage.count}</td>
-                  <td>${formatPercentValue(stage.percentOfTotal)}</td>
-                  <td>${stage.percentOfPrevious != null ? formatPercentValue(stage.percentOfPrevious) : '—'}</td>
-                  <td>${stage.lossFromPrevious != null ? stage.lossFromPrevious : '—'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+        <div class="advanced-stage-grid">
+          ${stageCards}
         </div>
         <div class="advanced-summary-funnel-summary">
           ${lossSummaryText ? `<p>${lossSummaryText}</p>` : ''}
@@ -805,162 +799,50 @@ function buildAdvancedSummaryReport(payloads = []) {
         </div>
       </section>
 
-      <section id="advanced-exposure" class="analytics-card analytics-card--wide advanced-summary-section">
+      <section id="advanced-context" class="analytics-card analytics-card--wide advanced-summary-section">
         <div class="advanced-summary-section__header">
-          <h3>Exposición al CTA</h3>
-          <p class="advanced-summary-section__subtitle">Sesiones clasificadas según la duración de exposición del CTA.</p>
+          <h3>Contexto y confianza</h3>
+          <p class="advanced-summary-section__subtitle">Resumen de la exposición, la instrumentación y los segmentos más relevantes.</p>
         </div>
-        <div class="analytics-breakdown analytics-breakdown-scroll">
-          <table class="analytics-breakdown-table">
-            <thead>
-              <tr>
-                <th>Exposición</th>
-                <th>Sesiones</th>
-                <th>% del total CTA Reached</th>
-                <th>WhatsApp</th>
-                <th>Conversión</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${exposureRows}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="advanced-click-comparison" class="analytics-card analytics-card--wide advanced-summary-section">
-        <div class="advanced-summary-section__header">
-          <h3>Click vs No Click</h3>
-          <p class="advanced-summary-section__subtitle">Comparación analítica de los grupos antes del click.</p>
-        </div>
-        <div class="analytics-breakdown analytics-breakdown-scroll">
-          <table class="analytics-breakdown-table">
-            <thead>
-              <tr>
-                <th>Grupo</th>
-                <th>Sesiones</th>
-                <th>No Ready</th>
-                <th>Ready sin CTA</th>
-                <th>CTA Reached</th>
-                <th>CTA Exposed</th>
-                <th>WhatsApp</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${clickComparisonRows}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="advanced-performance" class="analytics-card analytics-card--wide advanced-summary-section">
-        <div class="advanced-summary-section__header">
-          <h3>Performance</h3>
-          <p class="advanced-summary-section__subtitle">Métricas de velocidad y respuesta para todos los grupos.</p>
-        </div>
-        <div class="analytics-breakdown analytics-breakdown-scroll">
-          <table class="analytics-breakdown-table">
-            <thead>
-              <tr>
-                <th>Métrica</th>
-                <th>Todos</th>
-                <th>WhatsApp Click</th>
-                <th>No Click</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${performanceMetrics}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="advanced-behavior" class="analytics-card analytics-card--wide advanced-summary-section">
-        <div class="advanced-summary-section__header">
-          <h3>Comportamiento</h3>
-          <p class="advanced-summary-section__subtitle">Señales de interacción y navegación. Puede incluir actividad posterior al click.</p>
-        </div>
-        <div class="advanced-behavior-grid">
-          <div class="advanced-behavior-item">
-            <span class="advanced-behavior-item__label">Hero visible</span>
-            <span class="advanced-behavior-item__value">${behaviorHeroRate}</span>
+        <div class="advanced-summary-card-grid">
+          <div class="advanced-summary-card">
+            <span class="advanced-summary-card__label">Exposición insuficiente</span>
+            <span class="advanced-summary-card__value">${exposureProblemSessions} sesiones</span>
+            <span class="advanced-summary-card__meta">${exposureIssueText}</span>
+            <span class="advanced-summary-card__meta">Base: solo sesiones con CTA visible.</span>
           </div>
-          <div class="advanced-behavior-item">
-            <span class="advanced-behavior-item__label">Tiempo hasta CTA</span>
-            <span class="advanced-behavior-item__value">${behaviorCtaVisibleTime}</span>
+          <div class="advanced-summary-card">
+            <span class="advanced-summary-card__label">Instrumentación</span>
+            <span class="advanced-summary-card__value">${sampleQualityText}</span>
+            <span class="advanced-summary-card__meta">${totalHistoricalSessions} sesiones históricas</span>
           </div>
-          <div class="advanced-behavior-item">
-            <span class="advanced-behavior-item__label">Scroll máximo</span>
-            <span class="advanced-behavior-item__value">${behaviorMaxScroll}</span>
+          <div class="advanced-summary-card">
+            <span class="advanced-summary-card__label">Top dispositivo</span>
+            <span class="advanced-summary-card__value">${deviceSummary.all}</span>
+            <span class="advanced-summary-card__meta">WhatsApp: ${deviceSummary.clicked}</span>
           </div>
-        </div>
-      </section>
-
-      <section id="advanced-segmentation" class="analytics-card analytics-card--wide advanced-summary-section">
-        <div class="advanced-summary-section__header">
-          <h3>Segmentación</h3>
-          <p class="advanced-summary-section__subtitle">Rendimiento por dispositivo, fuente y conexión.</p>
-        </div>
-        <div class="analytics-breakdown analytics-breakdown-scroll">
-          <h4>Device</h4>
-          <table class="analytics-breakdown-table">
-            <thead>
-              <tr>
-                <th>Device</th>
-                <th>Sesiones</th>
-                <th>WhatsApp</th>
-                <th>Conversión</th>
-                <th>CTA Reached</th>
-                <th>CTA Exposed</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${deviceRows}
-            </tbody>
-          </table>
-        </div>
-        <div class="analytics-breakdown analytics-breakdown-scroll" style="margin-top:1rem;">
-          <h4>Source</h4>
-          <table class="analytics-breakdown-table">
-            <thead>
-              <tr>
-                <th>Source</th>
-                <th>Sesiones</th>
-                <th>WhatsApp</th>
-                <th>Conversión</th>
-                <th>CTA Reached</th>
-                <th>CTA Exposed</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sourceRows}
-            </tbody>
-          </table>
-        </div>
-        <div class="analytics-breakdown analytics-breakdown-scroll" style="margin-top:1rem;">
-          <h4>Connection</h4>
-          <table class="analytics-breakdown-table">
-            <thead>
-              <tr>
-                <th>Connection</th>
-                <th>Sesiones</th>
-                <th>WhatsApp</th>
-                <th>Conversión</th>
-                <th>CTA Reached</th>
-                <th>CTA Exposed</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${connectionRows}
-            </tbody>
-          </table>
+          <div class="advanced-summary-card">
+            <span class="advanced-summary-card__label">Top canal</span>
+            <span class="advanced-summary-card__value">${sourceSummary.all}</span>
+            <span class="advanced-summary-card__meta">WhatsApp: ${sourceSummary.clicked}</span>
+          </div>
+          <div class="advanced-summary-card">
+            <span class="advanced-summary-card__label">Top conexión</span>
+            <span class="advanced-summary-card__value">${connectionSummary.all}</span>
+            <span class="advanced-summary-card__meta">WhatsApp: ${connectionSummary.clicked}</span>
+          </div>
+          <div class="advanced-summary-card advanced-summary-card--wide">
+            <span class="advanced-summary-card__label">Soporte de datos</span>
+            <span class="advanced-summary-card__value">${sampleQualityText}</span>
+            <span class="advanced-summary-card__meta">${dataSupportLines.join(' • ') || 'Solo datos de embudo disponibles.'}</span>
+          </div>
         </div>
       </section>
 
       <section id="advanced-diagnostics" class="analytics-card analytics-card--wide advanced-summary-section">
         <div class="advanced-summary-section__header">
           <h3>Diagnóstico</h3>
-          <p class="advanced-summary-section__subtitle">Observaciones automáticas sobre la consistencia de los datos.</p>
+          <p class="advanced-summary-section__subtitle">Interpretación de los hallazgos y su impacto en la fiabilidad del análisis.</p>
         </div>
         <div class="analytics-diagnosis">
           ${diagnosisLines.length ? `<ul>${diagnosisLines.map((line) => `<li>${line}</li>`).join('')}</ul>` : '<p>No hay observaciones relevantes en este rango.</p>'}

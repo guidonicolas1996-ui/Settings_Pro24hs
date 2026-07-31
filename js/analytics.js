@@ -2,7 +2,7 @@ import { db } from './firebase.js';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
 import { createAnalyticsRange } from './analytics-range.mjs';
 import { calculateCampaignCalculatorMetrics } from './analytics-calculator.mjs';
-import { buildAdvancedSummaryCards, buildAdvancedSummaryReport } from './analytics-advanced-summary.mjs';
+import { buildAdvancedSummaryCards, buildAdvancedSummaryReport } from './analytics-advanced-summary.mjs?v=7';
 
 let rangeSelect = null;
 let detailSelect = null;
