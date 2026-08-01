@@ -1752,6 +1752,18 @@ function initializeEventListeners() {
 
   updateDateInputsState();
 
+  if (summaryBody) {
+    summaryBody.classList.add('collapsed');
+    summaryToggle?.setAttribute('aria-expanded', 'false');
+    summaryToggle?.querySelector('.sr-only').textContent = 'Mostrar resumen';
+  }
+
+  if (calculatorBody) {
+    calculatorBody.classList.add('collapsed');
+    calculatorToggle?.setAttribute('aria-expanded', 'false');
+    calculatorToggle?.querySelector('.sr-only').textContent = 'Mostrar calculadora';
+  }
+
   if (rangeSelect) {
     rangeSelect.addEventListener('change', async () => {
       updateDateInputsState();

@@ -120,13 +120,13 @@
                         Totales registrados para el período seleccionado.
                     </p>
                     </div>
-                    <button id="summary-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                    <button id="summary-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
                         <span class="analytics-toggle-icon">▶</span>
-                        <span class="sr-only">Minimizar resumen</span>
+                        <span class="sr-only">Mostrar resumen</span>
                     </button>
                 </div>
 
-                <div id="summary-body" class="analytics-section__body">
+                <div id="summary-body" class="analytics-section__body collapsed">
                 <div id="analytics-content" class="analytics-panel">
 
                     <div class="analytics-card">
@@ -166,17 +166,35 @@
                 </div>
             </section>
             <section>
+                <div>
+                    <div class="analytics-breakdown-header analytics-subsection-header">
+                        <div>
+                            <h3>Links</h3>
+                            <p class="settings-copy">Resumen de visitas por link principal y links alternativos.</p>
+                        </div>
+                        <button id="links-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
+                            <span class="analytics-toggle-icon">▶</span>
+                            <span class="sr-only">Mostrar links</span>
+                        </button>
+                    </div>
+                    <div id="links-body" class="analytics-section__body collapsed">
+                        <div id="analytics-links-summary" class="analytics-links-summary"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
                 <div class="analytics-breakdown-header analytics-subsection-header">
                     <div>
                         <h3>Calculadora</h3>
                         <p class="settings-copy">Estimación de conversión y costo por campaña según el rango activo.</p>
                     </div>
-                    <button id="calculator-toggle" type="button" class="analytics-section-toggle" aria-expanded="true">
+                    <button id="calculator-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
                         <span class="analytics-toggle-icon">▶</span>
-                        <span class="sr-only">Minimizar calculadora</span>
+                        <span class="sr-only">Mostrar calculadora</span>
                     </button>
                 </div>
-                <div id="calculator-body" class="analytics-section__body">
+                <div id="calculator-body" class="analytics-section__body collapsed">
                 <div class="analytics-calculator">
                     <div class="analytics-calculator__grid">
                         <div class="analytics-calculator__field analytics-calculator__field--full analytics-calculator__field--cost">
@@ -296,24 +314,7 @@
                     </div>
                 </div>
                 </div>
-            </section><section>
-                    <div>
-                        <div class="analytics-breakdown-header analytics-subsection-header">
-                            <div>
-                            <h3>Links</h3>
-                            <p class="settings-copy">Resumen de visitas por link principal y links alternativos.</p>
-                            </div>
-                            <button id="links-toggle" type="button" class="analytics-section-toggle" aria-expanded="false">
-                            <span class="analytics-toggle-icon">▶</span>
-                            <span class="sr-only">Mostrar links</span>
-                            </button>
-                        </div>
-                        <div id="links-body" class="analytics-section__body collapsed">
-                            <div id="analytics-links-summary" class="analytics-links-summary"></div>
-                        </div>
-                    </div>
-                </div>
-                </section>
+            </section>
 
                 <section>
                 <div class="analytics-breakdown-header">
