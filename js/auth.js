@@ -155,7 +155,8 @@ async function ensureAuthGate() {
 
   try {
     const auth = await getFirebaseAuth();
-    try { console.log('[auth] ensureAuthGate checking user', { pathname, currentUser: !!auth.currentUser }); } catch(e){}
+    const storedSession = getStoredSession();
+    try { console.log('[auth] ensureAuthGate checking user', { pathname, currentUser: !!auth.currentUser, hasStoredSession: !!storedSession }); } catch(e){}
     if (auth.currentUser && typeof auth.currentUser.reload === 'function') {
       try {
         await auth.currentUser.reload();
@@ -164,10 +165,15 @@ async function ensureAuthGate() {
       }
     }
 
-    const user = auth.currentUser || await waitForFirebaseUser(auth, 2500);
+    const user = auth.currentUser || await waitForFirebaseUser(auth, 3500);
     try { console.log('[auth] ensureAuthGate user', user && { uid: user.uid, email: user.email }); } catch(e){}
 
     if (!user || !user.uid) {
+      if (storedSession) {
+        console.warn('[auth] Firebase auth still not ready; keeping stored session temporarily');
+        setStoredSession(storedSession);
+        return true;
+      }
       await clearSession();
       redirectToLogin();
       return false;
@@ -177,6 +183,11 @@ async function ensureAuthGate() {
     return true;
   } catch (error) {
     console.warn('No se pudo validar la sesión de Firebase', error);
+    const storedSession = getStoredSession();
+    if (storedSession) {
+      setStoredSession(storedSession);
+      return true;
+    }
     await clearSession();
     redirectToLogin();
     return false;

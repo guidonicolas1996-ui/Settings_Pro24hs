@@ -14,30 +14,19 @@
     <meta http-equiv="cache-control" content="no-store" />
     <link rel="stylesheet" href="./css/styles.css" />
     <script type="module">
-      import { AUTH_STORAGE_KEY, clearSession } from './js/auth.js';
-
-      async function clearAuthCache() {
-        try {
-          await clearSession();
-        } catch (error) {
-          console.warn('Error limpiando sesión en login:', error);
-        }
-        try {
-          window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
-          window.localStorage.removeItem(AUTH_STORAGE_KEY);
-        } catch (error) {
-          console.warn('Error limpiando storage en login:', error);
-        }
-      }
+      import { AUTH_STORAGE_KEY } from './js/auth.js';
 
       window.addEventListener('pageshow', async (event) => {
         if (event.persisted) {
-          await clearAuthCache();
+          try {
+            window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+            window.localStorage.removeItem(AUTH_STORAGE_KEY);
+          } catch (error) {
+            console.warn('Error limpiando storage en login:', error);
+          }
           window.location.reload();
         }
       });
-
-      await clearAuthCache();
     </script>
   </head>
   <body class="settings-page" data-theme="default">
@@ -105,15 +94,6 @@
             window.location.reload();
           }
         });
-
-        try {
-          await auth.signOut();
-        } catch (logoutError) {
-          console.warn('No se pudo cerrar sesión previa de Firebase en login:', logoutError);
-        }
-
-        window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
-        window.localStorage.removeItem(AUTH_STORAGE_KEY);
 
         await setPersistence(auth, browserSessionPersistence);
 
