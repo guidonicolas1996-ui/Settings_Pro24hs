@@ -1754,6 +1754,7 @@ function initializeEventListeners() {
 
   if (summaryBody) {
     summaryBody.classList.add('collapsed');
+    summaryBody.style.display = 'none';
     summaryToggle?.setAttribute('aria-expanded', 'false');
     if (summaryToggle) {
       const summaryLabel = summaryToggle.querySelector('.sr-only');
@@ -1765,6 +1766,7 @@ function initializeEventListeners() {
 
   if (calculatorBody) {
     calculatorBody.classList.add('collapsed');
+    calculatorBody.style.display = 'none';
     calculatorToggle?.setAttribute('aria-expanded', 'false');
     if (calculatorToggle) {
       const calculatorLabel = calculatorToggle.querySelector('.sr-only');
@@ -1924,6 +1926,7 @@ function initializeEventListeners() {
   summaryToggle?.addEventListener('click', () => {
     if (!summaryBody) return;
     const isCollapsed = summaryBody.classList.toggle('collapsed');
+    summaryBody.style.display = isCollapsed ? 'none' : '';
     summaryToggle.setAttribute('aria-expanded', String(!isCollapsed));
     summaryToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar resumen' : 'Minimizar resumen';
   });
@@ -1940,6 +1943,7 @@ function initializeEventListeners() {
   visualizationToggle?.addEventListener('click', () => {
     if (!visualizationBody) return;
     const isCollapsed = visualizationBody.classList.toggle('collapsed');
+    visualizationBody.style.display = isCollapsed ? 'none' : '';
     // Also collapse/expand the visualization children container so chart and table hide together,
     // but do not mutate their internal collapsed states (they remain preserved).
     if (visualizationChildren) visualizationChildren.style.display = isCollapsed ? 'none' : '';
@@ -1977,6 +1981,7 @@ function initializeEventListeners() {
     const linksBody = document.getElementById('links-body');
     if (!linksBody) return;
     const isCollapsed = linksBody.classList.toggle('collapsed');
+    linksBody.style.display = isCollapsed ? 'none' : '';
     linksToggle.setAttribute('aria-expanded', String(!isCollapsed));
     linksToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar links' : 'Minimizar links';
   });
@@ -1986,6 +1991,7 @@ function initializeEventListeners() {
     const chartBody = chartSection.querySelector('.analytics-section__body');
     if (!chartBody) return;
     const isCollapsed = chartBody.classList.toggle('collapsed');
+    chartBody.style.display = isCollapsed ? 'none' : '';
     chartToggle.setAttribute('aria-expanded', String(!isCollapsed));
     chartToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar gráfico' : 'Minimizar gráfico';
   });
@@ -1994,6 +2000,7 @@ function initializeEventListeners() {
     const tableBody = document.getElementById('analytics-breakdown-body');
     if (!tableBody) return;
     const isCollapsed = tableBody.classList.toggle('collapsed');
+    tableBody.style.display = isCollapsed ? 'none' : '';
     tableToggle.setAttribute('aria-expanded', String(!isCollapsed));
     tableToggle.querySelector('.sr-only').textContent = isCollapsed ? 'Mostrar tabla' : 'Minimizar tabla';
   });

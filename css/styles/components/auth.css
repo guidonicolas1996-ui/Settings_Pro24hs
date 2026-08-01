@@ -3,10 +3,8 @@ Settings / auth / analytics page
 =========================== */
 
 .settings-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
+  display: block;
+  padding: 1rem 1rem 2rem;
 }
 
 .login-shell {
@@ -169,6 +167,8 @@ Settings / auth / analytics page
   margin: 0 auto;
   display: grid;
   gap: 0.75rem;
+  height: auto;
+  min-height: 0;
 }
 
 .settings-card {
@@ -177,6 +177,8 @@ Settings / auth / analytics page
   background: linear-gradient(140deg, rgba(17, 13, 51, 0.98), rgba(30, 22, 67, 0.96));
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: var(--shadow);
+  height: auto;
+  min-height: 0;
 }
 
 .settings-card--hero h1 {

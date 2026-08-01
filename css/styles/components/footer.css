@@ -872,13 +872,16 @@ Footer
   transition: max-height 0.28s ease, opacity 0.28s ease, margin 0.28s ease;
   overflow: visible;
   max-height: none;
+  height: auto;
 }
 
 .analytics-section__body.collapsed {
+  display: none !important;
   max-height: 0;
   opacity: 0;
   margin: 0;
   pointer-events: none;
+  height: 0;
 }
 
 .analytics-subsection-header {
@@ -929,6 +932,7 @@ Footer
 
 .analytics-breakdown-scroll {
   overflow-x: visible;
+  overflow-y: visible;
 }
 
 .analytics-breakdown table {
