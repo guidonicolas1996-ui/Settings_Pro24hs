@@ -929,7 +929,7 @@ Footer
 }
 
 .analytics-breakdown-scroll {
-  overflow-x: auto;
+  overflow-x: visible;
 }
 
 .analytics-breakdown table {
@@ -1024,12 +1024,12 @@ Footer
 .settings-shell,
 .settings-card {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: visible;
 }
 
 .analytics-breakdown-scroll {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: visible;
   display: block;
   min-width: 0;
 }
