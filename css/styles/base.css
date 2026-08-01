@@ -13,7 +13,7 @@ html {
 
 body {
   margin: 0;
-  min-height: auto;
+  min-height: 100dvh;
   font-family: "Syne", "Segoe UI", Roboto, Arial, sans-serif;
   color: var(--color-text);
   
@@ -27,7 +27,7 @@ body {
   background-repeat: no-repeat;
   position: relative;
   overflow-x: hidden;
-  overflow-y: visible;
+  overflow-y: auto;
 }
 
 img,

@@ -28,14 +28,14 @@
       .home-shell {
         min-height: 100vh;
         display: flex;
-        align-items: stretch;
-        justify-content: stretch;
+        align-items: center;
+        justify-content: center;
         padding: 0;
       }
 
       .home-phone {
-        width: 100%;
-        min-height: 100vh;
+        width: min(100%, 64rem);
+        min-height: auto;
         background: transparent;
         border: 0;
         border-radius: 0;
@@ -44,6 +44,7 @@
         position: relative;
         overflow: hidden;
         backdrop-filter: none;
+        margin: 0 auto;
       }
 
       .home-phone::before {
