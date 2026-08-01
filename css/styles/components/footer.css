@@ -872,6 +872,7 @@ Footer
 .analytics-section__body {
   transition: max-height 0.28s ease, opacity 0.28s ease, margin 0.28s ease;
   overflow: visible;
+  max-height: none;
 }
 
 .analytics-section__body.collapsed {
@@ -888,6 +889,7 @@ Footer
 .analytics-chart-section {
   transition: max-height 0.28s ease, opacity 0.28s ease;
   overflow: visible;
+  max-height: none;
 }
 
 .analytics-chart-section.collapsed {
@@ -899,6 +901,7 @@ Footer
 .analytics-breakdown-section {
   transition: max-height 0.28s ease, opacity 0.28s ease;
   overflow: visible;
+  max-height: none;
 }
 
 .analytics-breakdown-section.collapsed {
@@ -995,8 +998,7 @@ Footer
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 .analytics-chart {
