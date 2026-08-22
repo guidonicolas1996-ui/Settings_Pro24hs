@@ -76,7 +76,11 @@ function setStoredSession(userOrEmail) {
   const session = {
     uid: userOrEmail.uid || null,
     email: userOrEmail.email || userOrEmail,
-    loggedAt: new Date().toISOString()
+    loggedAt: new Date().toISOString(),
+    // derive tenantId from email local-part (e.g. futurevip@gmail.com -> futurevip)
+    tenantId: (userOrEmail && (userOrEmail.email || userOrEmail) && String((userOrEmail.email || userOrEmail)).includes('@'))
+      ? String((userOrEmail.email || userOrEmail)).split('@')[0].toLowerCase()
+      : null
   };
 
   const storage = getStorage();
@@ -84,7 +88,7 @@ function setStoredSession(userOrEmail) {
 
   storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
   try {
-    console.log('[auth] setStoredSession', session);
+    //console.log('[auth] setStoredSession', session);
   } catch (e) {
     /* ignore */
   }
@@ -102,7 +106,7 @@ function clearStoredSession() {
   }
 
   try {
-    console.log('[auth] clearStoredSession');
+    //console.log('[auth] clearStoredSession');
   } catch (e) {
     /* ignore */
   }
@@ -127,7 +131,7 @@ function redirectToLogin() {
 
 async function clearSession() {
   try {
-    console.log('[auth] clearSession start');
+    //console.log('[auth] clearSession start');
   } catch (e) {}
   try {
     const auth = await getFirebaseAuth();
@@ -140,7 +144,7 @@ async function clearSession() {
   }
   clearStoredSession();
   try {
-    console.log('[auth] clearSession done');
+    //console.log('[auth] clearSession done');
   } catch (e) {}
 }
 
@@ -156,7 +160,7 @@ async function ensureAuthGate() {
   try {
     const auth = await getFirebaseAuth();
     const storedSession = getStoredSession();
-    try { console.log('[auth] ensureAuthGate checking user', { pathname, currentUser: !!auth.currentUser, hasStoredSession: !!storedSession }); } catch(e){}
+    try { //console.log('[auth] ensureAuthGate checking user', { pathname, currentUser: !!auth.currentUser, hasStoredSession: !!storedSession }); } catch(e){}
     if (auth.currentUser && typeof auth.currentUser.reload === 'function') {
       try {
         await auth.currentUser.reload();
@@ -166,7 +170,7 @@ async function ensureAuthGate() {
     }
 
     const user = auth.currentUser || await waitForFirebaseUser(auth, 3500);
-    try { console.log('[auth] ensureAuthGate user', user && { uid: user.uid, email: user.email }); } catch(e){}
+    try { //console.log('[auth] ensureAuthGate user', user && { uid: user.uid, email: user.email }); } catch(e){}
 
     if (!user || !user.uid) {
       if (storedSession) {

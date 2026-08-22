@@ -87,5 +87,5 @@ function value(field) {
   };
   const earliest = parsed[0]?.visitStart || null;
   const latest = parsed[parsed.length - 1]?.visitStart || null;
-  console.log(JSON.stringify({ counts, earliest, latest, sample: parsed.slice(0, 3) }, null, 2));
+  //console.log(JSON.stringify({ counts, earliest, latest, sample: parsed.slice(0, 3) }, null, 2));
 })();

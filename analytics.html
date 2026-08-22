@@ -14,8 +14,9 @@
     <meta http-equiv="cache-control" content="no-store" />
     <link rel="stylesheet" href="./css/styles.css" />
     <style>body{visibility:hidden;}</style>
+        <script type="module" src="./js/tenant.js"></script>
         <script type="module">
-            console.log('[page] analytics head script loaded');
+            //console.log('[page] analytics head script loaded');
             import { ensureAuthGate } from './js/auth.js?v=1';
       window.authOk = false;
       window.addEventListener('pageshow', (event) => {
@@ -34,7 +35,7 @@
             // Additional guard: ensure stored session exists before loading analytics scripts
             try {
                 if (!window.authGuard || !window.authGuard.isAuthenticated || !window.authGuard.isAuthenticated()) {
-                    console.log('[auth] analytics: no stored session, redirecting');
+                    //console.log('[auth] analytics: no stored session, redirecting');
                     const returnTarget = new URL('./analytics.html', window.location.href).href;
                     window.location.replace(`./login.html?redirect=${encodeURIComponent(returnTarget)}`);
                 }
@@ -473,7 +474,7 @@
         <script type="module">
             import { clearSession } from './js/auth.js';
 
-            console.log('[page] analytics bottom script start', { authOk: window.authOk, storedSession: sessionStorage.getItem('adminSession') });
+            //console.log('[page] analytics bottom script start', { authOk: window.authOk, storedSession: sessionStorage.getItem('adminSession') });
 
             document.getElementById('logout-button')?.addEventListener('click', async () => {
                 await clearSession();
@@ -484,19 +485,19 @@
             try {
                 const { ensureAuthGate } = await import('./js/auth.js');
                 const ok = await ensureAuthGate();
-                console.log('[page] analytics bottom ensureAuthGate result', ok);
+                //console.log('[page] analytics bottom ensureAuthGate result', ok);
                 if (ok) {
                     try {
-                        console.log('[page] analytics importing module...');
+                        //console.log('[page] analytics importing module...');
                         await import('./js/analytics.js?v=7');
-                        console.log('[page] analytics imported analytics.js');
+                        //console.log('[page] analytics imported analytics.js');
                     } catch (e) {
                         console.error('[page] analytics failed to load analytics module', e);
                         try { await import('./js/auth.js'); window.authGuard && await window.authGuard.clearSession(); } catch (_) {}
                         window.location.replace('./login.html');
                     }
                 } else {
-                    console.log('[page] analytics bottom script: ensureAuthGate returned false');
+                    //console.log('[page] analytics bottom script: ensureAuthGate returned false');
                 }
             } catch (e) {
                 console.error('[page] analytics bottom script error while ensuring auth', e);

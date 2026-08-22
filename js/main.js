@@ -266,9 +266,13 @@ async function loadDynamicCasinos() {
   }
 
   try {
-    const { db, doc, getDoc } = await ensureFirebaseServices();
-    const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
-    const config = snapshot.exists() ? snapshot.data() : {};
+  const { db, doc, getDoc } = await ensureFirebaseServices();
+  const stored = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('adminSession') : null;
+  const session = stored ? JSON.parse(stored) : null;
+  const tenantId = session?.tenantId || 'futurevip';
+  const snapshot = await getDoc(doc(db, 'tenants', tenantId));
+  const rawConfig = snapshot.exists() ? snapshot.data() : {};
+  const config = rawConfig?.config || rawConfig;
     dynamicCasinos = config.casinos || getLocalDynamicCasinos();
     if (!dynamicCasinos || typeof dynamicCasinos !== 'object') {
       dynamicCasinos = getLocalDynamicCasinos();
@@ -307,17 +311,25 @@ async function saveDynamicCasinos() {
     return;
   }
 
-  try {
+    try {
     const { db, doc, getDoc, setDoc } = await ensureFirebaseServices();
-    const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
-    const currentConfig = snapshot.exists() ? snapshot.data() : {};
-    const newConfig = {
-      ...currentConfig,
-      casinos: dynamicCasinos,
-      casinoOrder: dynamicCasinoOrder
+    const stored = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('adminSession') : null;
+    const session = stored ? JSON.parse(stored) : null;
+    const tenantId = session?.tenantId || 'futurevip';
+    const tenantRef = doc(db, 'tenants', tenantId);
+    const snapshot = await getDoc(tenantRef);
+    const currentRaw = snapshot.exists() ? snapshot.data() : {};
+    const currentConfig = currentRaw?.config || currentRaw;
+    const next = {
+      ...currentRaw,
+      config: {
+        ...(currentRaw.config || {}),
+        casinos: dynamicCasinos,
+        casinoOrder: dynamicCasinoOrder
+      }
     };
-    await setDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), newConfig);
-    console.debug('saveDynamicCasinos success', { newConfig });
+    await setDoc(tenantRef, next, { merge: true });
+    console.debug('saveDynamicCasinos success (tenant path)', { next });
   } catch (error) {
     console.error('Error guardando casinos dinámicos en Firebase:', error);
     throw error;
@@ -404,8 +416,12 @@ async function getRemoteConfig() {
 
   try {
     const { db, doc, getDoc } = await ensureFirebaseServices();
-    const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
-    const data = snapshot.exists() ? snapshot.data() : null;
+    const stored = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('adminSession') : null;
+    const session = stored ? JSON.parse(stored) : null;
+    const tenantId = session?.tenantId || 'futurevip';
+    const snapshot = await getDoc(doc(db, 'tenants', tenantId));
+    const tenantData = snapshot.exists() ? snapshot.data() : null;
+    const data = tenantData ? (tenantData.config || tenantData) : null;
     
     // Actualizar caché
     remoteConfigCache = data;
@@ -518,14 +534,22 @@ function setLandingContent(content, saveRemote = true) {
 async function saveRemoteConfig(config) {
   try {
     const { db, doc, getDoc, setDoc } = await ensureFirebaseServices();
-    const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT));
-    const currentConfig = snapshot.exists() ? snapshot.data() : {};
-    await setDoc(doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOCUMENT), {
-      ...currentConfig,
-      ...config
-    });
+    const stored = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('adminSession') : null;
+    const session = stored ? JSON.parse(stored) : null;
+    const tenantId = session?.tenantId || 'futurevip';
+    const tenantRef = doc(db, 'tenants', tenantId);
+    const snapshot = await getDoc(tenantRef);
+    const currentRaw = snapshot.exists() ? snapshot.data() : {};
+    const next = {
+      ...currentRaw,
+      config: {
+        ...(currentRaw.config || {}),
+        ...config
+      }
+    };
+    await setDoc(tenantRef, next, { merge: true });
   } catch (error) {
-    console.error("Error guardando configuración en Firebase:", error);
+    console.error("Error guardando configuración en Firebase (tenant path):", error);
   }
 }
 // End Firebase
@@ -605,7 +629,7 @@ if (typeof window !== 'undefined') {
   };
 
   window.landingSettings = guardedLandingSettingsAPI;
-  try { console.log('[main] landingSettings assigned, hasActiveSession:', hasActiveSession); } catch(e){}
+  try { //console.log('[main] landingSettings assigned, hasActiveSession:', hasActiveSession); } catch(e){}
   window.casinosAPI = guardedLandingSettingsAPI;
 }
 

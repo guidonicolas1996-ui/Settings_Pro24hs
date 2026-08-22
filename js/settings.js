@@ -1,7 +1,8 @@
 // M�dulo de scripts espec�ficos de settings.html
-console.log('[settings] settings.js loaded');
+//console.log('[settings] settings.js loaded');
 
 import { buildLandingContentState } from './landing-content.js';
+import { getStoredSession } from './auth.js';
 
 function compressImage(base64String, maxWidth = 600, maxHeight = 600, quality = 0.8) {
   return new Promise((resolve) => {
@@ -208,8 +209,11 @@ async function loadAnalyticsTargetsFromDb() {
     const firebaseModule = await import('./firebase.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
     const { doc, getDoc } = firestoreModule;
-    const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
-    const cfg = snapshot.exists() ? (snapshot.data() || {}) : {};
+    const session = getStoredSession();
+    const tenantId = session?.tenantId || 'futurevip';
+    const snapshot = await getDoc(doc(firebaseModule.db, 'tenants', tenantId));
+    const raw = snapshot.exists() ? (snapshot.data() || {}) : {};
+    const cfg = raw?.config || raw;
     const targets = cfg.analyticsTargets && typeof cfg.analyticsTargets === 'object' ? cfg.analyticsTargets : {};
     const normalizedTargets = { ...getDefaultAnalyticsTargets(), ...targets };
     setStoredAnalyticsTargets(normalizedTargets);
@@ -239,7 +243,11 @@ async function saveAnalyticsTargetsToDb(targets = {}) {
     const firebaseModule = await import('./firebase.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
     const { doc, setDoc } = firestoreModule;
-    await setDoc(doc(firebaseModule.db, 'config', 'landing'), { analyticsTargets: normalizedTargets }, { merge: true });
+    const session = getStoredSession();
+    const tenantId = session?.tenantId || 'futurevip';
+    const tenantRef = doc(firebaseModule.db, 'tenants', tenantId);
+    const snapshot = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js').then(f => f.getDoc ? null : null).catch(()=>null);
+    await setDoc(tenantRef, { config: { analyticsTargets: normalizedTargets } }, { merge: true });
   } catch (error) {
     console.warn('[settings] No se pudo guardar analyticsTargets en Firestore, usando localStorage', error);
   }
@@ -759,7 +767,7 @@ function closeNewCasinoModal() {
 }
 
 function setupSettingsPage() {
-  console.log('[settings] setupSettingsPage called');
+  //console.log('[settings] setupSettingsPage called');
   
   // ===== NEW: Multi-config management =====
   let currentConfig = 'general'; // Track active config tab
@@ -941,8 +949,11 @@ function setupSettingsPage() {
       const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
       const { doc, getDoc } = firestoreModule;
 
-      const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
-      const cfg = snapshot.exists() ? (snapshot.data() || {}) : {};
+      const session = getStoredSession();
+      const tenantId = session?.tenantId || 'futurevip';
+      const snapshot = await getDoc(doc(firebaseModule.db, 'tenants', tenantId));
+      const raw = snapshot.exists() ? (snapshot.data() || {}) : {};
+      const cfg = raw?.config || raw;
       if (cfg.landingContent && typeof cfg.landingContent === 'object') {
         landingContent = cfg.landingContent;
       }
@@ -1016,10 +1027,13 @@ function setupSettingsPage() {
       const firebaseModule = await import('./firebase.js');
       const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
       const { doc, getDoc, setDoc } = firestoreModule;
-      const docRef = doc(firebaseModule.db, 'config', 'landing');
+      const session = getStoredSession();
+      const tenantId = session?.tenantId || 'futurevip';
+      const docRef = doc(firebaseModule.db, 'tenants', tenantId);
 
       const snapshot = await getDoc(docRef);
-      const currentConfig_data = snapshot.exists() ? snapshot.data() : {};
+      const currentRaw = snapshot.exists() ? (snapshot.data() || {}) : {};
+      const currentConfig_data = currentRaw?.config || currentRaw;
       const previousLandingContent = currentConfig_data.landingContent && typeof currentConfig_data.landingContent === 'object'
         ? currentConfig_data.landingContent
         : {};
@@ -1094,12 +1108,12 @@ function setupSettingsPage() {
   
   // ===== Save button handler (updated) =====
   const saveLandingButton = document.getElementById('save-landing-content');
-  console.log('[settings] saveLandingButton lookup', { button: saveLandingButton });
+  //console.log('[settings] saveLandingButton lookup', { button: saveLandingButton });
   if (saveLandingButton) {
-    console.log('[settings] saveLandingButton found and handler attached');
+    //console.log('[settings] saveLandingButton found and handler attached');
     saveLandingButton.addEventListener('click', async () => {
       const selectedConfig = currentConfig || 'general';
-      console.log('[settings] saveLandingButton clicked for config:', selectedConfig);
+      //console.log('[settings] saveLandingButton clicked for config:', selectedConfig);
       try {
         await saveCurrentConfig(selectedConfig);
         alert(`✅ Configuración "${selectedConfig}" guardada correctamente.`);
@@ -1120,10 +1134,13 @@ function setupSettingsPage() {
         const firebaseModule = await import('./firebase.js');
         const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
         const { doc, getDoc, setDoc } = firestoreModule;
-        const docRef = doc(firebaseModule.db, 'config', 'landing');
+        const session = getStoredSession();
+        const tenantId = session?.tenantId || 'futurevip';
+        const docRef = doc(firebaseModule.db, 'tenants', tenantId);
 
         const snapshot = await getDoc(docRef);
-        const cfg = snapshot && snapshot.exists() ? snapshot.data() : {};
+        const raw = snapshot && snapshot.exists() ? snapshot.data() : {};
+        const cfg = raw?.config || raw;
         const previousLandingContent = cfg.landingContent && typeof cfg.landingContent === 'object' ? cfg.landingContent : {};
         const general = previousLandingContent.general && typeof previousLandingContent.general === 'object'
           ? previousLandingContent.general
@@ -1277,7 +1294,7 @@ function populateForm(content, configName = 'general') {
 }
 
 function initSettings() {
-  console.log('[settings] initSettings called');
+  //console.log('[settings] initSettings called');
   setupFilePreview('casino-logo', 'logo-preview');
   setupFilePreview('casino-mascot', 'mascot-preview');
   setupCasinoForm();
@@ -1293,14 +1310,14 @@ window.addEventListener('landingContent:ready', (event) => {
 });
 
 async function runOnReady() {
-  console.log('[settings] runOnReady start', { readyState: document.readyState });
+  //console.log('[settings] runOnReady start', { readyState: document.readyState });
   try {
     if (window.casinosReady) {
       await window.casinosReady.catch(() => {});
     }
 
     const api = await waitForCasinosApi();
-    console.log('[settings] runOnReady got api', api);
+    //console.log('[settings] runOnReady got api', api);
 
     // Prefer explicitly reading landingContent from Firestore so the settings
     // form shows the database values (not the local constants) as the source
@@ -1310,9 +1327,12 @@ async function runOnReady() {
       const firebaseModule = await import('./firebase.js');
       const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
       const { doc, getDoc } = firestoreModule;
-      const snapshot = await getDoc(doc(firebaseModule.db, 'config', 'landing'));
+      const session = getStoredSession();
+      const tenantId = session?.tenantId || 'futurevip';
+      const snapshot = await getDoc(doc(firebaseModule.db, 'tenants', tenantId));
       if (snapshot && snapshot.exists()) {
-        const cfg = snapshot.data() || {};
+        const raw = snapshot.data() || {};
+        const cfg = raw?.config || raw;
         if (cfg.landingContent && typeof cfg.landingContent === 'object') {
           landingFromDb = cfg.landingContent;
         }

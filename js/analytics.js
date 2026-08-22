@@ -1,6 +1,7 @@
 import { db } from './firebase.js';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
 import { createAnalyticsRange } from './analytics-range.mjs';
+import { getStoredSession } from './auth.js';
 import { calculateCampaignCalculatorMetrics } from './analytics-calculator.mjs';
 import { buildAdvancedSummaryCards, buildAdvancedSummaryReport } from './analytics-advanced-summary.mjs?v=7';
 
@@ -124,8 +125,11 @@ function getPerformanceColor(value, idealValue, mode = 'higher') {
 
 async function loadAnalyticsTargets() {
   try {
-    const snapshot = await getDoc(doc(db, 'config', 'landing'));
-    const cfg = snapshot.exists() ? (snapshot.data() || {}) : {};
+    const session = getStoredSession();
+    const tenantId = session?.tenantId || 'futurevip';
+    const snapshot = await getDoc(doc(db, 'tenants', tenantId));
+    const raw = snapshot.exists() ? (snapshot.data() || {}) : {};
+    const cfg = raw?.config || raw;
     const targets = cfg.analyticsTargets && typeof cfg.analyticsTargets === 'object' ? cfg.analyticsTargets : {};
     analyticsTargets = { ...getDefaultAnalyticsTargets(), ...targets };
   } catch (error) {
@@ -1285,20 +1289,20 @@ function renderAdvancedSummary(payload = {}) {
     return;
   }
 
-  console.log('[AdvancedSummary DEBUG] renderAdvancedSummary called');
-  console.log('[AdvancedSummary DEBUG] payload type:', Object.prototype.toString.call(payload));
-  console.log('[AdvancedSummary DEBUG] isArray:', Array.isArray(payload));
-  console.log('[AdvancedSummary DEBUG] length:', Array.isArray(payload) ? payload.length : null);
+  //console.log('[AdvancedSummary DEBUG] renderAdvancedSummary called');
+  //console.log('[AdvancedSummary DEBUG] payload type:', Object.prototype.toString.call(payload));
+  //console.log('[AdvancedSummary DEBUG] isArray:', Array.isArray(payload));
+  //console.log('[AdvancedSummary DEBUG] length:', Array.isArray(payload) ? payload.length : null);
 
   if (Array.isArray(payload)) {
-    console.log('[AdvancedSummary DEBUG] renderer: buildAdvancedSummaryReport');
-    console.log('[AdvancedSummary DEBUG] version: analytics.js renderAdvancedSummary branch check');
+    //console.log('[AdvancedSummary DEBUG] renderer: buildAdvancedSummaryReport');
+    //console.log('[AdvancedSummary DEBUG] version: analytics.js renderAdvancedSummary branch check');
     container.innerHTML = buildAdvancedSummaryReport(payload);
     return;
   }
 
-  console.log('[AdvancedSummary DEBUG] renderer: buildAdvancedSummaryCards');
-  console.log('[AdvancedSummary DEBUG] version: analytics.js renderAdvancedSummary branch check');
+  //console.log('[AdvancedSummary DEBUG] renderer: buildAdvancedSummaryCards');
+  //console.log('[AdvancedSummary DEBUG] version: analytics.js renderAdvancedSummary branch check');
   const cardsHtml = buildAdvancedSummaryCards(payload).map(({ title, value }) => `
     <div class="analytics-card">
       <h3>${title}</h3>
@@ -1473,7 +1477,9 @@ async function loadAdvancedSummaryPayload(range) {
 async function loadAnalytics() {
   try {
     await loadAnalyticsTargets();
-    const ref = doc(db, 'analytics', 'landing');
+    const session = getStoredSession();
+    const tenantId = session?.tenantId || 'futurevip';
+    const ref = doc(db, 'tenants', tenantId, 'analytics', 'landing');
     const snapshot = await getDoc(ref);
     const range = parseRangeInputs();
     const detailMode = detailSelect.value || 'hour';
@@ -2031,8 +2037,10 @@ async function runOnLoad() {
         messageElement.textContent = 'Generando datos de prueba...';
         const testData = buildTestAnalyticsDocument();
         const payload = buildAnalyticsDocumentPayload(testData);
-        const analyticsRef = doc(db, 'analytics', 'landing');
-        console.log('[analytics] generate button writing payload', { ref: analyticsRef.path, totals: payload.totals, visitorCount: Object.keys(payload.visitors || {}).length });
+        const session = getStoredSession();
+        const tenantId = session?.tenantId || 'futurevip';
+        const analyticsRef = doc(db, 'tenants', tenantId, 'analytics', 'landing');
+        //console.log('[analytics] generate button writing payload', { ref: analyticsRef.path, totals: payload.totals, visitorCount: Object.keys(payload.visitors || {}).length });
         await setDoc(analyticsRef, payload, { merge: true });
         messageElement.textContent = 'Datos de prueba generados correctamente.';
         await loadAnalytics();
@@ -2048,8 +2056,10 @@ async function runOnLoad() {
         if (!confirm('¿Confirmás que querés borrar TODOS los datos de analytics? Esto es irreversible.')) return;
         messageElement.textContent = 'Borrando datos...';
         const empty = buildAnalyticsDocumentPayload(createEmptyAnalyticsDocument());
-        const analyticsRef = doc(db, 'analytics', 'landing');
-        console.log('[analytics] clear button writing empty payload', { ref: analyticsRef.path, totals: empty.totals });
+        const session = getStoredSession();
+        const tenantId = session?.tenantId || 'futurevip';
+        const analyticsRef = doc(db, 'tenants', tenantId, 'analytics', 'landing');
+        //console.log('[analytics] clear button writing empty payload', { ref: analyticsRef.path, totals: empty.totals });
         await setDoc(analyticsRef, empty, { merge: true });
         messageElement.textContent = 'Datos borrados correctamente.';
         await loadAnalytics();
