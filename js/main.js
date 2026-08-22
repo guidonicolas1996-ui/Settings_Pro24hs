@@ -629,7 +629,11 @@ if (typeof window !== 'undefined') {
   };
 
   window.landingSettings = guardedLandingSettingsAPI;
-  try { //console.log('[main] landingSettings assigned, hasActiveSession:', hasActiveSession); } catch(e){}
+  try {
+    console.debug('[main] landingSettings assigned, hasActiveSession:', hasActiveSession);
+  } catch (e) {
+    console.warn('[main] landingSettings debug failed', e);
+  }
   window.casinosAPI = guardedLandingSettingsAPI;
 }
 
