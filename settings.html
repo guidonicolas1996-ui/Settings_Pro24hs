@@ -32,19 +32,42 @@
       })();
     </script>
     <script type="module">
-      import { ensureAuthGate } from './js/auth.js?v=1';
+      import { ensureAuthGate, getStoredSession } from './js/auth.js?v=1';
       //console.log('[page] settings head script loaded');
-      
       window.authOk = false;
       window.addEventListener('pageshow', (event) => {
         if (event.persisted) {
           window.location.reload();
         }
       });
-      const authOk = await ensureAuthGate();
-      window.authOk = authOk;
-      if (authOk) {
-        document.body.style.visibility = 'visible';
+      try {
+        const authOk = await ensureAuthGate();
+        window.authOk = authOk;
+        if (authOk) {
+          document.body.style.visibility = 'visible';
+        } else {
+          // If Firebase auth not ready but we have a stored session, allow the page as fallback
+          const stored = getStoredSession();
+          if (stored) {
+            console.warn('[auth] Firebase auth not ready, but stored session exists. Showing page as fallback.');
+            document.body.style.visibility = 'visible';
+            window.authOk = true;
+          } else {
+            const returnTarget = new URL('./settings.html', window.location.href).href;
+            window.location.replace(`./login.html?redirect=${encodeURIComponent(returnTarget)}`);
+          }
+        }
+      } catch (e) {
+        console.warn('[auth] settings head ensureAuthGate error', e);
+        const stored = getStoredSession();
+        if (stored) {
+          console.warn('[auth] Showing page due to stored session despite error.');
+          document.body.style.visibility = 'visible';
+          window.authOk = true;
+        } else {
+          const returnTarget = new URL('./settings.html', window.location.href).href;
+          window.location.replace(`./login.html?redirect=${encodeURIComponent(returnTarget)}`);
+        }
       }
       // Additional runtime guard: ensure stored session exists before loading modules
       try {

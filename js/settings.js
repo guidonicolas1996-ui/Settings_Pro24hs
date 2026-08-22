@@ -206,15 +206,10 @@ function populateAnalyticsTargetsForm(targets = {}) {
 
 async function loadAnalyticsTargetsFromDb() {
   try {
-    const firebaseModule = await import('./firebase.js');
-    const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
-    const { doc, getDoc } = firestoreModule;
     const session = getStoredSession();
     const tenantId = session?.tenantId || 'futurevip';
-    const snapshot = await getDoc(doc(firebaseModule.db, 'tenants', tenantId));
-    const raw = snapshot.exists() ? (snapshot.data() || {}) : {};
-    const cfg = raw?.config || raw;
-    const targets = cfg.analyticsTargets && typeof cfg.analyticsTargets === 'object' ? cfg.analyticsTargets : {};
+    const cfg = await readTenantConfig(tenantId);
+    const targets = cfg && cfg.analyticsTargets && typeof cfg.analyticsTargets === 'object' ? cfg.analyticsTargets : {};
     const normalizedTargets = { ...getDefaultAnalyticsTargets(), ...targets };
     setStoredAnalyticsTargets(normalizedTargets);
     return normalizedTargets;
@@ -945,17 +940,21 @@ function setupSettingsPage() {
     let landingContent = getStoredLandingContent();
 
     try {
-      const firebaseModule = await import('./firebase.js');
-      const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
-      const { doc, getDoc } = firestoreModule;
-
       const session = getStoredSession();
       const tenantId = session?.tenantId || 'futurevip';
-      const snapshot = await getDoc(doc(firebaseModule.db, 'tenants', tenantId));
-      const raw = snapshot.exists() ? (snapshot.data() || {}) : {};
-      const cfg = raw?.config || raw;
-      if (cfg.landingContent && typeof cfg.landingContent === 'object') {
+      const cfg = await readTenantConfig(tenantId);
+      if (cfg && cfg.landingContent && typeof cfg.landingContent === 'object') {
         landingContent = cfg.landingContent;
+      } else if (cfg && typeof cfg === 'object' && Object.keys(cfg).length) {
+        // fallback: if cfg looks like a map of docs from tenants/{tenantId}/config,
+        // try to find a landingContent-like doc
+        if (cfg.landingContent && typeof cfg.landingContent === 'object') {
+          landingContent = cfg.landingContent;
+        } else if (cfg.landing && typeof cfg.landing === 'object') {
+          landingContent = cfg.landing;
+        } else if (cfg.default && typeof cfg.default === 'object') {
+          landingContent = cfg.default;
+        }
       }
     } catch (error) {
       console.warn(`[settings] Error loading config ${configName} from Firestore, using local fallback`, error);
@@ -1229,6 +1228,49 @@ function setupSettingsPage() {
 
 }
 
+// Read tenant config with fallbacks for legacy storage locations
+async function readTenantConfig(tenantId) {
+  try {
+    const firebaseModule = await import('./firebase.js');
+    const fs = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+    const { doc, getDoc, collection, getDocs } = fs;
+
+    // 1) Try tenants/{tenantId} doc
+    try {
+      const snap = await getDoc(doc(firebaseModule.db, 'tenants', tenantId));
+      if (snap && snap.exists()) {
+        const raw = snap.data() || {};
+        const cfg = raw?.config || raw;
+        if (cfg && (cfg.landingContent || cfg.analyticsTargets || Object.keys(cfg).length)) {
+          return cfg;
+        }
+      }
+    } catch (e) {
+      // continue to fallback
+    }
+
+    // 2) Try collection tenants/{tenantId}/config (legacy pattern)
+    try {
+      const col = collection(firebaseModule.db, 'tenants', tenantId, 'config');
+      const snaps = await getDocs(col);
+      if (snaps && !snaps.empty) {
+        const merged = {};
+        snaps.forEach((d) => {
+          merged[d.id] = d.data();
+        });
+        return merged;
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return {};
+  } catch (error) {
+    console.warn('[settings] readTenantConfig failed', error);
+    return {};
+  }
+}
+
 function populateForm(content, configName = 'general') {
   const fallbackContent = {
     heroBonusLine: '100% DE BONO',
@@ -1324,17 +1366,18 @@ async function runOnReady() {
     // of truth. Fallback to the API-provided values if Firestore read fails.
     let landingFromDb = null;
     try {
-      const firebaseModule = await import('./firebase.js');
-      const firestoreModule = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
-      const { doc, getDoc } = firestoreModule;
       const session = getStoredSession();
       const tenantId = session?.tenantId || 'futurevip';
-      const snapshot = await getDoc(doc(firebaseModule.db, 'tenants', tenantId));
-      if (snapshot && snapshot.exists()) {
-        const raw = snapshot.data() || {};
-        const cfg = raw?.config || raw;
+      const cfg = await readTenantConfig(tenantId);
+      if (cfg && cfg.landingContent && typeof cfg.landingContent === 'object') {
+        landingFromDb = cfg.landingContent;
+      } else if (cfg && typeof cfg === 'object' && Object.keys(cfg).length) {
         if (cfg.landingContent && typeof cfg.landingContent === 'object') {
           landingFromDb = cfg.landingContent;
+        } else if (cfg.landing && typeof cfg.landing === 'object') {
+          landingFromDb = cfg.landing;
+        } else if (cfg.default && typeof cfg.default === 'object') {
+          landingFromDb = cfg.default;
         }
       }
     } catch (e) {
