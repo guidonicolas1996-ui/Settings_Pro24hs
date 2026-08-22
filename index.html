@@ -284,6 +284,7 @@
         width: 100%;
         padding: 1.2rem;
         box-sizing: border-box;
+        overflow: hidden;
       }
 
       .link-pill {
@@ -335,7 +336,8 @@
 
       @media (max-width: 900px) {
         .link-list {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.5rem;
+          padding: 1rem;
         }
       }
 
@@ -358,18 +360,25 @@
         }
 
         .link-list {
-          grid-template-columns: 1fr;
           gap: 0.65rem;
           padding: 0.9rem 1rem 1.2rem;
         }
 
         .link-pill {
-          min-height: 7rem;
-          border-radius: 18px;
+          min-height: clamp(4.5rem, 20vw, 7rem);
+          border-radius: 12px;
           flex-direction: column;
           align-items: center;
           gap: 0.2rem;
-          padding: 0.9rem 1rem;
+          padding: 0.45rem 0.25rem;
+        }
+
+        .link-pill .alt-emoji {
+          font-size: clamp(1.4rem, 8vw, 2.4rem);
+        }
+
+        .link-pill .alt-number {
+          font-size: clamp(0.8rem, 3vw, 1.05rem);
         }
 
         .home-footer {
@@ -474,6 +483,13 @@
     </style>
   </head>
   <body class="settings-page">
+    <div class="top-actions">
+      <div class="tenant-context" aria-label="Casino activo">
+        <span class="tenant-context__label">Casino</span>
+        <strong id="tenant-name" class="tenant-context__name">Cargando...</strong>
+      </div>
+      <button type="button" id="logout-button" class="analytics-button" aria-label="Cerrar sesión">🚪</button>
+    </div>
     <div class="blob-container">
       <div class="blob blob-1"></div>
       <div class="blob blob-2"></div>
@@ -503,6 +519,7 @@
       </div>
     </main>
 
+    <script type="module" src="./js/account-bar.js"></script>
     <script>
       // Build alternate links based on stored adminSession.tenantId or fallback to host-derived tenant.
       (function () {

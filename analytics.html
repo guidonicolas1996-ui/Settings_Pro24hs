@@ -64,6 +64,10 @@
   </head>
   <body class="settings-page" data-theme="default">
     <div class="top-actions">
+            <div class="tenant-context" aria-label="Casino activo">
+                <span class="tenant-context__label">Casino</span>
+                <strong id="tenant-name" class="tenant-context__name">Cargando...</strong>
+            </div>
       <button type="button" id="logout-button" class="analytics-button" aria-label="Cerrar sesión">🚪</button>
       <a href="index.html" class="analytics-button" aria-label="Index">🏠</a>
     </div>
@@ -487,15 +491,9 @@
                 </section>
             </section>
         </main>
+        <script type="module" src="./js/account-bar.js"></script>
         <script type="module">
-            import { clearSession } from './js/auth.js';
-
             //console.log('[page] analytics bottom script start', { authOk: window.authOk, storedSession: sessionStorage.getItem('adminSession') });
-
-            document.getElementById('logout-button')?.addEventListener('click', async () => {
-                await clearSession();
-                window.location.replace('./login.html');
-            });
 
             // Ensure auth gate here too (avoid race between head and bottom modules)
             try {
