@@ -12,17 +12,27 @@
     <link rel="manifest" href="./img/favicon/site.webmanifest" />
     <link rel="shortcut icon" href="./img/favicon/favicon.ico" />
     <link rel="stylesheet" href="./css/styles.css" />
-    <script type="module">
-      import { getStoredSession, redirectToLogin } from './js/auth.js';
-      // If no stored admin session, redirect to login immediately
-      try {
-        const sess = getStoredSession();
-        if (!sess) {
-          redirectToLogin();
+    <style>body{visibility:hidden;}</style>
+    <script>
+      // Inline check: read adminSession from sessionStorage or localStorage, redirect if missing
+      (function(){
+        try {
+          var raw = null;
+          try { raw = window.sessionStorage.getItem('adminSession'); } catch(e) { raw = null; }
+          if (!raw) {
+            try { raw = window.localStorage.getItem('adminSession'); } catch(e) { raw = null; }
+          }
+          if (!raw) {
+            var target = './login.html?redirect=' + encodeURIComponent(window.location.href);
+            window.location.replace(target);
+            return;
+          }
+          // show page when session exists
+          try { document.body.style.visibility = 'visible'; } catch (e) {}
+        } catch (err) {
+          try { window.location.replace('./login.html'); } catch(_){ }
         }
-      } catch (e) {
-        try { redirectToLogin(); } catch (_) {}
-      }
+      })();
     </script>
     <style>
       body {

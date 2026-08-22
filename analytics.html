@@ -15,17 +15,25 @@
     <link rel="stylesheet" href="./css/styles.css" />
     <style>body{visibility:hidden;}</style>
         <script type="module" src="./js/tenant.js"></script>
-        <script type="module">
-            // Quick redirect to login if no stored session (avoid loading modules unnecessarily)
-            import { getStoredSession, redirectToLogin, ensureAuthGate } from './js/auth.js?v=1';
-            try {
-                const sess = getStoredSession();
-                if (!sess) {
-                    redirectToLogin();
+        <script>
+            // Inline quick-check: read adminSession from sessionStorage or localStorage, redirect if missing
+            (function(){
+                try {
+                    var raw = null;
+                    try { raw = window.sessionStorage.getItem('adminSession'); } catch(e) { raw = null; }
+                    if (!raw) {
+                        try { raw = window.localStorage.getItem('adminSession'); } catch(e) { raw = null; }
+                    }
+                    if (!raw) {
+                        window.location.replace('./login.html?redirect=' + encodeURIComponent(window.location.href));
+                    }
+                } catch (err) {
+                    try { window.location.replace('./login.html'); } catch(_){}
                 }
-            } catch (e) {
-                try { redirectToLogin(); } catch (_) {}
-            }
+            })();
+        </script>
+        <script type="module">
+            import { ensureAuthGate } from './js/auth.js?v=1';
             //console.log('[page] analytics head script loaded');
       window.authOk = false;
       window.addEventListener('pageshow', (event) => {
@@ -44,7 +52,6 @@
             // Additional guard: ensure stored session exists before loading analytics scripts
             try {
                 if (!window.authGuard || !window.authGuard.isAuthenticated || !window.authGuard.isAuthenticated()) {
-                    //console.log('[auth] analytics: no stored session, redirecting');
                     const returnTarget = new URL('./analytics.html', window.location.href).href;
                     window.location.replace(`./login.html?redirect=${encodeURIComponent(returnTarget)}`);
                 }
