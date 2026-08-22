@@ -82,10 +82,23 @@
       }
 
       document.addEventListener('DOMContentLoaded', async () => {
+        console.debug('[login] DOMContentLoaded');
         const form = document.getElementById('login-form');
         const message = document.getElementById('login-message');
         const submitButton = form.querySelector('button[type="submit"]');
-        const { auth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence } = await ensureFirebase();
+        let auth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence;
+        try {
+          const authPkg = await ensureFirebase();
+          auth = authPkg.auth;
+          signInWithEmailAndPassword = authPkg.signInWithEmailAndPassword;
+          onAuthStateChanged = authPkg.onAuthStateChanged;
+          setPersistence = authPkg.setPersistence;
+          browserSessionPersistence = authPkg.browserSessionPersistence;
+        } catch (initErr) {
+          console.error('[login] ensureFirebase failed', initErr);
+          message.textContent = 'Error inicializando autenticación. Reintentá más tarde.';
+          return;
+        }
 
         let failedAttempts = 0;
         let lockedUntil = 0;
@@ -101,7 +114,8 @@
         // No passive auth restore on login page. Login only proceeds after explicit form submit.
 
         form.addEventListener('submit', async (event) => {
-          event.preventDefault();
+          console.debug('[login] submit event');
+          try { event.preventDefault(); } catch(e) { console.warn('preventDefault failed', e); }
           const now = Date.now();
           if (now < lockedUntil) {
             const secondsLeft = Math.ceil((lockedUntil - now) / 1000);
