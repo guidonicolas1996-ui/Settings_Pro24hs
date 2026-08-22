@@ -43,25 +43,30 @@
     </script>
     <style>body{visibility:hidden;}</style>
     <script>
-      // Inline check: read adminSession from sessionStorage or localStorage, redirect if missing
-      (function(){
+      // Inline check: run on DOMContentLoaded to ensure body exists; log values for debugging
+      document.addEventListener('DOMContentLoaded', function () {
         try {
+          console.debug('[index] DOMContentLoaded - checking adminSession');
           var raw = null;
           try { raw = window.sessionStorage.getItem('adminSession'); } catch(e) { raw = null; }
           if (!raw) {
             try { raw = window.localStorage.getItem('adminSession'); } catch(e) { raw = null; }
           }
+          console.debug('[index] storedRaw:', raw);
           if (!raw) {
             var target = './login.html?redirect=' + encodeURIComponent(window.location.href);
+            console.debug('[index] no session, redirecting to', target);
             window.location.replace(target);
             return;
           }
           // show page when session exists
-          try { document.body.style.visibility = 'visible'; } catch (e) {}
+          try { document.body.style.visibility = 'visible'; } catch (e) { console.warn('[index] set visibility failed', e); }
+          console.debug('[index] page shown');
         } catch (err) {
+          console.error('[index] session check error', err);
           try { window.location.replace('./login.html'); } catch(_){ }
         }
-      })();
+      });
     </script>
     <style>
       body {
@@ -502,6 +507,7 @@
       // Build alternate links based on stored adminSession.tenantId or fallback to host-derived tenant.
       (function () {
         const storedRaw = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('adminSession') : null;
+        console.debug('[index] alt-links storedRaw:', storedRaw);
         let tenant = null;
         try {
           const parsed = storedRaw ? JSON.parse(storedRaw) : null;
@@ -515,6 +521,7 @@
         tenant = tenant || 'futurevip';
 
         const base = `https://${tenant}.vercel.app`;
+        console.debug('[index] alt-links tenant base:', base);
         const alternateLinks = [
           { number: 1, url: `${base}/?src=alt1` },
           { number: 2, url: `${base}/?src=alt2` },
@@ -533,6 +540,7 @@
               </a>
             `)
             .join('');
+          console.debug('[index] alt-links rendered');
         }
 
         // Update main landing link
