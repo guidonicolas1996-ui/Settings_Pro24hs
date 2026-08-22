@@ -12,6 +12,35 @@
     <link rel="manifest" href="./img/favicon/site.webmanifest" />
     <link rel="shortcut icon" href="./img/favicon/favicon.ico" />
     <link rel="stylesheet" href="./css/styles.css" />
+    <script>
+      // Inline tenant helper (available early) — derives tenantId from hostname
+      (function (global) {
+        function getTenantIdFromHost(hostname) {
+          try {
+            let host = hostname;
+            if (!host && typeof global !== 'undefined' && global.location) {
+              host = global.location.hostname || '';
+            }
+            host = (host || '').toString();
+            if (!host) return 'futurevip';
+            if (host.includes('localhost')) {
+              host = 'futurevip.vercel.app';
+            }
+            host = host.split(':')[0].toLowerCase();
+            if (host.endsWith('.vercel.app')) {
+              return host.replace(/\.vercel\.app$/i, '');
+            }
+            if (host.indexOf('.') !== -1) {
+              return host.split('.')[0];
+            }
+            return host;
+          } catch (error) {
+            return 'futurevip';
+          }
+        }
+        global.getTenantIdFromHost = getTenantIdFromHost;
+      })(window);
+    </script>
     <style>body{visibility:hidden;}</style>
     <script>
       // Inline check: read adminSession from sessionStorage or localStorage, redirect if missing
@@ -513,6 +542,5 @@
         }
       })();
     </script>
-      <script type="module" src="./js/tenant.js"></script>
-      <script type="module">
+      
 </html>
