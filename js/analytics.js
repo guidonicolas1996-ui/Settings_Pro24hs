@@ -1178,10 +1178,22 @@ function renderLinksSummary(totals, prevTotals) {
 
   const safe = (value) => (typeof value === 'number' ? value : (value ? Number(value) : 0));
 
+  // Derive tenant base URL from stored admin session or host fallback
+  let tenant = 'futurevip';
+  try {
+    const raw = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('adminSession') : null;
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && parsed.tenantId) tenant = parsed.tenantId;
+    else if (typeof window.getTenantIdFromHost === 'function') tenant = window.getTenantIdFromHost(window.location.hostname) || tenant;
+  } catch (e) {
+    tenant = tenant;
+  }
+  const baseUrl = `https://${tenant}.vercel.app`;
+
   const links = [
     {
       title: 'Link principal',
-      subtitle: 'https://futurevip.vercel.app/',
+      subtitle: `${baseUrl}/`,
       uniqueVisits: totals.primaryLinks || 0,
       uniqueVisitsPrev: prevTotals?.primaryLinks || 0,
       totalVisits: totals.primaryVisits || 0,
@@ -1193,7 +1205,7 @@ function renderLinksSummary(totals, prevTotals) {
     },
     {
       title: 'Link alternativo 1',
-      subtitle: 'https://futurevip.vercel.app/?src=alt1',
+      subtitle: `${baseUrl}/?src=alt1`,
       uniqueVisits: totals.alt1Links || 0,
       uniqueVisitsPrev: prevTotals?.alt1Links || 0,
       totalVisits: totals.alt1Visits || 0,
@@ -1205,7 +1217,7 @@ function renderLinksSummary(totals, prevTotals) {
     },
     {
       title: 'Link alternativo 2',
-      subtitle: 'https://futurevip.vercel.app/?src=alt2',
+      subtitle: `${baseUrl}/?src=alt2`,
       uniqueVisits: totals.alt2Links || 0,
       uniqueVisitsPrev: prevTotals?.alt2Links || 0,
       totalVisits: totals.alt2Visits || 0,
@@ -1217,7 +1229,7 @@ function renderLinksSummary(totals, prevTotals) {
     },
     {
       title: 'Link alternativo 3',
-      subtitle: 'https://futurevip.vercel.app/?src=alt3',
+      subtitle: `${baseUrl}/?src=alt3`,
       uniqueVisits: totals.alt3Links || 0,
       uniqueVisitsPrev: prevTotals?.alt3Links || 0,
       totalVisits: totals.alt3Visits || 0,
@@ -1229,7 +1241,7 @@ function renderLinksSummary(totals, prevTotals) {
     },
     {
       title: 'Link alternativo 4',
-      subtitle: 'https://futurevip.vercel.app/?src=alt4',
+      subtitle: `${baseUrl}/?src=alt4`,
       uniqueVisits: totals.alt4Links || 0,
       uniqueVisitsPrev: prevTotals?.alt4Links || 0,
       totalVisits: totals.alt4Visits || 0,
@@ -1241,7 +1253,7 @@ function renderLinksSummary(totals, prevTotals) {
     },
     {
       title: 'Link alternativo 5',
-      subtitle: 'https://futurevip.vercel.app/?src=alt5',
+      subtitle: `${baseUrl}/?src=alt5`,
       uniqueVisits: totals.alt5Links || 0,
       uniqueVisitsPrev: prevTotals?.alt5Links || 0,
       totalVisits: totals.alt5Visits || 0,

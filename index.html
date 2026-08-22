@@ -12,6 +12,18 @@
     <link rel="manifest" href="./img/favicon/site.webmanifest" />
     <link rel="shortcut icon" href="./img/favicon/favicon.ico" />
     <link rel="stylesheet" href="./css/styles.css" />
+    <script type="module">
+      import { getStoredSession, redirectToLogin } from './js/auth.js';
+      // If no stored admin session, redirect to login immediately
+      try {
+        const sess = getStoredSession();
+        if (!sess) {
+          redirectToLogin();
+        }
+      } catch (e) {
+        try { redirectToLogin(); } catch (_) {}
+      }
+    </script>
     <style>
       body {
         margin: 0;
@@ -435,7 +447,7 @@
           <div class="home-actions">
             <a class="home-link" href="./settings.html" aria-label="Configuración"><img src="./img/buttons/Settings.png" alt="Configuración" class="icon-image"></a>
             <a class="home-link" href="./analytics.html" aria-label="Analytics"><img src="./img/buttons/Analytics.png" alt="Analytics" class="icon-image"></a>
-            <a class="home-link home-link--landing" href="https://futurevip.vercel.app" target="_blank" rel="noopener noreferrer" aria-label="Landing"><img src="./img/buttons/Landing.png" alt="Landing" class="icon-image"></a>
+            <a id="landing-link" class="home-link home-link--landing" href="https://futurevip.vercel.app" target="_blank" rel="noopener noreferrer" aria-label="Landing"><img src="./img/buttons/Landing.png" alt="Landing" class="icon-image"></a>
             <a class="home-link" href="#" aria-label="Más"><img src="./img/buttons/VIP.png" alt="VIP" class="icon-image"></a>
           </div>
         </section>
@@ -448,25 +460,48 @@
     </main>
 
     <script>
-      const alternateLinks = [
-        { number: 1, url: 'https://futurevip.vercel.app/?src=alt1' },
-        { number: 2, url: 'https://futurevip.vercel.app/?src=alt2' },
-        { number: 3, url: 'https://futurevip.vercel.app/?src=alt3' },
-        { number: 4, url: 'https://futurevip.vercel.app/?src=alt4' },
-        { number: 5, url: 'https://futurevip.vercel.app/?src=alt5' }
-      ];
+      // Build alternate links based on stored adminSession.tenantId or fallback to host-derived tenant.
+      (function () {
+        const storedRaw = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('adminSession') : null;
+        let tenant = null;
+        try {
+          const parsed = storedRaw ? JSON.parse(storedRaw) : null;
+          if (parsed && parsed.tenantId) tenant = parsed.tenantId;
+        } catch (e) {
+          tenant = null;
+        }
+        if (!tenant && typeof getTenantIdFromHost === 'function') {
+          try { tenant = getTenantIdFromHost(window.location.hostname); } catch (e) { tenant = 'futurevip'; }
+        }
+        tenant = tenant || 'futurevip';
 
-      const linkList = document.getElementById('alt-link-list');
-      if (linkList) {
-        linkList.innerHTML = alternateLinks
-          .map((link) => `
-            <a class="link-pill" href="${link.url}" target="_blank" rel="noopener noreferrer">
-              <span class="alt-emoji">🌐</span>
-              <span class="alt-number">${link.number}</span>
-            </a>
-          `)
-          .join('');
-      }
+        const base = `https://${tenant}.vercel.app`;
+        const alternateLinks = [
+          { number: 1, url: `${base}/?src=alt1` },
+          { number: 2, url: `${base}/?src=alt2` },
+          { number: 3, url: `${base}/?src=alt3` },
+          { number: 4, url: `${base}/?src=alt4` },
+          { number: 5, url: `${base}/?src=alt5` }
+        ];
+
+        const linkList = document.getElementById('alt-link-list');
+        if (linkList) {
+          linkList.innerHTML = alternateLinks
+            .map((link) => `
+              <a class="link-pill" href="${link.url}" target="_blank" rel="noopener noreferrer">
+                <span class="alt-emoji">🌐</span>
+                <span class="alt-number">${link.number}</span>
+              </a>
+            `)
+            .join('');
+        }
+
+        // Update main landing link
+        const landingLink = document.getElementById('landing-link');
+        if (landingLink) {
+          landingLink.href = base;
+        }
+      })();
     </script>
       <script type="module" src="./js/tenant.js"></script>
       <script type="module">
